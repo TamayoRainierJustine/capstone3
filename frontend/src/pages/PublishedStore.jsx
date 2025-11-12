@@ -1104,9 +1104,9 @@ const PublishedStore = () => {
         }
 
         // Replace footer copyright text with domain name and new copyright
-        // Use domain name (like "brocade") and format to uppercase (like "BROCADE")
-        const domainName = store.domainName || store.storeName || 'Store';
-        const displayDomainName = domainName.toUpperCase();
+        // Use domain name (already declared above) and format to uppercase (like "BROCADE")
+        // domainName and logoDisplayName are already declared above, reuse them
+        const displayDomainName = logoDisplayName; // Already uppercase from logo update
         const newCopyright = `© 2025 ${displayDomainName} - Structura Team from Faith Colleges`;
         
         console.log('🔄 Replacing footer copyright:', domainName, newCopyright);
