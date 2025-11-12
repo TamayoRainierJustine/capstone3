@@ -1,0 +1,35 @@
+# ============================================
+# VERCEL ENVIRONMENT VARIABLES - COPY BELOW
+# ============================================
+# Go to: Vercel Dashboard → Your Project → Settings → Environment Variables
+# Add these for: Production, Preview, and Development
+# Replace [YOUR-VALUES] with your actual credentials
+# ============================================
+
+# DATABASE (Supabase PostgreSQL)
+DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-ID].supabase.co:5432/postgres
+SUPABASE_DB_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-ID].supabase.co:5432/postgres
+
+# SUPABASE
+SUPABASE_URL=https://[YOUR-PROJECT-ID].supabase.co
+SUPABASE_ANON_KEY=[YOUR-ANON-KEY]
+SUPABASE_SERVICE_ROLE_KEY=[YOUR-SERVICE-ROLE-KEY]
+
+# JWT SECRET (Generate a random 32+ character string)
+JWT_SECRET=[YOUR-JWT-SECRET-MIN-32-CHARACTERS]
+
+# NODE ENV
+NODE_ENV=production
+
+# FRONTEND (Optional - VITE_ prefix required for frontend)
+VITE_SUPABASE_URL=https://[YOUR-PROJECT-ID].supabase.co
+FRONTEND_URL=https://your-project.vercel.app
+
+# ============================================
+# OPTIONAL: VITE_API_URL
+# ============================================
+# Option 1 (Recommended): Don't set this - uses /api automatically
+# Option 2: Set to your Vercel domain after deployment
+# VITE_API_URL=https://your-project.vercel.app/api
+# ============================================
+

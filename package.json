@@ -12,7 +12,7 @@
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "install:frontend": "cd frontend && npm install --production=false",
     "migrate:supabase": "cd backend && npm run migrate:supabase",
-    "vercel-build": "npm install && cd frontend && npm install --production=false && npm run build"
+    "vercel-build": "node build.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
