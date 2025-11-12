@@ -85,6 +85,11 @@ export const servePublishedStoreHTML = async (req, res) => {
       return res.status(500).send('Error loading store template');
     }
 
+    // Get domain name once at the top (use domain name if available, otherwise store name)
+    const domainName = store.domainName || store.storeName || 'Store';
+    const logoDisplayName = domainName.toUpperCase(); // Uppercase for logo (like "BROCADE")
+    const displayDomainName = domainName.toUpperCase(); // Uppercase for copyright (like "BROCADE")
+
     // Get hero content
     const heroContent = storeData.content?.hero || {};
     const heroTitle = (heroContent.title && heroContent.title.trim()) 
@@ -120,8 +125,20 @@ export const servePublishedStoreHTML = async (req, res) => {
       htmlContent = htmlContent.replace(/(<section[^>]*class="[^"]*hero[^"]*"[^>]*>[\s\S]*?<p[^>]*>)[\s\S]*?(<\/p>)/i, `$1${heroSubtitle}$2`);
     }
 
-    // Replace store name in logo/navbar
-    htmlContent = htmlContent.replace(/(<[^>]*class="[^"]*logo[^"]*"[^>]*>)[\s\S]*?(<\/[^>]*>)/i, `$1${store.storeName}$2`);
+    // Replace "Truvara" or any template brand name in logo/navbar with domain name (uppercase)
+    htmlContent = htmlContent.replace(/(<[^>]*class="[^"]*logo[^"]*"[^>]*>)[\s\S]*?(<\/[^>]*>)/i, `$1${logoDisplayName}$2`);
+    
+    // Also replace any hardcoded "Truvara" text in navbar (uppercase)
+    htmlContent = htmlContent.replace(/>Truvara</gi, `>${logoDisplayName}<`);
+    
+    // Replace footer logo/brand name with domain name (uppercase)
+    htmlContent = htmlContent.replace(/(<[^>]*class="[^"]*footer-logo[^"]*"[^>]*>)[\s\S]*?(<\/[^>]*>)/i, `$1${logoDisplayName}$2`);
+    
+    // Replace any "Truvara" in footer (but not in copyright text which will be handled separately)
+    htmlContent = htmlContent.replace(/(<footer[^>]*>[\s\S]*?<[^>]*class="[^"]*footer-logo[^"]*"[^>]*>)[\s\S]*?(<\/[^>]*>)/gi, `$1${logoDisplayName}$2`);
+    
+    // Replace any remaining "Truvara" in navbar and footer (except copyright)
+    htmlContent = htmlContent.replace(/Truvara(?!\s*©)/gi, logoDisplayName);
 
     // Inject background styles
     let backgroundCSS = '';
@@ -223,8 +240,8 @@ export const servePublishedStoreHTML = async (req, res) => {
     }
 
     // Replace footer copyright text with domain name and new copyright
-    const domainName = store.domainName || store.storeName || 'Store';
-    const newCopyright = `© 2025 ${domainName} - Structura Team from Faith Colleges`;
+    // Use displayDomainName which is already defined above (uppercase domain name)
+    const newCopyright = `© 2025 ${displayDomainName} - Structura Team from Faith Colleges`;
     
     // AGGRESSIVE replacement strategy to catch all variations of old copyright text
     // Strategy 1: Direct text replacement for known old copyright strings

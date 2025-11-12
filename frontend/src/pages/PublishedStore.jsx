@@ -853,14 +853,49 @@ const PublishedStore = () => {
           console.warn('No products to display');
         }
 
-        // Update logo with store name and add click handler
+        // Update logo with domain name (preferred) or store name and add click handler
+        // Use domain name in uppercase for logo (like "BROCADE")
+        const domainName = store.domainName || store.storeName || 'Store';
+        const logoDisplayName = domainName.toUpperCase();
+        
         const logo = iframeDoc.querySelector('.logo, .navbar .logo');
         if (logo) {
-          logo.textContent = store.storeName || 'Store';
+          logo.textContent = logoDisplayName;
+          // Also replace any "Truvara" text that might be in the logo
+          if (logo.textContent.includes('Truvara')) {
+            logo.textContent = logo.textContent.replace(/Truvara/gi, logoDisplayName);
+          }
           logo.onclick = (e) => {
             e.preventDefault();
             iframeDoc.querySelector('.hero, body')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           };
+          console.log('✅ Logo updated to:', logoDisplayName);
+        }
+        
+        // Update footer logo with domain name (uppercase)
+        const footerLogo = iframeDoc.querySelector('.footer-logo, footer .footer-logo');
+        if (footerLogo) {
+          footerLogo.textContent = logoDisplayName;
+          // Replace any "Truvara" in footer logo
+          if (footerLogo.textContent.includes('Truvara')) {
+            footerLogo.textContent = footerLogo.textContent.replace(/Truvara/gi, logoDisplayName);
+          }
+          console.log('✅ Footer logo updated to:', logoDisplayName);
+        }
+        
+        // Also replace any remaining "Truvara" text in navbar and footer areas
+        // Search for "Truvara" in navbar and footer sections
+        const navbar = iframeDoc.querySelector('.navbar, nav');
+        if (navbar) {
+          navbar.innerHTML = navbar.innerHTML.replace(/Truvara/gi, logoDisplayName);
+        }
+        
+        const footerElement = iframeDoc.querySelector('footer');
+        if (footerElement) {
+          // Replace "Truvara" in footer but preserve copyright text (we'll update that separately)
+          const footerHTML = footerElement.innerHTML;
+          // Only replace Truvara that's not part of copyright text
+          footerElement.innerHTML = footerHTML.replace(/Truvara(?!\s*©)/gi, logoDisplayName);
         }
 
         // Add navigation link functionality and remove About/Gallery links
@@ -1069,8 +1104,10 @@ const PublishedStore = () => {
         }
 
         // Replace footer copyright text with domain name and new copyright
+        // Use domain name (like "brocade") and format to uppercase (like "BROCADE")
         const domainName = store.domainName || store.storeName || 'Store';
-        const newCopyright = `© 2025 ${domainName} - Structura Team from Faith Colleges`;
+        const displayDomainName = domainName.toUpperCase();
+        const newCopyright = `© 2025 ${displayDomainName} - Structura Team from Faith Colleges`;
         
         console.log('🔄 Replacing footer copyright:', domainName, newCopyright);
         
