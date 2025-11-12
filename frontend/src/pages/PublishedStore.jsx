@@ -853,10 +853,8 @@ const PublishedStore = () => {
           console.warn('No products to display');
         }
 
-        // Update logo with domain name (preferred) or store name and add click handler
-        // Use domain name in uppercase for logo (like "BROCADE")
-        const domainName = store.domainName || store.storeName || 'Store';
-        const logoDisplayName = domainName.toUpperCase();
+        // Update logo with store name (from form, not domain name) and add click handler
+        const logoDisplayName = store.storeName || 'Store';
         
         const logo = iframeDoc.querySelector('.logo, .navbar .logo');
         if (logo) {
@@ -872,7 +870,7 @@ const PublishedStore = () => {
           console.log('✅ Logo updated to:', logoDisplayName);
         }
         
-        // Update footer logo with domain name (uppercase)
+        // Update footer logo with store name (from form)
         const footerLogo = iframeDoc.querySelector('.footer-logo, footer .footer-logo');
         if (footerLogo) {
           footerLogo.textContent = logoDisplayName;
@@ -1103,13 +1101,10 @@ const PublishedStore = () => {
           });
         }
 
-        // Replace footer copyright text with domain name and new copyright
-        // Use domain name (already declared above) and format to uppercase (like "BROCADE")
-        // domainName and logoDisplayName are already declared above, reuse them
-        const displayDomainName = logoDisplayName; // Already uppercase from logo update
-        const newCopyright = `© 2025 ${displayDomainName} - Structura Team from Faith Colleges`;
+        // Replace footer copyright text with new copyright (without store name/domain)
+        const newCopyright = `© 2025 - Structura Team from Faith Colleges`;
         
-        console.log('🔄 Replacing footer copyright:', domainName, newCopyright);
+        console.log('🔄 Replacing footer copyright:', newCopyright);
         
         // Find footer element
         const footer = iframeDoc.querySelector('footer');
