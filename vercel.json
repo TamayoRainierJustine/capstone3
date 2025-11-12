@@ -1,8 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run vercel-build",
   "outputDirectory": "frontend/dist",
-  "installCommand": "npm install && cd frontend && npm install --production=false",
   "rewrites": [
     {
       "source": "/api/(.*)",
