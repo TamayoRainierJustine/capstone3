@@ -1120,7 +1120,8 @@ const PublishedStore = () => {
               originalText.includes('2024') || 
               originalText.includes('Truvara') || 
               originalText.includes('Ceramic Studio') ||
-              originalText.includes('Crafted with artistry')
+              originalText.includes('Crafted with artistry') ||
+              originalText.includes('Store Domain')
             )) {
               console.log('🔄 Replacing copyright in paragraph:', originalText);
               p.textContent = newCopyright;
@@ -1136,7 +1137,8 @@ const PublishedStore = () => {
           if (footerHTML.includes('©') && (
             footerHTML.includes('2024') || 
             footerHTML.includes('Truvara') || 
-            footerHTML.includes('Ceramic Studio')
+            footerHTML.includes('Ceramic Studio') ||
+            footerHTML.includes('Store Domain')
           )) {
             console.log('🔄 Replacing copyright in footer HTML');
             
@@ -1151,6 +1153,14 @@ const PublishedStore = () => {
             );
             footer.innerHTML = footer.innerHTML.replace(
               /©\s*\d{4}[^<]*?Ceramic\s*Studio[^<]*/gi,
+              newCopyright
+            );
+            footer.innerHTML = footer.innerHTML.replace(
+              /©\s*2025[^<]*Store\s*Domain[^<]*Structura\s*Team[^<]*/gi,
+              newCopyright
+            );
+            footer.innerHTML = footer.innerHTML.replace(
+              /©\s*\d{4}[^<]*Store\s*Domain[^<]*/gi,
               newCopyright
             );
             footer.innerHTML = footer.innerHTML.replace(
@@ -1174,7 +1184,7 @@ const PublishedStore = () => {
           allParagraphs.forEach(p => {
             const text = p.textContent || '';
             if (text.includes('©') && text.match(/\d{4}/) && !text.includes('Structura Team')) {
-              if (text.includes('Truvara') || text.includes('Ceramic Studio') || text.includes('2024')) {
+              if (text.includes('Truvara') || text.includes('Ceramic Studio') || text.includes('2024') || text.includes('Store Domain')) {
                 console.log('🔄 Replacing copyright in paragraph:', text);
                 p.textContent = newCopyright;
               }

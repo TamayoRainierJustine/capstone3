@@ -251,6 +251,8 @@ export const servePublishedStoreHTML = async (req, res) => {
       /©\s*2024[^<]*Truvara[^<]*/gi,
       /Truvara\s*Ceramic\s*Studio[^<]*Crafted\s*with\s*artistry[^<]*/gi,
       /©\s*\d{4}[^<]*Ceramic\s*Studio[^<]*/gi,
+      /©\s*2025[^<]*Store\s*Domain[^<]*Structura\s*Team[^<]*/gi,
+      /©\s*\d{4}[^<]*Store\s*Domain[^<]*/gi,
     ];
     
     oldCopyrightPatterns.forEach(pattern => {
