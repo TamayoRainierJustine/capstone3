@@ -1068,6 +1068,90 @@ const PublishedStore = () => {
           });
         }
 
+        // Replace footer copyright text with domain name and new copyright
+        const domainName = store.domainName || store.storeName || 'Store';
+        const newCopyright = `© 2025 ${domainName} - Structura Team from Faith Colleges`;
+        
+        console.log('🔄 Replacing footer copyright:', domainName, newCopyright);
+        
+        // Find footer element
+        const footer = iframeDoc.querySelector('footer');
+        if (footer) {
+          console.log('✅ Footer found, updating copyright...');
+          
+          // Strategy 1: Direct replacement of paragraphs containing old copyright text
+          const footerParagraphs = footer.querySelectorAll('p');
+          footerParagraphs.forEach(p => {
+            const originalText = p.textContent || p.innerHTML || '';
+            // Check if this paragraph contains old copyright patterns
+            if (originalText.includes('©') && (
+              originalText.includes('2024') || 
+              originalText.includes('Truvara') || 
+              originalText.includes('Ceramic Studio') ||
+              originalText.includes('Crafted with artistry')
+            )) {
+              console.log('🔄 Replacing copyright in paragraph:', originalText);
+              p.textContent = newCopyright;
+              // Also update innerHTML to ensure it's replaced
+              if (p.innerHTML.includes('©')) {
+                p.innerHTML = p.innerHTML.replace(/©\s*\d{4}[^<]*/gi, newCopyright);
+              }
+            }
+          });
+          
+          // Strategy 2: Replace copyright text in footer HTML (handles nested HTML)
+          const footerHTML = footer.innerHTML;
+          if (footerHTML.includes('©') && (
+            footerHTML.includes('2024') || 
+            footerHTML.includes('Truvara') || 
+            footerHTML.includes('Ceramic Studio')
+          )) {
+            console.log('🔄 Replacing copyright in footer HTML');
+            
+            // Replace known patterns
+            footer.innerHTML = footer.innerHTML.replace(
+              /©\s*2024[^<]*Truvara[^<]*Ceramic\s*Studio[^<]*/gi,
+              newCopyright
+            );
+            footer.innerHTML = footer.innerHTML.replace(
+              /©\s*\d{4}[^<]*?Truvara[^<]*/gi,
+              newCopyright
+            );
+            footer.innerHTML = footer.innerHTML.replace(
+              /©\s*\d{4}[^<]*?Ceramic\s*Studio[^<]*/gi,
+              newCopyright
+            );
+            footer.innerHTML = footer.innerHTML.replace(
+              /©\s*2024[^<]*?(?=<|$)/gi,
+              (match) => {
+                if (!match.includes('Structura Team')) {
+                  return newCopyright;
+                }
+                return match;
+              }
+            );
+          }
+        } else {
+          console.warn('⚠️ Footer element not found in template');
+        }
+        
+        // Strategy 3: Fallback - Replace any copyright text in entire document
+        if (!iframeDoc.body.textContent.includes('Structura Team from Faith Colleges')) {
+          console.log('🔄 Fallback: Searching entire document for copyright text');
+          const allParagraphs = iframeDoc.querySelectorAll('p');
+          allParagraphs.forEach(p => {
+            const text = p.textContent || '';
+            if (text.includes('©') && text.match(/\d{4}/) && !text.includes('Structura Team')) {
+              if (text.includes('Truvara') || text.includes('Ceramic Studio') || text.includes('2024')) {
+                console.log('🔄 Replacing copyright in paragraph:', text);
+                p.textContent = newCopyright;
+              }
+            }
+          });
+        }
+        
+        console.log('✅ Footer copyright replacement completed');
+
       } catch (error) {
         console.error('Error updating iframe:', error);
       }

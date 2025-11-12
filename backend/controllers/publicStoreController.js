@@ -222,6 +222,77 @@ export const servePublishedStoreHTML = async (req, res) => {
       htmlContent = htmlContent.replace('</body>', `${contactHTML}</body>`);
     }
 
+    // Replace footer copyright text with domain name and new copyright
+    const domainName = store.domainName || store.storeName || 'Store';
+    const newCopyright = `© 2025 ${domainName} - Structura Team from Faith Colleges`;
+    
+    // AGGRESSIVE replacement strategy to catch all variations of old copyright text
+    // Strategy 1: Direct text replacement for known old copyright strings
+    const oldCopyrightPatterns = [
+      /©\s*2024\s*Truvara\s*Ceramic\s*Studio[^<]*/gi,
+      /©\s*2024[^<]*Truvara[^<]*Ceramic\s*Studio[^<]*/gi,
+      /©\s*2024[^<]*Truvara[^<]*/gi,
+      /Truvara\s*Ceramic\s*Studio[^<]*Crafted\s*with\s*artistry[^<]*/gi,
+      /©\s*\d{4}[^<]*Ceramic\s*Studio[^<]*/gi,
+    ];
+    
+    oldCopyrightPatterns.forEach(pattern => {
+      htmlContent = htmlContent.replace(pattern, newCopyright);
+    });
+    
+    // Strategy 2: Replace entire footer paragraph containing old copyright
+    // This handles the case where the paragraph contains the old copyright text
+    htmlContent = htmlContent.replace(
+      /(<p[^>]*>)([^<]*©\s*\d{4}[^<]*Truvara[^<]*?)(<\/p>)/gi,
+      (match, openTag, content, closeTag) => {
+        return openTag + newCopyright + closeTag;
+      }
+    );
+    
+    // Strategy 3: Replace copyright text in footer section (handles nested HTML)
+    htmlContent = htmlContent.replace(
+      /(<footer[^>]*>[\s\S]*?)(©\s*2024[^<]*?Truvara[^<]*?)([\s\S]*?<\/footer>)/gi,
+      (match, before, oldCopyright, after) => {
+        return before + newCopyright + after;
+      }
+    );
+    
+    // Strategy 4: Replace any copyright paragraph with year 2024 in footer
+    htmlContent = htmlContent.replace(
+      /(<footer[^>]*>[\s\S]*?<p[^>]*>)(©\s*2024[^<]*?)(<\/p>[\s\S]*?<\/footer>)/gi,
+      (match, before, oldCopyright, after) => {
+        return before + newCopyright + after;
+      }
+    );
+    
+    // Strategy 5: Replace any copyright text with year pattern (general fallback)
+    if (!htmlContent.includes('Structura Team from Faith Colleges')) {
+      htmlContent = htmlContent.replace(
+        /(<p[^>]*>[\s\S]*?)(©\s*\d{4}[^<]*?)([\s\S]*?<\/p>)/gi,
+        (match, before, oldCopyright, after) => {
+          // Only replace if it's clearly a copyright notice and not already updated
+          if (oldCopyright && !oldCopyright.includes('Structura Team') && oldCopyright.match(/\d{4}/)) {
+            return before + newCopyright + after;
+          }
+          return match;
+        }
+      );
+    }
+    
+    // Strategy 6: Final aggressive replacement - replace any copyright symbol with year
+    if (!htmlContent.includes('Structura Team from Faith Colleges')) {
+      htmlContent = htmlContent.replace(
+        /©\s*\d{4}[^<]*?(?=<|$)/gi,
+        (match) => {
+          // Replace any copyright with year that doesn't contain our new text
+          if (!match.includes('Structura Team')) {
+            return newCopyright;
+          }
+          return match;
+        }
+      );
+    }
+
     // Add order modal script
     const orderModalScript = `
       <script>
