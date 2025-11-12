@@ -1,5 +1,5 @@
 // Build script for Vercel that checks if frontend directory exists
-import { existsSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -21,25 +21,49 @@ if (!existsSync(frontendDir)) {
 }
 
 console.log('✅ Frontend directory exists');
-console.log('Installing root dependencies...');
+
+// List files in frontend directory for debugging
+try {
+  console.log('Frontend directory contents:', readdirSync(frontendDir).slice(0, 10).join(', '));
+} catch (err) {
+  console.log('Could not list frontend directory:', err.message);
+}
 
 try {
-  // Install root dependencies
-  execSync('npm install', { stdio: 'inherit', cwd: __dirname });
-  console.log('✅ Root dependencies installed');
-  
   // Install frontend dependencies
+  // Note: Root dependencies are already installed by installCommand
   console.log('Installing frontend dependencies...');
-  execSync('npm install --production=false', { stdio: 'inherit', cwd: frontendDir });
+  console.log('Working directory:', frontendDir);
+  execSync('npm install --production=false', { 
+    stdio: 'inherit', 
+    cwd: frontendDir,
+    env: { ...process.env }
+  });
   console.log('✅ Frontend dependencies installed');
   
   // Build frontend
   console.log('Building frontend...');
-  execSync('npm run build', { stdio: 'inherit', cwd: frontendDir });
+  execSync('npm run build', { 
+    stdio: 'inherit', 
+    cwd: frontendDir,
+    env: { ...process.env }
+  });
   console.log('✅ Frontend built successfully');
   
+  // Verify build output
+  const distDir = join(frontendDir, 'dist');
+  if (existsSync(distDir)) {
+    console.log('✅ Build output directory exists:', distDir);
+  } else {
+    console.error('❌ Build output directory does not exist:', distDir);
+    process.exit(1);
+  }
+  
 } catch (error) {
-  console.error('❌ Build failed:', error.message);
+  console.error('❌ Build failed!');
+  console.error('Error message:', error.message);
+  if (error.stdout) console.error('stdout:', error.stdout.toString());
+  if (error.stderr) console.error('stderr:', error.stderr.toString());
   process.exit(1);
 }
 
