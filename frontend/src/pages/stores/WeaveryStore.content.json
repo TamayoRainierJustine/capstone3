@@ -1,0 +1,50 @@
+{
+  "hero": {
+    "title": "Art in Thread",
+    "subtitle": "Handcrafted textiles that bring warmth and beauty to your space",
+    "cta": "Explore Collection"
+  },
+  "featuredProducts": [
+    {"id":1,"name":"Handwoven Wall Tapestry","price":299.99,"image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80","category":"Tapestries","description":"Large handwoven wall tapestry with natural dyes","details":{"dimensions":"60\" x 40\"","materials":"Wool, Cotton","technique":"Handwoven"}},
+    {"id":2,"name":"Woven Throw Blanket","price":189.99,"image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80","category":"Blankets","description":"Soft woven throw blanket with geometric pattern","details":{"dimensions":"50\" x 60\"","materials":"Alpaca Wool","technique":"Handwoven"}},
+    {"id":3,"name":"Table Runner Set","price":89.99,"image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80","category":"Table Linens","description":"Set of 2 handwoven table runners","details":{"dimensions":"72\" x 12\" each","materials":"Linen","technique":"Handwoven"}},
+    {"id":4,"name":"Decorative Pillow Covers","price":69.99,"image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80","category":"Pillows","description":"Set of 2 handwoven pillow covers","details":{"dimensions":"18\" x 18\" each","materials":"Cotton, Wool","technique":"Handwoven"}}
+  ],
+  "categories": [
+    {"id":1,"name":"Tapestries","image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"},
+    {"id":2,"name":"Blankets","image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"},
+    {"id":3,"name":"Table Linens","image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"},
+    {"id":4,"name":"Pillows","image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"}
+  ],
+  "features": [
+    {"icon":"fas fa-spinner","title":"Hand Spun","description":"Traditional spinning techniques"},
+    {"icon":"fas fa-paint-brush","title":"Natural Dyes","description":"Eco-friendly coloring process"},
+    {"icon":"fas fa-hands","title":"Hand Woven","description":"Artisanal weaving methods"}
+  ],
+  "workshops": {
+    "title": "Learn the Craft",
+    "subtitle": "Join our workshops and discover the art of weaving",
+    "types": [
+      {"title":"Beginner Weaving","description":"Perfect for first-time weavers","link":"/workshops/beginner","cta":"Start Learning"},
+      {"title":"Advanced Techniques","description":"For experienced weavers","link":"/workshops/advanced","cta":"Level Up"},
+      {"title":"Natural Dyeing","description":"Learn traditional dyeing methods","link":"/workshops/dyeing","cta":"Learn More"}
+    ]
+  },
+  "footer": {
+    "aboutTitle": "About Thread & Weave",
+    "aboutText": "Creating unique handwoven textiles that bring art into your everyday life.",
+    "quickLinks": [
+      { "name": "Home", "link": "/" },
+      { "name": "Collection", "link": "/collection" },
+      { "name": "Workshops", "link": "/workshops" },
+      { "name": "Custom", "link": "/custom" },
+      { "name": "Contact", "link": "/contact" }
+    ],
+    "contact": {
+      "email": "studio@threadandweave.com",
+      "phone": "(555) 123-4567",
+      "address": "123 Weave Street, Artisan City"
+    },
+    "copyright": "© 2024 Thread & Weave. All rights reserved."
+  }
+} 

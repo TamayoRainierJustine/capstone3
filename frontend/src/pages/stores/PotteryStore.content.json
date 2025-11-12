@@ -1,0 +1,50 @@
+{
+  "hero": {
+    "title": "Art in Clay",
+    "subtitle": "Handcrafted ceramic pieces that bring art into your everyday life",
+    "cta": "Explore Gallery"
+  },
+  "featuredProducts": [
+    {"id":1,"name":"Hand-Thrown Ceramic Vase","price":89.99,"image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80","category":"Vases","description":"Unique hand-thrown ceramic vase with natural glaze finish","dimensions":"8\" x 6\" x 6\"","material":"Stoneware"},
+    {"id":2,"name":"Artistic Tea Set","price":149.99,"image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80","category":"Tea Sets","description":"Complete tea set with hand-painted floral design","dimensions":"Set of 4 cups, 1 teapot","material":"Porcelain"},
+    {"id":3,"name":"Decorative Bowl","price":69.99,"image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80","category":"Bowls","description":"Hand-carved decorative bowl with unique pattern","dimensions":"10\" diameter x 4\" height","material":"Earthenware"},
+    {"id":4,"name":"Ceramic Plant Pot","price":45.99,"image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80","category":"Plant Pots","description":"Modern ceramic plant pot with drainage hole","dimensions":"6\" diameter x 5\" height","material":"Stoneware"}
+  ],
+  "categories": [
+    {"id":1,"name":"Vases","image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"},
+    {"id":2,"name":"Tea Sets","image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"},
+    {"id":3,"name":"Bowls","image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"},
+    {"id":4,"name":"Plant Pots","image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"}
+  ],
+  "features": [
+    {"icon":"fas fa-hands","title":"Hand-Thrown","description":"Each piece is carefully crafted by hand"},
+    {"icon":"fas fa-paint-brush","title":"Glazed","description":"Unique glazes for distinctive finishes"},
+    {"icon":"fas fa-fire","title":"Kiln-Fired","description":"High-temperature firing for durability"}
+  ],
+  "workshops": {
+    "title": "Join Our Workshops",
+    "subtitle": "Learn the art of pottery in our hands-on workshops",
+    "types": [
+      {"title":"Beginner's Class","description":"Perfect for first-time potters","link":"/workshops/beginner","cta":"Learn More"},
+      {"title":"Advanced Techniques","description":"For experienced potters","link":"/workshops/advanced","cta":"Learn More"},
+      {"title":"Private Sessions","description":"One-on-one instruction","link":"/workshops/private","cta":"Learn More"}
+    ]
+  },
+  "footer": {
+    "aboutTitle": "About Clay & Soul",
+    "aboutText": "Creating unique ceramic pieces that bring beauty to your everyday life.",
+    "quickLinks": [
+      { "name": "Home", "link": "/" },
+      { "name": "Gallery", "link": "/gallery" },
+      { "name": "Workshops", "link": "/workshops" },
+      { "name": "Custom Orders", "link": "/custom-orders" },
+      { "name": "Contact", "link": "/contact" }
+    ],
+    "contact": {
+      "email": "studio@clayandsoul.com",
+      "phone": "(555) 123-4567",
+      "address": "123 Clay Street, Artisan City"
+    },
+    "copyright": "© 2024 Clay & Soul. All rights reserved."
+  }
+} 

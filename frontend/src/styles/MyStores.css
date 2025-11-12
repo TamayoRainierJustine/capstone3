@@ -1,0 +1,314 @@
+.my-stores-container {
+  padding: 3rem 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - 80px);
+}
+
+.my-stores-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  color: white;
+}
+
+.my-stores-header h1 {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.my-stores-header p {
+  font-size: 1.125rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+}
+
+.create-store-button {
+  padding: 0.875rem 2rem;
+  background: linear-gradient(45deg, #8B5CF6, #4C1D95);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.create-store-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.error-message {
+  text-align: center;
+  padding: 3rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 1rem;
+  color: #6b7280;
+  font-size: 1.125rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.stores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 3rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
+
+.store-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 0;
+  padding-bottom: 0 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s, box-shadow 0.3s;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: visible !important;
+  border: 3px solid #e5e7eb;
+  min-height: 400px;
+  margin-top: 80px;
+  margin-bottom: 60px !important;
+  z-index: 1;
+}
+
+/* Store roof/top section - white roof with vertical opaque black stripes */
+.store-card::before {
+  content: '';
+  position: absolute;
+  top: -70px;
+  left: -10px;
+  right: -10px;
+  height: 120px;
+  background: 
+    repeating-linear-gradient(
+      90deg,
+      #ffffff 0px,
+      #ffffff 18px,
+      #000000 18px,
+      #000000 22px,
+      #ffffff 22px,
+      #ffffff 40px
+    );
+  clip-path: polygon(5% 0, 95% 0, 100% 100%, 0% 100%);
+  border-radius: 20px 20px 0 0;
+  z-index: 10;
+  border: 5px solid #000000;
+  border-bottom: none;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.store-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  border-color: #8B5CF6;
+}
+
+.store-card:hover::before {
+  border-color: #000000;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.store-card:hover::after {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.store-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  padding-top: 4.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  position: relative;
+  z-index: 1;
+  background: #ffffff;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 20px 20px 0 0;
+}
+
+.store-card-header h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.store-domain {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.store-card-body {
+  flex: 1;
+  margin-bottom: 1.5rem;
+  padding: 0 1.5rem;
+  background: #ffffff;
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+.store-info-item {
+  display: flex;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.store-info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #374151;
+  min-width: 100px;
+  margin-right: 0.5rem;
+}
+
+.info-value {
+  color: #6b7280;
+  flex: 1;
+  word-break: break-word;
+}
+
+.store-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding: 1rem 1.5rem 1.5rem 1.5rem !important;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  position: relative;
+  z-index: 25 !important;
+  box-sizing: border-box;
+  border-radius: 0 0 20px 20px;
+  margin-bottom: 30px !important;
+  min-height: auto !important;
+  overflow: visible !important;
+}
+
+/* Store platform/base at bottom with rounded ends */
+.store-card::after {
+  content: '';
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% + 20px);
+  height: 30px;
+  background: #ffffff;
+  border-radius: 50px;
+  border: 3px solid #000000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1 !important;
+  transition: transform 0.3s, box-shadow 0.3s;
+  pointer-events: none;
+}
+
+.action-button {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.action-button:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+
+.action-button.primary {
+  background: linear-gradient(45deg, #8B5CF6, #4C1D95);
+  color: white;
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+}
+
+.action-button.secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.action-button.secondary:hover {
+  background: #e5e7eb;
+}
+
+/* Delete button styling */
+.delete-store-button {
+  width: 100% !important;
+  padding: 0.75rem 1rem !important;
+  background: #ef4444 !important;
+  background-color: #ef4444 !important;
+  color: white !important;
+  border: 2px solid #dc2626 !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: transform 0.2s, opacity 0.2s, box-shadow 0.2s !important;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3) !important;
+  text-align: center !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 100 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.delete-store-button:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.5) !important;
+  background: #dc2626 !important;
+  background-color: #dc2626 !important;
+}
+
+.delete-store-button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .my-stores-container {
+    padding: 2rem 1rem;
+  }
+
+  .my-stores-header h1 {
+    font-size: 2rem;
+  }
+
+  .stores-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .store-card-actions {
+    flex-direction: column;
+  }
+
+  .action-button {
+    width: 100%;
+  }
+}
+

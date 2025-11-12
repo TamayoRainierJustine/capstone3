@@ -1,0 +1,50 @@
+{
+  "hero": {
+    "title": "Art in Wood",
+    "subtitle": "Handcrafted wooden pieces that bring nature's beauty into your space",
+    "cta": "Explore Gallery"
+  },
+  "featuredProducts": [
+    {"id":1,"name":"Hand-Carved Wooden Bowl","price":249.99,"image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80","category":"Bowls","description":"Beautiful hand-carved wooden bowl with natural grain patterns","details":{"dimensions":"12\" diameter x 4\" height","woodType":"Black Walnut","finish":"Food-safe oil finish","technique":"Hand-carved"}},
+    {"id":2,"name":"Decorative Wall Panel","price":399.99,"image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80","category":"Wall Art","description":"Intricately carved wall panel featuring forest scene","details":{"dimensions":"24\" x 36\"","woodType":"Cherry Wood","finish":"Natural wax finish","technique":"Relief carving"}},
+    {"id":3,"name":"Wooden Sculpture","price":599.99,"image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80","category":"Sculptures","description":"Abstract wooden sculpture with flowing lines","details":{"dimensions":"18\" x 12\" x 8\"","woodType":"Maple","finish":"Matte lacquer","technique":"3D carving"}},
+    {"id":4,"name":"Carved Wooden Box","price":179.99,"image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80","category":"Boxes","description":"Hand-carved wooden box with hidden compartment","details":{"dimensions":"8\" x 6\" x 4\"","woodType":"Mahogany","finish":"Hand-rubbed oil","technique":"Chip carving"}}
+  ],
+  "categories": [
+    {"id":1,"name":"Bowls","image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"},
+    {"id":2,"name":"Wall Art","image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"},
+    {"id":3,"name":"Sculptures","image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"},
+    {"id":4,"name":"Boxes","image":"https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"}
+  ],
+  "features": [
+    {"icon":"fas fa-tree","title":"Wood Selection","description":"Carefully chosen premium woods"},
+    {"icon":"fas fa-hammer","title":"Hand Carving","description":"Traditional carving techniques"},
+    {"icon":"fas fa-paint-brush","title":"Finishing","description":"Natural, protective finishes"}
+  ],
+  "workshops": {
+    "title": "Learn the Craft",
+    "subtitle": "Join our workshops and discover the art of wood carving",
+    "types": [
+      {"title":"Beginner Carving","description":"Perfect for first-time carvers","link":"/workshops/beginner","cta":"Start Learning"},
+      {"title":"Advanced Techniques","description":"For experienced carvers","link":"/workshops/advanced","cta":"Level Up"},
+      {"title":"Tool Maintenance","description":"Learn proper tool care","link":"/workshops/maintenance","cta":"Learn More"}
+    ]
+  },
+  "footer": {
+    "aboutTitle": "About Wood & Soul",
+    "aboutText": "Creating unique hand-carved wooden pieces that bring nature's beauty into your home.",
+    "quickLinks": [
+      { "name": "Home", "link": "/" },
+      { "name": "Gallery", "link": "/gallery" },
+      { "name": "Workshops", "link": "/workshops" },
+      { "name": "Custom", "link": "/custom" },
+      { "name": "Contact", "link": "/contact" }
+    ],
+    "contact": {
+      "email": "studio@woodandsoul.com",
+      "phone": "(555) 123-4567",
+      "address": "123 Wood Street, Artisan City"
+    },
+    "copyright": "© 2024 Wood & Soul. All rights reserved."
+  }
+} 

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caturis - Hand Carved Wood</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Crimson Text', 'Georgia', serif;
+            background: #f5efe6;
+            color: #4a3728;
+            line-height: 1.8;
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(245, 239, 230, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 2rem 5%;
+            z-index: 1000;
+            border-bottom: 2px solid #8b6f47;
+            box-shadow: 0 2px 10px rgba(139, 111, 71, 0.1);
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #6b4e37;
+            text-decoration: none;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-bottom: 3px solid #8b6f47;
+            padding-bottom: 0.3rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+        }
+
+        .nav-links a {
+            color: #6b4e37;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #8b6f47;
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #8b6f47;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10rem 5% 4rem;
+            background: 
+                linear-gradient(135deg, rgba(107, 78, 55, 0.05) 0%, rgba(139, 111, 71, 0.05) 100%),
+                url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="wood" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse"><rect width="100" height="100" fill="%23f5efe6"/><path d="M0 50 Q25 40 50 50 T100 50" stroke="%23d4c4b0" stroke-width="0.5" fill="none" opacity="0.3"/></pattern></defs><rect width="100" height="100" fill="url(%23wood)"/></svg>');
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(139, 111, 71, 0.1) 0%, transparent 70%);
+        }
+
+        .hero-content {
+            max-width: 900px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: #8b6f47;
+            color: #f5efe6;
+            padding: 0.6rem 1.8rem;
+            border-radius: 0;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            border: 2px solid #6b4e37;
+            box-shadow: 4px 4px 0 #6b4e37;
+        }
+
+        .hero h1 {
+            font-size: 4.5rem;
+            font-weight: 700;
+            color: #4a3728;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+            text-shadow: 2px 2px 4px rgba(107, 78, 55, 0.2);
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: #8b6f47;
+            margin-bottom: 2rem;
+            font-weight: 400;
+            font-style: italic;
+        }
+
+        .hero-description {
+            font-size: 1.1rem;
+            color: #6b4e37;
+            margin-bottom: 3rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-button {
+            background: #8b6f47;
+            color: #f5efe6;
+            padding: 1.2rem 3.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border: 3px solid #6b4e37;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            box-shadow: 4px 4px 0 #6b4e37;
+        }
+
+        .cta-button:hover {
+            background: #6b4e37;
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 #6b4e37;
+        }
+
+        /* Products Section */
+        .products {
+            padding: 6rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 5rem;
+        }
+
+        .section-badge {
+            display: inline-block;
+            background: #8b6f47;
+            color: #f5efe6;
+            padding: 0.5rem 1.5rem;
+            border: 2px solid #6b4e37;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #4a3728;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(107, 78, 55, 0.2);
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: #8b6f47;
+            font-style: italic;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+            gap: 3rem;
+        }
+
+        .product-card {
+            background: #ffffff;
+            border: 3px solid #8b6f47;
+            overflow: hidden;
+            transition: all 0.3s;
+            box-shadow: 6px 6px 0 rgba(107, 78, 55, 0.2);
+        }
+
+        .product-card:hover {
+            transform: translate(-3px, -3px);
+            box-shadow: 8px 8px 0 rgba(107, 78, 55, 0.3);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-bottom: 3px solid #8b6f47;
+        }
+
+        .product-info {
+            padding: 2.5rem;
+            background: linear-gradient(to bottom, #ffffff, #faf7f2);
+        }
+
+        .product-category {
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #8b6f47;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+        }
+
+        .product-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #4a3728;
+            margin-bottom: 1rem;
+        }
+
+        .product-description {
+            color: #6b4e37;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            line-height: 1.9;
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1.5rem;
+            border-top: 2px solid #d4c4b0;
+        }
+
+        .product-price {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #8b6f47;
+        }
+
+        .product-button {
+            background: transparent;
+            border: 2px solid #8b6f47;
+            color: #8b6f47;
+            padding: 0.8rem 2rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .product-button:hover {
+            background: #8b6f47;
+            color: #f5efe6;
+        }
+
+        /* Decorative Elements */
+        .wood-divider {
+            width: 200px;
+            height: 4px;
+            background: linear-gradient(to right, transparent, #8b6f47, transparent);
+            margin: 4rem auto;
+            position: relative;
+        }
+
+        .wood-divider::before,
+        .wood-divider::after {
+            content: '❋';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8b6f47;
+            font-size: 1.5rem;
+        }
+
+        .wood-divider::before {
+            left: -30px;
+        }
+
+        .wood-divider::after {
+            right: -30px;
+        }
+
+        /* Footer */
+        .footer {
+            background: #6b4e37;
+            color: #f5efe6;
+            padding: 4rem 5%;
+            text-align: center;
+            border-top: 4px solid #8b6f47;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .footer-logo {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #f5efe6;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            border-bottom: 3px solid #f5efe6;
+            display: inline-block;
+            padding-bottom: 0.5rem;
+        }
+
+        .footer p {
+            color: #d4c4b0;
+            font-size: 1rem;
+            margin-top: 2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 1.5rem;
+                font-size: 0.9rem;
+            }
+
+            .hero h1 {
+                font-size: 2.8rem;
+            }
+
+            .product-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="#" class="logo">Caturis</a>
+            <div class="nav-links">
+                <a href="#">Home</a>
+                <a href="#">Shop Now</a>
+                <a href="#">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">Lorem Ipsum</div>
+            <h1>Lorem Ipsum Dolor</h1>
+            <p class="hero-subtitle">Lorem Ipsum Sit Amet</p>
+            <button class="cta-button">Lorem Ipsum</button>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section class="products">
+        <div class="section-header">
+            <div class="section-badge">Featured Works</div>
+            <h2 class="section-title">Our Creations</h2>
+            <p class="section-subtitle">Hand-carved with precision and passion</p>
+            <div class="wood-divider"></div>
+        </div>
+        <div class="product-grid">
+            <div class="product-card">
+                <img src="/imgplc.jpg" alt="Product" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Forest Guardian</h3>
+                    <p class="product-description">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                    <div class="product-footer">
+                        <span class="product-price">$459</span>
+                        <button class="product-button">Inquire</button>
+                    </div>
+                </div>
+            </div>
+            <div class="product-card">
+                <img src="/imgplc.jpg" alt="Product" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Mountain Vista</h3>
+                    <p class="product-description">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                    <div class="product-footer">
+                        <span class="product-price">$329</span>
+                        <button class="product-button">Inquire</button>
+                    </div>
+                </div>
+            </div>
+            <div class="product-card">
+                <img src="/imgplc.jpg" alt="Product" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Carved Bowl Set</h3>
+                    <p class="product-description">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                    <div class="product-footer">
+                        <span class="product-price">$289</span>
+                        <button class="product-button">Inquire</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">Caturis</div>
+            <p>© 2024 Caturis Wood Carving. Carved with dedication and skill.</p>
+        </div>
+    </footer>
+</body>
+</html>

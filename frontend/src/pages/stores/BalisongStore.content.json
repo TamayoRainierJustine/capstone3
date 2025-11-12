@@ -1,0 +1,145 @@
+{
+  "hero": {
+    "title": "PRECISION CRAFTED",
+    "subtitle": "Premium balisongs and knives for collectors and enthusiasts",
+    "cta": "View Collection"
+  },
+  "featuredProducts": [
+    {
+      "id": 1,
+      "name": "Titanium Balisong Trainer",
+      "price": 199.99,
+      "image": "https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+      "category": "Trainers",
+      "description": "Professional grade titanium trainer with perfect balance",
+      "specifications": {
+        "bladeLength": "4.2\"",
+        "handleLength": "5.5\"",
+        "weight": "4.2oz",
+        "material": "Titanium"
+      }
+    },
+    {
+      "id": 2,
+      "name": "Carbon Fiber Pocket Knife",
+      "price": 149.99,
+      "image": "https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+      "category": "Pocket Knives",
+      "description": "Ultra-light carbon fiber handle with premium steel blade",
+      "specifications": {
+        "bladeLength": "3.5\"",
+        "handleLength": "4.5\"",
+        "weight": "2.8oz",
+        "material": "Carbon Fiber/Steel"
+      }
+    },
+    {
+      "id": 3,
+      "name": "Custom Balisong",
+      "price": 299.99,
+      "image": "https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+      "category": "Custom",
+      "description": "Handcrafted balisong with unique design",
+      "specifications": {
+        "bladeLength": "4.5\"",
+        "handleLength": "5.8\"",
+        "weight": "4.5oz",
+        "material": "Custom"
+      }
+    },
+    {
+      "id": 4,
+      "name": "EDC Utility Knife",
+      "price": 89.99,
+      "image": "https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+      "category": "Utility",
+      "description": "Everyday carry utility knife with quick deployment",
+      "specifications": {
+        "bladeLength": "3.2\"",
+        "handleLength": "4.2\"",
+        "weight": "3.1oz",
+        "material": "Aluminum/Steel"
+      }
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Balisongs",
+      "image": "https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+    },
+    {
+      "id": 2,
+      "name": "Trainers",
+      "image": "https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+    },
+    {
+      "id": 3,
+      "name": "Pocket Knives",
+      "image": "https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+    },
+    {
+      "id": 4,
+      "name": "Custom Orders",
+      "image": "https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+    }
+  ],
+  "features": [
+    {
+      "icon": "fas fa-gem",
+      "title": "Premium Materials",
+      "description": "High-quality steel and handles"
+    },
+    {
+      "icon": "fas fa-tools",
+      "title": "Custom Orders",
+      "description": "Personalized designs"
+    },
+    {
+      "icon": "fas fa-shield-alt",
+      "title": "Quality Guaranteed",
+      "description": "Lifetime warranty"
+    }
+  ],
+  "tutorials": {
+    "title": "Learn the Art",
+    "subtitle": "Master the craft with our expert tutorials",
+    "types": [
+      {
+        "title": "Beginner Basics",
+        "description": "Perfect for first-time users",
+        "link": "/tutorials/basics",
+        "cta": "Start Learning"
+      },
+      {
+        "title": "Advanced Tricks",
+        "description": "For experienced flippers",
+        "link": "/tutorials/advanced",
+        "cta": "Level Up"
+      },
+      {
+        "title": "Maintenance",
+        "description": "Care and maintenance guides",
+        "link": "/tutorials/maintenance",
+        "cta": "Learn More"
+      }
+    ]
+  },
+  "footer": {
+    "aboutTitle": "About BladeCraft",
+    "aboutText": "Premium balisongs and knives for collectors and enthusiasts.",
+    "quickLinks": [
+      { "name": "Home", "link": "/" },
+      { "name": "Collection", "link": "/collection" },
+      { "name": "Custom", "link": "/custom" },
+      { "name": "Tutorials", "link": "/tutorials" },
+      { "name": "Contact", "link": "/contact" }
+    ],
+    "contact": {
+      "email": "info@bladecraft.com",
+      "phone": "(555) 123-4567",
+      "address": "123 Blade Street, Knife City"
+    },
+    "copyright": "© 2024 BladeCraft. All rights reserved."
+  }
+} 

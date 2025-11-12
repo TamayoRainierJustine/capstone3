@@ -1,0 +1,18 @@
+.about-section {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.about-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: #22223b;
+}
+.about-text {
+  font-size: 1.1rem;
+  color: #4a4e69;
+  line-height: 1.7;
+} 

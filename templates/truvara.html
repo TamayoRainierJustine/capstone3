@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truvara - Ceramic Art Studio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: #faf8f3;
+            color: #3d2817;
+            line-height: 1.8;
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(250, 248, 243, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem 5%;
+            z-index: 1000;
+            border-bottom: 2px solid #d4a574;
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-style: italic;
+            color: #8b6f47;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+        }
+
+        .nav-links a {
+            color: #5c4033;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        .nav-links a::before {
+            content: '•';
+            position: absolute;
+            left: -15px;
+            color: #d4a574;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #d4a574;
+        }
+
+        .nav-links a:hover::before {
+            opacity: 1;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 90vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8rem 5% 4rem;
+            background: linear-gradient(135deg, #faf8f3 0%, #ede8dc 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(212, 165, 116, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .hero-content {
+            max-width: 900px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-size: 4.5rem;
+            font-weight: 400;
+            font-style: italic;
+            color: #8b6f47;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: #a67c52;
+            margin-bottom: 3rem;
+            font-weight: 300;
+        }
+
+        .hero-description {
+            font-size: 1.1rem;
+            color: #5c4033;
+            margin-bottom: 3rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-button {
+            background: #d4a574;
+            color: #faf8f3;
+            padding: 1.2rem 3rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Georgia', serif;
+            box-shadow: 0 4px 15px rgba(212, 165, 116, 0.3);
+        }
+
+        .cta-button:hover {
+            background: #c49564;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 165, 116, 0.4);
+        }
+
+        /* Products Section */
+        .products {
+            padding: 6rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 5rem;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            font-style: italic;
+            color: #8b6f47;
+            margin-bottom: 1rem;
+            font-weight: 400;
+        }
+
+        .section-subtitle {
+            font-size: 1.1rem;
+            color: #a67c52;
+            font-style: italic;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 3rem;
+        }
+
+        .product-card {
+            background: #ffffff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(139, 111, 71, 0.1);
+            transition: all 0.4s;
+            position: relative;
+        }
+
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 3px solid #d4a574;
+            border-radius: 20px;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(139, 111, 71, 0.2);
+        }
+
+        .product-card:hover::before {
+            opacity: 0.3;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+        }
+
+        .product-info {
+            padding: 2.5rem;
+            background: linear-gradient(to bottom, #ffffff, #faf8f3);
+        }
+
+        .product-title {
+            font-size: 1.8rem;
+            font-style: italic;
+            color: #8b6f47;
+            margin-bottom: 0.8rem;
+            font-weight: 500;
+        }
+
+        .product-category {
+            color: #d4a574;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+        }
+
+        .product-description {
+            color: #5c4033;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-price {
+            color: #8b6f47;
+            font-size: 1.8rem;
+            font-weight: 600;
+            font-style: italic;
+        }
+
+        .product-button {
+            background: transparent;
+            border: 2px solid #d4a574;
+            color: #d4a574;
+            padding: 0.8rem 2rem;
+            font-size: 0.9rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Georgia', serif;
+        }
+
+        .product-button:hover {
+            background: #d4a574;
+            color: #faf8f3;
+        }
+
+        /* Decorative Elements */
+        .decorative-line {
+            width: 150px;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #d4a574, transparent);
+            margin: 3rem auto;
+        }
+
+        /* Footer */
+        .footer {
+            background: #3d2817;
+            color: #faf8f3;
+            padding: 4rem 5%;
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .footer-logo {
+            font-size: 2rem;
+            font-style: italic;
+            color: #d4a574;
+            margin-bottom: 2rem;
+        }
+
+        .footer p {
+            color: #d4a574;
+            font-size: 1rem;
+            margin-top: 2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 1.5rem;
+                font-size: 0.9rem;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .product-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="#" class="logo">Truvara</a>
+            <div class="nav-links">
+                <a href="#">Home</a>
+                <a href="#">Shop Now</a>
+                <a href="#">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Lorem Ipsum Dolor</h1>
+            <p class="hero-subtitle">Lorem Ipsum Sit Amet</p>
+            <button class="cta-button">Lorem Ipsum</button>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section class="products">
+        <div class="section-header">
+            <h2 class="section-title">Featured Creations</h2>
+            <p class="section-subtitle">One-of-a-kind pieces from our studio</p>
+            <div class="decorative-line"></div>
+        </div>
+        <div class="product-grid">
+            <div class="product-card">
+                <img src="/imgplc.jpg" alt="Product" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Earth-Toned Vase</h3>
+                    <p class="product-description">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                    <div class="product-footer">
+                        <span class="product-price">$189</span>
+                        <button class="product-button">Order</button>
+                    </div>
+                </div>
+            </div>
+            <div class="product-card">
+                <img src="/imgplc.jpg" alt="Product" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Artisan Bowl Set</h3>
+                    <p class="product-description">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                    <div class="product-footer">
+                        <span class="product-price">$249</span>
+                        <button class="product-button">Order</button>
+                    </div>
+                </div>
+            </div>
+            <div class="product-card">
+                <img src="/imgplc.jpg" alt="Product" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Decorative Platter</h3>
+                    <p class="product-description">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                    <div class="product-footer">
+                        <span class="product-price">$329</span>
+                        <button class="product-button">Order</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">Truvara</div>
+            <p>© 2024 Truvara Ceramic Studio. Crafted with artistry.</p>
+        </div>
+    </footer>
+</body>
+</html>
