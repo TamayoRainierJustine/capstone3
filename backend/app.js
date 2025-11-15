@@ -190,7 +190,21 @@ app.use((req, res) => {
 }); 
 
 // Test DB connection & sync
-sequelize.sync({ alter: true })
+// Use force: false to only create missing tables, don't alter existing ones
+// This prevents PostgreSQL ENUM casting errors in production
+// Railway always sets PORT, so if PORT is set and not localhost, use safe mode
+const isLocalDev = !process.env.PORT || process.env.PORT === '5000';
+const useSafeSync = process.env.NODE_ENV === 'production' || !isLocalDev;
+
+const syncOptions = useSafeSync 
+  ? { force: false }  // Production/Railway: only create missing tables (safe)
+  : { alter: true };   // Development: alter tables to match models
+
+console.log(`📊 Sync mode: ${useSafeSync ? 'production (safe)' : 'development (alter)'}`);
+console.log(`📊 NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+console.log(`📊 PORT: ${process.env.PORT || 'not set'}`);
+
+sequelize.sync(syncOptions)
   .then(() => {
     console.log('✅ Database synced');
     app.listen(PORT, () => {
