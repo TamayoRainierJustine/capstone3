@@ -12,7 +12,8 @@ const templateFileMap = {
   pottery: 'truvara.html',
   balisong: 'ructon.html',
   weavery: 'urastra.html',
-  woodcarving: 'caturis.html'
+  woodcarving: 'caturis.html',
+  fireandsteel: 'fireandsteel.html'
 };
 
 const templateNames = {
@@ -20,7 +21,8 @@ const templateNames = {
   pottery: 'Truvara',
   balisong: 'Ructon',
   weavery: 'Urastra',
-  woodcarving: 'Caturis'
+  woodcarving: 'Caturis',
+  fireandsteel: 'Fire and Steel'
 };
 
 // Template-specific default background colors
@@ -29,7 +31,8 @@ const templateDefaultColors = {
   pottery: '#faf8f3', // Warm beige
   balisong: '#0f0f23', // Dark blue
   weavery: '#ffffff', // White
-  woodcarving: '#f5efe6' // Light beige
+  woodcarving: '#f5efe6', // Light beige
+  fireandsteel: '#ffffff' // White (like Fire and Steel website)
 };
 
 export default function SiteBuilder() {

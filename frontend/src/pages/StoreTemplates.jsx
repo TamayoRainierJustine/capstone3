@@ -36,7 +36,8 @@ const StoreTemplates = () => {
     pottery: 'truvara.html',
     balisong: 'ructon.html',
     weavery: 'urastra.html',
-    woodcarving: 'caturis.html'
+    woodcarving: 'caturis.html',
+    fireandsteel: 'fireandsteel.html'
   };
 
   const templates = [
@@ -65,6 +66,12 @@ const StoreTemplates = () => {
       id: 'woodcarving',
       title: 'Caturis',
       colorPalette: ['#f5efe6', '#8b6f47', '#6b4e37', '#4a3728', '#d4c4b0']
+    },
+    {
+      id: 'fireandsteel',
+      title: 'Fire and Steel',
+      colorPalette: ['#ffffff', '#000000', '#666666', '#1a1a1a', '#e5e5e5'],
+      isPopular: true
     }
   ];
 
