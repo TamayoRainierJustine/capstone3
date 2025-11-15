@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Route, Routes, useNavigate, useLocation, Link } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import TodoCard from '../components/TodoCard';
-import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
 
 const Payment = () => (
   <div className="p-6">
@@ -37,26 +36,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Store Settings state
+  // Store ID state (needed to show Store Settings button)
   const [storeId, setStoreId] = useState(null);
-  const [storeSettings, setStoreSettings] = useState({
-    storeName: '',
-    description: '',
-    domainName: '',
-    region: '',
-    province: '',
-    municipality: '',
-    barangay: '',
-    contactEmail: '',
-    phone: ''
-  });
-  const [storeSettingsStatus, setStoreSettingsStatus] = useState('');
-  
-  // Location dropdowns state
-  const [regionsList] = useState(regions);
-  const [provincesList, setProvincesList] = useState([]);
-  const [municipalitiesList, setMunicipalitiesList] = useState([]);
-  const [barangaysList, setBarangaysList] = useState([]);
 
   useEffect(() => {
     const fetchStore = async () => {
@@ -75,6 +56,7 @@ const Dashboard = () => {
           setStoreName(selectedStore.storeName || 'Your Store');
           setTemplateId(selectedStore.templateId);
           setStoreStatus(selectedStore.status);
+          setStoreId(selectedStore.id);
           setError(null);
           setLoading(false);
           return;
@@ -97,35 +79,6 @@ const Dashboard = () => {
           setTemplateId(firstStore.templateId);
           setStoreStatus(firstStore.status);
           setStoreId(firstStore.id);
-          
-          // Load store settings
-          setStoreSettings({
-            storeName: firstStore.storeName || '',
-            description: firstStore.description || '',
-            domainName: firstStore.domainName || '',
-            region: firstStore.region || '',
-            province: firstStore.province || '',
-            municipality: firstStore.municipality || '',
-            barangay: firstStore.barangay || '',
-            contactEmail: firstStore.contactEmail || '',
-            phone: firstStore.phone || ''
-          });
-          
-          // Load location dropdowns based on existing data
-          if (firstStore.region) {
-            setProvincesList(getProvincesByRegion(firstStore.region));
-            if (firstStore.province) {
-              setMunicipalitiesList(getCityMunByProvince(firstStore.province));
-              if (firstStore.municipality) {
-                const barangaysData = getBarangayByMun(firstStore.municipality);
-                const barangaysArray = barangaysData?.data || barangaysData || [];
-                setBarangaysList(Array.isArray(barangaysArray) ? barangaysArray.map(brgy => ({
-                  brgy_code: brgy.brgy_code || brgy.code || brgy.brgyCode || '',
-                  name: (brgy.name || brgy.brgy_name || brgy.brgyName || '').toUpperCase()
-                })) : []);
-              }
-            }
-          }
         } else {
           console.log('No store data found');
           setStoreName('Your Store');
@@ -165,75 +118,6 @@ const Dashboard = () => {
 
   const handleDismissPrompt = () => {
     setShowCreateStorePrompt(false);
-  };
-
-  const handleStoreSettingsChange = (field, value) => {
-    // Handle location cascading dropdowns
-    if (field === 'region') {
-      setProvincesList(getProvincesByRegion(value));
-      setMunicipalitiesList([]);
-      setBarangaysList([]);
-      setStoreSettings(prev => ({ ...prev, [field]: value, province: '', municipality: '', barangay: '' }));
-    } else if (field === 'province') {
-      setMunicipalitiesList(getCityMunByProvince(value));
-      setBarangaysList([]);
-      setStoreSettings(prev => ({ ...prev, [field]: value, municipality: '', barangay: '' }));
-    } else if (field === 'municipality') {
-      const barangaysData = getBarangayByMun(value);
-      const barangaysArray = barangaysData?.data || barangaysData || [];
-      setBarangaysList(Array.isArray(barangaysArray) ? barangaysArray.map(brgy => ({
-        brgy_code: brgy.brgy_code || brgy.code || brgy.brgyCode || '',
-        name: (brgy.name || brgy.brgy_name || brgy.brgyName || '').toUpperCase()
-      })) : []);
-      setStoreSettings(prev => ({ ...prev, [field]: value, barangay: '' }));
-    } else {
-      setStoreSettings(prev => ({ ...prev, [field]: value }));
-    }
-  };
-
-  const handleSaveStoreSettings = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setStoreSettingsStatus('Error: Please log in to save settings');
-        return;
-      }
-
-      if (!storeId) {
-        setStoreSettingsStatus('Error: No store found. Please create a store first.');
-        return;
-      }
-
-      // Normalize domain name
-      let normalizedDomain = storeSettings.domainName;
-      if (normalizedDomain) {
-        normalizedDomain = normalizedDomain
-          .toLowerCase()
-          .trim()
-          .replace(/\s+/g, '-')
-          .replace(/[^a-z0-9-]/g, '')
-          .replace(/-+/g, '-')
-          .replace(/^-|-$/g, '');
-        
-        if (normalizedDomain.length === 0) {
-          normalizedDomain = undefined;
-        }
-      }
-
-      const payload = {
-        templateId,
-        ...storeSettings,
-        domainName: normalizedDomain
-      };
-
-      await apiClient.put(`/stores/${storeId}`, payload);
-
-      setStoreSettingsStatus('Store settings saved successfully!');
-      setTimeout(() => setStoreSettingsStatus(''), 3000);
-    } catch (e) {
-      setStoreSettingsStatus('Error saving store settings: ' + (e.response?.data?.message || e.message));
-      setTimeout(() => setStoreSettingsStatus(''), 5000);
-    }
   };
 
   return (
@@ -359,253 +243,25 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* Store Settings Section */}
-      {storeId && (
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto 2rem auto', 
-          background: 'white', 
-          borderRadius: '0.75rem', 
-          padding: '1.5rem',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-        }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem', color: '#1f2937' }}>
-            Store Settings
-          </h2>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                Store Name
-              </label>
-              <input
-                type="text"
-                value={storeSettings.storeName}
-                onChange={(e) => handleStoreSettingsChange('storeName', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem'
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                Domain Name
-              </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <input
-                  type="text"
-                  value={storeSettings.domainName}
-                  onChange={(e) => handleStoreSettingsChange('domainName', e.target.value)}
-                  style={{
-                    width: '70%',
-                    padding: '0.5rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.875rem'
-                  }}
-                />
-                <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>.structura.com</span>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
-              Description
-            </label>
-            <textarea
-              value={storeSettings.description}
-              onChange={(e) => handleStoreSettingsChange('description', e.target.value)}
-              rows={3}
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem',
-                resize: 'vertical'
-              }}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                Region
-              </label>
-              <select
-                value={storeSettings.region}
-                onChange={(e) => handleStoreSettingsChange('region', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem'
-                }}
-              >
-                <option value="">Select Region</option>
-                {regionsList.map(region => (
-                  <option key={region.reg_code} value={region.reg_code}>{region.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                Province
-              </label>
-              <select
-                value={storeSettings.province}
-                onChange={(e) => handleStoreSettingsChange('province', e.target.value)}
-                disabled={!provincesList.length}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                  background: provincesList.length ? 'white' : '#f3f4f6'
-                }}
-              >
-                <option value="">Select Province</option>
-                {provincesList.map(province => (
-                  <option key={province.prov_code} value={province.prov_code}>{province.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                Municipality/City
-              </label>
-              <select
-                value={storeSettings.municipality}
-                onChange={(e) => handleStoreSettingsChange('municipality', e.target.value)}
-                disabled={!municipalitiesList.length}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                  background: municipalitiesList.length ? 'white' : '#f3f4f6'
-                }}
-              >
-                <option value="">Select Municipality/City</option>
-                {municipalitiesList.map(mun => (
-                  <option key={mun.mun_code} value={mun.mun_code}>{mun.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                Barangay
-              </label>
-              <select
-                value={storeSettings.barangay}
-                onChange={(e) => handleStoreSettingsChange('barangay', e.target.value)}
-                disabled={!barangaysList.length}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                  background: barangaysList.length ? 'white' : '#f3f4f6'
-                }}
-              >
-                <option value="">Select Barangay</option>
-                {barangaysList.map((brgy, idx) => (
-                  <option
-                    key={brgy.brgy_code || brgy.code || brgy.brgyName || brgy.name || idx}
-                    value={brgy.name}
-                  >
-                    {brgy.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                Contact Email
-              </label>
-              <input
-                type="email"
-                value={storeSettings.contactEmail}
-                onChange={(e) => handleStoreSettingsChange('contactEmail', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem'
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                value={storeSettings.phone}
-                onChange={(e) => handleStoreSettingsChange('phone', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem'
-                }}
-              />
-            </div>
-          </div>
-
-          <button
-            onClick={handleSaveStoreSettings}
-            style={{
-              padding: '0.75rem 1.5rem',
-              background: 'linear-gradient(45deg, #8B5CF6, #4C1D95)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.5rem',
-              fontSize: '0.875rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-            }}
-          >
-            Save Store Settings
-          </button>
-
-          {storeSettingsStatus && (
-            <div style={{
-              marginTop: '1rem',
-              padding: '0.75rem',
-              background: storeSettingsStatus.includes('Error') ? '#fee2e2' : '#d1fae5',
-              color: storeSettingsStatus.includes('Error') ? '#dc2626' : '#065f46',
-              borderRadius: '0.375rem',
-              fontSize: '0.875rem',
-              textAlign: 'center'
-            }}>
-              {storeSettingsStatus}
-            </div>
-          )}
-        </div>
-      )}
-
       <div className="grid gap-6" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        {storeId && (
+          <TodoCard
+            icon={
+              <div className="bg-yellow-100 p-3 rounded-full">
+                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+            }
+            title="Store Settings"
+            description="Manage your store information and settings."
+            subDescription="Update your store name, description, location, contact information, and domain settings."
+            actionText="Manage Settings"
+            actionLink="/dashboard/store-settings"
+            variant="solid"
+          />
+        )}
         {console.log('🔍 Rendering dashboard cards, storeStatus:', storeStatus)}
         <TodoCard
           icon={
