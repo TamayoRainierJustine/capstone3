@@ -1764,8 +1764,8 @@ export default function SiteBuilder() {
           
           {expandedSections.backgroundSettings && (
             <div style={{ padding: '1rem' }}>
-          {/* Background Type Selection */}
-          <div style={{ marginBottom: '1rem' }}>
+              {/* Background Type Selection */}
+              <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
               Background Type
             </label>
@@ -2135,6 +2135,7 @@ export default function SiteBuilder() {
                 </div>
               </div>
             </>
+          )}
             </div>
           )}
         </div>
