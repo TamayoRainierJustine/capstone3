@@ -35,9 +35,6 @@ const WelcomePage = () => {
 
       {/* Header */}
       <header className="welcome-header">
-        <div className="logo-container">
-          <img src="/logoweb.png" alt="Structura Logo" className="logo-image" />
-        </div>
         <div className="logo-text">Structura</div>
         <nav className="welcome-nav">
           <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>Home</Link>
@@ -67,13 +64,6 @@ const WelcomePage = () => {
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="welcome-footer">
-        <p className="footer-text">
-          Made with ❤️ by the Structura team
-        </p>
-      </footer>
     </div>
   );
 };
