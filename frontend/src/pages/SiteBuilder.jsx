@@ -484,27 +484,45 @@ export default function SiteBuilder() {
         if (productsSection) {
           const productsGrid = productsSection.querySelector('.products-grid, .product-grid');
           if (productsGrid && products.length > 0) {
-            // Clear existing product cards (but keep the structure)
-            const existingCards = productsGrid.querySelectorAll('.product-card');
-            existingCards.forEach(card => card.remove());
-            
-            // Add products dynamically
-            products.filter(p => p.isActive !== false).forEach((product, index) => {
-              const productCard = iframeDoc.createElement('div');
-              productCard.className = 'product-card';
-              productCard.innerHTML = `
-                <div class="product-image">
-                  <img src="${product.image ? (product.image.startsWith('http') ? product.image : getImageUrl(product.image)) : 'https://via.placeholder.com/300'}" alt="${product.name || 'Product'}" />
-                </div>
-                <div class="product-info">
-                  <h3>${product.name || 'Product'}</h3>
-                  <p class="description">${product.description || ''}</p>
-                  <div class="price">₱${parseFloat(product.price || 0).toFixed(2)}</div>
-                  <button class="add-to-cart" type="button">Order</button>
-                </div>
-              `;
-              productsGrid.appendChild(productCard);
-            });
+            try {
+              // Clear existing product cards (but keep the structure)
+              const existingCards = productsGrid.querySelectorAll('.product-card');
+              existingCards.forEach(card => {
+                if (card && card.parentNode === productsGrid) {
+                  card.remove();
+                }
+              });
+              
+              // Verify productsGrid is still a valid parent before adding
+              if (productsGrid.parentNode) {
+                // Add products dynamically
+                products.filter(p => p.isActive !== false).forEach((product, index) => {
+                  try {
+                    const productCard = iframeDoc.createElement('div');
+                    productCard.className = 'product-card';
+                    productCard.innerHTML = `
+                      <div class="product-image">
+                        <img src="${product.image ? (product.image.startsWith('http') ? product.image : getImageUrl(product.image)) : 'https://via.placeholder.com/300'}" alt="${product.name || 'Product'}" />
+                      </div>
+                      <div class="product-info">
+                        <h3>${product.name || 'Product'}</h3>
+                        <p class="description">${product.description || ''}</p>
+                        <div class="price">₱${parseFloat(product.price || 0).toFixed(2)}</div>
+                        <button class="add-to-cart" type="button">Order</button>
+                      </div>
+                    `;
+                    // Double-check parent is still valid before appending
+                    if (productsGrid.parentNode) {
+                      productsGrid.appendChild(productCard);
+                    }
+                  } catch (cardError) {
+                    console.warn('Error adding product card:', cardError);
+                  }
+                });
+              }
+            } catch (productsError) {
+              console.warn('Error updating products in iframe:', productsError);
+            }
           }
         }
 

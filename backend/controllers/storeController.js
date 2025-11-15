@@ -169,13 +169,21 @@ export const updateStore = async (req, res) => {
   
   // Normalize domain name if provided
   if (domainName) {
-    domainName = domainName
+    const normalizedDomain = domainName
       .toLowerCase()
       .trim()
       .replace(/\s+/g, '-') // Replace spaces with hyphens
       .replace(/[^a-z0-9-]/g, '') // Remove special characters except hyphens
       .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
       .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+    
+    // If normalization results in empty string, keep original domain name
+    if (normalizedDomain.length > 0) {
+      domainName = normalizedDomain;
+    } else {
+      // If domain becomes empty after normalization, don't update it
+      domainName = undefined;
+    }
   }
   
   try {
