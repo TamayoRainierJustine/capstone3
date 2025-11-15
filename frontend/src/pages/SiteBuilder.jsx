@@ -1206,17 +1206,16 @@ export default function SiteBuilder() {
           
           {expandedSections.textStyling && (
             <div style={{ padding: '1.5rem', background: 'white' }}>
-
-          {/* Title Styling */}
-          <div style={{ 
-            marginBottom: '1.25rem', 
-            padding: '1.25rem', 
-            background: 'white', 
-            borderRadius: '0.5rem', 
-            border: '1px solid #e5e7eb',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
-          }}>
-            <h4 style={{ 
+              {/* Title Styling */}
+              <div style={{ 
+                marginBottom: '1.25rem', 
+                padding: '1.25rem', 
+                background: 'white', 
+                borderRadius: '0.5rem', 
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+              }}>
+                <h4 style={{ 
               fontSize: '0.9375rem', 
               fontWeight: '600', 
               marginBottom: '1rem', 
@@ -1379,16 +1378,16 @@ export default function SiteBuilder() {
             </div>
           </div>
 
-          {/* Subtitle Styling */}
-          <div style={{ 
-            marginBottom: '1.25rem', 
-            padding: '1.25rem', 
-            background: 'white', 
-            borderRadius: '0.5rem', 
-            border: '1px solid #e5e7eb',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
-          }}>
-            <h4 style={{ 
+              {/* Subtitle Styling */}
+              <div style={{ 
+                marginBottom: '1.25rem', 
+                padding: '1.25rem', 
+                background: 'white', 
+                borderRadius: '0.5rem', 
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+              }}>
+                <h4 style={{ 
               fontSize: '0.9375rem', 
               fontWeight: '600', 
               marginBottom: '1rem', 
@@ -1550,15 +1549,15 @@ export default function SiteBuilder() {
             </div>
           </div>
 
-          {/* Button Styling */}
-          <div style={{ 
-            padding: '1.25rem', 
-            background: 'white', 
-            borderRadius: '0.5rem', 
-            border: '1px solid #e5e7eb',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
-          }}>
-            <h4 style={{ 
+              {/* Button Styling */}
+              <div style={{ 
+                padding: '1.25rem', 
+                background: 'white', 
+                borderRadius: '0.5rem', 
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+              }}>
+                <h4 style={{ 
               fontSize: '0.9375rem', 
               fontWeight: '600', 
               marginBottom: '1rem', 
