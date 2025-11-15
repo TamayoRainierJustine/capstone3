@@ -37,7 +37,10 @@ const StoreTemplates = () => {
     balisong: 'ructon.html',
     weavery: 'urastra.html',
     woodcarving: 'caturis.html',
-    fireandsteel: 'fireandsteel.html'
+    fireandsteel: 'fireandsteel.html',
+    carved: 'carved.html',
+    revolve: 'revolve.html',
+    bladebinge: 'bladebinge.html'
   };
 
   const templates = [
@@ -72,6 +75,22 @@ const StoreTemplates = () => {
       title: 'Fire and Steel',
       colorPalette: ['#ffffff', '#000000', '#666666', '#1a1a1a', '#e5e5e5'],
       isPopular: true
+    },
+    {
+      id: 'carved',
+      title: 'Carved',
+      colorPalette: ['#fafafa', '#ffffff', '#1a1a1a', '#666666', '#e5e5e5'],
+      isPopular: true
+    },
+    {
+      id: 'revolve',
+      title: 'Revolve',
+      colorPalette: ['#ffffff', '#fafafa', '#1a1a1a', '#666666', '#e5e5e5']
+    },
+    {
+      id: 'bladebinge',
+      title: 'Blade Binge',
+      colorPalette: ['#0a0a0a', '#1a1a1a', '#c9a961', '#e0e0e0', '#333333']
     }
   ];
 

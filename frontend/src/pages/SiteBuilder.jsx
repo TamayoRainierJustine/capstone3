@@ -13,7 +13,10 @@ const templateFileMap = {
   balisong: 'ructon.html',
   weavery: 'urastra.html',
   woodcarving: 'caturis.html',
-  fireandsteel: 'fireandsteel.html'
+  fireandsteel: 'fireandsteel.html',
+  carved: 'carved.html',
+  revolve: 'revolve.html',
+  bladebinge: 'bladebinge.html'
 };
 
 const templateNames = {
@@ -22,7 +25,10 @@ const templateNames = {
   balisong: 'Ructon',
   weavery: 'Urastra',
   woodcarving: 'Caturis',
-  fireandsteel: 'Fire and Steel'
+  fireandsteel: 'Fire and Steel',
+  carved: 'Carved',
+  revolve: 'Revolve',
+  bladebinge: 'Blade Binge'
 };
 
 // Template-specific default background colors
@@ -32,7 +38,10 @@ const templateDefaultColors = {
   balisong: '#0f0f23', // Dark blue
   weavery: '#ffffff', // White
   woodcarving: '#f5efe6', // Light beige
-  fireandsteel: '#ffffff' // White (like Fire and Steel website)
+  fireandsteel: '#ffffff', // White (like Fire and Steel website)
+  carved: '#fafafa', // Light gray
+  revolve: '#ffffff', // White
+  bladebinge: '#0a0a0a' // Dark black
 };
 
 export default function SiteBuilder() {

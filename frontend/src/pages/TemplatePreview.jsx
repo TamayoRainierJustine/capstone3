@@ -12,7 +12,10 @@ const TemplatePreview = () => {
     balisong: 'ructon.html',
     weavery: 'urastra.html',
     woodcarving: 'caturis.html',
-    fireandsteel: 'fireandsteel.html'
+    fireandsteel: 'fireandsteel.html',
+    carved: 'carved.html',
+    revolve: 'revolve.html',
+    bladebinge: 'bladebinge.html'
   };
 
   const templateFile = templateMap[templateId];

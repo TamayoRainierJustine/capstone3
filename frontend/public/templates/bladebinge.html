@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blade Binge - Premium Blades & Knives</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        /* Top Announcement Bar */
+        .announcement-bar {
+            background: #1a1a1a;
+            color: #c9a961;
+            padding: 0.75rem 0;
+            text-align: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border-bottom: 1px solid #333;
+        }
+
+        /* Navigation */
+        .navbar {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 10, 10, 0.98);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #333;
+            padding: 1.25rem 5%;
+            z-index: 1000;
+        }
+
+        .nav-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #c9a961;
+            text-decoration: none;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #e0e0e0;
+            text-decoration: none;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #c9a961;
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #c9a961;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-icons {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-icon {
+            color: #e0e0e0;
+            text-decoration: none;
+            font-size: 1.25rem;
+            transition: color 0.3s;
+        }
+
+        .nav-icon:hover {
+            color: #c9a961;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 85vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            padding: 8rem 5% 6rem;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M 100 0 L 0 0 0 100" fill="none" stroke="%23333" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 4.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #e0e0e0;
+            letter-spacing: -2px;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+
+        .hero h1 span {
+            color: #c9a961;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: #999;
+            margin-bottom: 2.5rem;
+            line-height: 1.7;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-button {
+            background: transparent;
+            border: 2px solid #c9a961;
+            color: #c9a961;
+            padding: 1.125rem 3rem;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .cta-button:hover {
+            background: #c9a961;
+            color: #0a0a0a;
+        }
+
+        /* Products Section */
+        .products {
+            padding: 6rem 5%;
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #0a0a0a;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #e0e0e0;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 2px;
+            background: #c9a961;
+            margin: 1rem auto 0;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 3rem;
+        }
+
+        .product-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .product-card:hover {
+            border-color: #c9a961;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(201, 169, 97, 0.2);
+        }
+
+        .product-image {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+            background: #0a0a0a;
+            position: relative;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(20%);
+            transition: all 0.5s ease;
+        }
+
+        .product-card:hover .product-image img {
+            filter: grayscale(0%);
+            transform: scale(1.1);
+        }
+
+        .product-info {
+            padding: 2rem;
+        }
+
+        .product-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #e0e0e0;
+            line-height: 1.4;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .product-description,
+        .description {
+            color: #999;
+            font-size: 0.9375rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #333;
+        }
+
+        .product-price,
+        .price {
+            color: #c9a961;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 0;
+        }
+
+        .product-button,
+        .add-to-cart {
+            background: transparent;
+            border: 1px solid #c9a961;
+            color: #c9a961;
+            padding: 0.75rem 1.75rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .product-footer .product-button,
+        .product-footer .add-to-cart {
+            width: auto;
+        }
+
+        .product-button:hover,
+        .add-to-cart:hover {
+            background: #c9a961;
+            color: #0a0a0a;
+        }
+
+        /* Footer */
+        .footer {
+            background: #1a1a1a;
+            border-top: 1px solid #333;
+            padding: 4rem 5% 2rem;
+            margin-top: 5rem;
+        }
+
+        .footer-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-section h4 {
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1.5rem;
+            color: #c9a961;
+        }
+
+        .footer-section a {
+            display: block;
+            color: #999;
+            text-decoration: none;
+            font-size: 0.875rem;
+            margin-bottom: 0.875rem;
+            transition: color 0.3s;
+        }
+
+        .footer-section a:hover {
+            color: #c9a961;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid #333;
+            color: #999;
+            font-size: 0.875rem;
+            letter-spacing: 1px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 3rem;
+            }
+
+            .hero p {
+                font-size: 1.125rem;
+            }
+
+            .product-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 2rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Announcement Bar -->
+    <div class="announcement-bar">
+        ⚡ Free Shipping on Orders Over $100 ⚡
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="#" class="logo">BLADE BINGE</a>
+            <div class="nav-links">
+                <a href="#">Knives</a>
+                <a href="#">Swords</a>
+                <a href="#">Tools</a>
+                <a href="#">Accessories</a>
+                <a href="#">New Arrivals</a>
+            </div>
+            <div class="nav-icons">
+                <a href="#" class="nav-icon" aria-label="Search">🔍</a>
+                <a href="#" class="nav-icon" aria-label="Account">👤</a>
+                <a href="#" class="nav-icon" aria-label="Cart">🛒</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Premium <span>Blades</span></h1>
+            <p>Discover our collection of high-quality knives, swords, and cutting tools. Each piece is crafted with precision and built to last.</p>
+            <button class="cta-button">Explore Collection</button>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section class="products">
+        <div class="section-header">
+            <h2 class="section-title">Featured Products</h2>
+        </div>
+        <div class="product-grid">
+            <div class="product-card">
+                <div class="product-image">
+                    <img src="/imgplc.jpg" alt="Product 1" />
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">Product 1</h3>
+                    <p class="product-description">Premium quality blade with exceptional craftsmanship. Built for performance and durability.</p>
+                    <div class="product-footer">
+                        <span class="product-price">$199</span>
+                        <button class="product-button">Order Now</button>
+                    </div>
+                </div>
+            </div>
+            <div class="product-card">
+                <div class="product-image">
+                    <img src="/imgplc.jpg" alt="Product 2" />
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">Product 2</h3>
+                    <p class="product-description">Premium quality blade with exceptional craftsmanship. Built for performance and durability.</p>
+                    <div class="product-footer">
+                        <span class="product-price">$249</span>
+                        <button class="product-button">Order Now</button>
+                    </div>
+                </div>
+            </div>
+            <div class="product-card">
+                <div class="product-image">
+                    <img src="/imgplc.jpg" alt="Product 3" />
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">Product 3</h3>
+                    <p class="product-description">Premium quality blade with exceptional craftsmanship. Built for performance and durability.</p>
+                    <div class="product-footer">
+                        <span class="product-price">$179</span>
+                        <button class="product-button">Order Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Shop</h4>
+                <a href="#">Knives</a>
+                <a href="#">Swords</a>
+                <a href="#">Tools</a>
+                <a href="#">Accessories</a>
+                <a href="#">On Sale</a>
+            </div>
+            <div class="footer-section">
+                <h4>Information</h4>
+                <a href="#">About Us</a>
+                <a href="#">Shipping Policy</a>
+                <a href="#">Return Policy</a>
+                <a href="#">Warranty</a>
+                <a href="#">FAQ</a>
+            </div>
+            <div class="footer-section">
+                <h4>Customer Service</h4>
+                <a href="#">Contact Us</a>
+                <a href="#">Track Order</a>
+                <a href="#">Size Guide</a>
+                <a href="#">Care Instructions</a>
+            </div>
+            <div class="footer-section">
+                <h4>Connect</h4>
+                <a href="#">Instagram</a>
+                <a href="#">Facebook</a>
+                <a href="#">Twitter</a>
+                <a href="#">YouTube</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2025 Blade Binge. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
+
