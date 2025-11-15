@@ -1115,53 +1115,54 @@ export default function SiteBuilder() {
           
           {expandedSections.heroSection && (
             <div style={{ padding: '1rem' }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
-              Title
-            </label>
-            <input
-              type="text"
-              value={heroContent.title}
-              onChange={(e) => handleHeroChange('title', e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem'
-              }}
-            />
-          </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
-              Subtitle
-            </label>
-            <QuillEditor
-              value={heroContent.subtitle}
-              onChange={(value) => handleHeroChange('subtitle', value)}
-              toolbar={heroSubtitleToolbar}
-              style={{
-                background: 'white',
-                borderRadius: '0.375rem'
-              }}
-            />
-          </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
-              Button Text
-            </label>
-            <input
-              type="text"
-              value={heroContent.buttonText}
-              onChange={(e) => handleHeroChange('buttonText', e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem'
-              }}
-            />
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={heroContent.title}
+                  onChange={(e) => handleHeroChange('title', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.875rem'
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                  Subtitle
+                </label>
+                <QuillEditor
+                  value={heroContent.subtitle}
+                  onChange={(value) => handleHeroChange('subtitle', value)}
+                  toolbar={heroSubtitleToolbar}
+                  style={{
+                    background: 'white',
+                    borderRadius: '0.375rem'
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                  Button Text
+                </label>
+                <input
+                  type="text"
+                  value={heroContent.buttonText}
+                  onChange={(e) => handleHeroChange('buttonText', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.875rem'
+                  }}
+                />
+              </div>
             </div>
           )}
         </div>
