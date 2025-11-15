@@ -79,7 +79,6 @@ export default function SiteBuilder() {
   
   // Collapsible sections state
   const [expandedSections, setExpandedSections] = useState({
-    storeSettings: true,  // Open by default
     heroSection: true,
     textStyling: false,
     backgroundSettings: false,
@@ -758,6 +757,36 @@ export default function SiteBuilder() {
     }
   };
 
+  const handleSaveHero = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setStatus('Error: Please log in to save');
+        return;
+      }
+
+      if (!storeId) {
+        setStatus('Error: No store found. Please create a store first.');
+        return;
+      }
+
+      // Save only hero content to backend
+      const content = {
+        hero: heroContent
+      };
+
+      await apiClient.put(`/stores/${storeId}/content`, 
+        { content },
+      );
+
+      setStatus('Hero section saved successfully!');
+      setTimeout(() => setStatus(''), 3000);
+    } catch (e) {
+      setStatus('Error saving hero: ' + (e.response?.data?.message || e.message));
+      setTimeout(() => setStatus(''), 5000);
+    }
+  };
+
   const handleSave = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -771,9 +800,6 @@ export default function SiteBuilder() {
         return;
       }
 
-      // Save store settings first
-      await handleSaveStoreSettings();
-      
       // Save template content (hero, background) to backend - products are managed separately
       const content = {
         hero: heroContent,
@@ -825,268 +851,6 @@ export default function SiteBuilder() {
           <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
             Customize your store content
           </p>
-        </div>
-
-        {/* Store Settings Section */}
-        <div style={{ marginBottom: '1rem', background: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-          <div 
-            onClick={() => toggleSection('storeSettings')}
-            style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
-              padding: '1rem',
-              cursor: 'pointer',
-              background: expandedSections.storeSettings ? '#ede9fe' : 'transparent',
-              transition: 'background 0.2s'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '0.875rem', transition: 'transform 0.2s', transform: expandedSections.storeSettings ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-                ▶
-              </span>
-              <h3 style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>
-                Store Settings
-              </h3>
-            </div>
-            {storeId && expandedSections.storeSettings && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSaveStoreSettings();
-                }}
-                style={{
-                  padding: '0.375rem 0.75rem',
-                  background: '#8b5cf6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.75rem',
-                  cursor: 'pointer',
-                  fontWeight: '500'
-                }}
-              >
-                Save
-              </button>
-            )}
-          </div>
-          
-          {expandedSections.storeSettings && (
-            <div style={{ padding: '0 1rem 1rem 1rem' }}>
-              {!storeId && (
-                <p style={{ fontSize: '0.75rem', color: '#ef4444', marginBottom: '1rem' }}>
-                  Create a store first to edit settings
-                </p>
-              )}
-
-              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-            <div style={{ marginBottom: '0.75rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '500' }}>
-                Store Name
-              </label>
-              <input
-                type="text"
-                value={storeSettings.storeName}
-                onChange={(e) => handleStoreSettingsChange('storeName', e.target.value)}
-                disabled={!storeId}
-                style={{
-                  width: '100%',
-                  padding: '0.375rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.25rem',
-                  fontSize: '0.875rem',
-                  background: storeId ? 'white' : '#f3f4f6'
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '0.75rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '500' }}>
-                Description
-              </label>
-              <textarea
-                value={storeSettings.description}
-                onChange={(e) => handleStoreSettingsChange('description', e.target.value)}
-                disabled={!storeId}
-                rows={3}
-                style={{
-                  width: '100%',
-                  padding: '0.375rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.25rem',
-                  fontSize: '0.875rem',
-                  resize: 'vertical',
-                  background: storeId ? 'white' : '#f3f4f6'
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '0.75rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '500' }}>
-                Domain Name
-              </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                <input
-                  type="text"
-                  value={storeSettings.domainName}
-                  onChange={(e) => handleStoreSettingsChange('domainName', e.target.value)}
-                  disabled={!storeId}
-                  style={{
-                    width: '70%',
-                    padding: '0.375rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '0.25rem',
-                    fontSize: '0.875rem',
-                    background: storeId ? 'white' : '#f3f4f6'
-                  }}
-                />
-                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>.structura.com</span>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '0.75rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '500' }}>
-                Region
-              </label>
-              <select
-                value={storeSettings.region}
-                onChange={(e) => handleStoreSettingsChange('region', e.target.value)}
-                disabled={!storeId}
-                style={{
-                  width: '100%',
-                  padding: '0.375rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.25rem',
-                  fontSize: '0.875rem',
-                  background: storeId ? 'white' : '#f3f4f6'
-                }}
-              >
-                <option value="">Select Region</option>
-                {regionsList.map(region => (
-                  <option key={region.reg_code} value={region.reg_code}>{region.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: '0.75rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '500' }}>
-                Province
-              </label>
-              <select
-                value={storeSettings.province}
-                onChange={(e) => handleStoreSettingsChange('province', e.target.value)}
-                disabled={!storeId || !provincesList.length}
-                style={{
-                  width: '100%',
-                  padding: '0.375rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.25rem',
-                  fontSize: '0.875rem',
-                  background: (storeId && provincesList.length) ? 'white' : '#f3f4f6'
-                }}
-              >
-                <option value="">Select Province</option>
-                {provincesList.map(province => (
-                  <option key={province.prov_code} value={province.prov_code}>{province.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: '0.75rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '500' }}>
-                Municipality/City
-              </label>
-              <select
-                value={storeSettings.municipality}
-                onChange={(e) => handleStoreSettingsChange('municipality', e.target.value)}
-                disabled={!storeId || !municipalitiesList.length}
-                style={{
-                  width: '100%',
-                  padding: '0.375rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.25rem',
-                  fontSize: '0.875rem',
-                  background: (storeId && municipalitiesList.length) ? 'white' : '#f3f4f6'
-                }}
-              >
-                <option value="">Select Municipality/City</option>
-                {municipalitiesList.map(mun => (
-                  <option key={mun.mun_code} value={mun.mun_code}>{mun.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: '0.75rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '500' }}>
-                Barangay
-              </label>
-              <select
-                value={storeSettings.barangay}
-                onChange={(e) => handleStoreSettingsChange('barangay', e.target.value)}
-                disabled={!storeId || !barangaysList.length}
-                style={{
-                  width: '100%',
-                  padding: '0.375rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.25rem',
-                  fontSize: '0.875rem',
-                  background: (storeId && barangaysList.length) ? 'white' : '#f3f4f6'
-                }}
-              >
-                <option value="">Select Barangay</option>
-                {barangaysList.map((brgy, idx) => (
-                  <option
-                    key={brgy.brgy_code || brgy.code || brgy.brgyName || brgy.name || idx}
-                    value={brgy.name}
-                  >
-                    {brgy.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: '0.75rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '500' }}>
-                Contact Email
-              </label>
-              <input
-                type="email"
-                value={storeSettings.contactEmail}
-                onChange={(e) => handleStoreSettingsChange('contactEmail', e.target.value)}
-                disabled={!storeId}
-                style={{
-                  width: '100%',
-                  padding: '0.375rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.25rem',
-                  fontSize: '0.875rem',
-                  background: storeId ? 'white' : '#f3f4f6'
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '0.75rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '500' }}>
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                value={storeSettings.phone}
-                onChange={(e) => handleStoreSettingsChange('phone', e.target.value)}
-                disabled={!storeId}
-                style={{
-                  width: '100%',
-                  padding: '0.375rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.25rem',
-                  fontSize: '0.875rem',
-                  background: storeId ? 'white' : '#f3f4f6'
-                }}
-              />
-            </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Hero Section Editor */}
@@ -1163,6 +927,26 @@ export default function SiteBuilder() {
                   }}
                 />
               </div>
+              {storeId && (
+                <button
+                  onClick={handleSaveHero}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: 'linear-gradient(45deg, #8B5CF6, #4C1D95)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                    marginTop: '0.5rem'
+                  }}
+                >
+                  Save Changes
+                </button>
+              )}
             </div>
           )}
         </div>
