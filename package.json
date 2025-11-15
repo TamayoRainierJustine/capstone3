@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Structura - E-commerce Store Builder",
   "scripts": {
+    "start": "cd backend && npm start",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
@@ -11,8 +12,11 @@
     "install": "cd frontend && npm install",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "install:frontend": "cd frontend && npm install --production=false",
+    "postinstall": "cd backend && npm install --production",
     "migrate:supabase": "cd backend && npm run migrate:supabase",
-    "vercel-build": "node build.js"
+    "vercel-build": "node build.js",
+    "check:railway": "node scripts/check-railway-setup.js",
+    "test:backend": "node scripts/test-backend-start.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
