@@ -47,7 +47,7 @@ const WelcomePage = () => {
       {/* Main Content */}
       <main className="welcome-content">
         <div className="welcome-text">
-          <h1 className="welcome-title">Welcome Home</h1>
+          <h1 className="welcome-title">Structura</h1>
           <div className="separator"></div>
           <p className="welcome-description">
             Create your dream store in a warm, welcoming environment.

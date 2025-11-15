@@ -77,6 +77,22 @@ export default function SiteBuilder() {
   const [municipalitiesList, setMunicipalitiesList] = useState([]);
   const [barangaysList, setBarangaysList] = useState([]);
   
+  // Collapsible sections state
+  const [expandedSections, setExpandedSections] = useState({
+    storeSettings: true,  // Open by default
+    heroSection: true,
+    textStyling: false,
+    backgroundSettings: false,
+    products: true
+  });
+  
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+  
   // Content state - these will be editable
   // Initialize with empty values - will be populated from store data or user input
   const [heroContent, setHeroContent] = useState({
@@ -812,14 +828,33 @@ export default function SiteBuilder() {
         </div>
 
         {/* Store Settings Section */}
-        <div style={{ marginBottom: '2rem', padding: '1rem', background: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: '600' }}>
-              Store Settings
-            </h3>
-            {storeId && (
+        <div style={{ marginBottom: '1rem', background: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+          <div 
+            onClick={() => toggleSection('storeSettings')}
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '1rem',
+              cursor: 'pointer',
+              background: expandedSections.storeSettings ? '#ede9fe' : 'transparent',
+              transition: 'background 0.2s'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.875rem', transition: 'transform 0.2s', transform: expandedSections.storeSettings ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                ▶
+              </span>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>
+                Store Settings
+              </h3>
+            </div>
+            {storeId && expandedSections.storeSettings && (
               <button
-                onClick={handleSaveStoreSettings}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSaveStoreSettings();
+                }}
                 style={{
                   padding: '0.375rem 0.75rem',
                   background: '#8b5cf6',
@@ -836,13 +871,15 @@ export default function SiteBuilder() {
             )}
           </div>
           
-          {!storeId && (
-            <p style={{ fontSize: '0.75rem', color: '#ef4444', marginBottom: '1rem' }}>
-              Create a store first to edit settings
-            </p>
-          )}
+          {expandedSections.storeSettings && (
+            <div style={{ padding: '0 1rem 1rem 1rem' }}>
+              {!storeId && (
+                <p style={{ fontSize: '0.75rem', color: '#ef4444', marginBottom: '1rem' }}>
+                  Create a store first to edit settings
+                </p>
+              )}
 
-          <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
             <div style={{ marginBottom: '0.75rem' }}>
               <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '500' }}>
                 Store Name
@@ -1047,14 +1084,37 @@ export default function SiteBuilder() {
                 }}
               />
             </div>
-          </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Hero Section Editor */}
-        <div style={{ marginBottom: '2rem' }}>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
-            Hero Section
-          </h3>
+        <div style={{ marginBottom: '1rem', background: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+          <div 
+            onClick={() => toggleSection('heroSection')}
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '1rem',
+              cursor: 'pointer',
+              background: expandedSections.heroSection ? '#ede9fe' : 'transparent',
+              transition: 'background 0.2s'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.875rem', transition: 'transform 0.2s', transform: expandedSections.heroSection ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                ▶
+              </span>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>
+                Hero Section
+              </h3>
+            </div>
+          </div>
+          
+          {expandedSections.heroSection && (
+            <div style={{ padding: '1rem' }}>
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
               Title
@@ -1102,30 +1162,50 @@ export default function SiteBuilder() {
                 fontSize: '0.875rem'
               }}
             />
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Text Styling Section - Right after Hero Section for visibility */}
         <div className="text-styling-section" style={{ 
-          marginBottom: '2rem', 
-          padding: '1.5rem', 
-          background: 'white',
-          backgroundImage: 'none',
+          marginBottom: '1rem', 
+          background: '#f9fafb',
           borderRadius: '0.5rem', 
           border: '1px solid #e5e7eb',
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+          overflow: 'hidden'
         }}>
-          <h3 style={{ 
-            fontSize: '1.125rem', 
-            fontWeight: '600', 
-            marginBottom: '1.5rem',
-            color: '#1f2937',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem'
-          }}>
-            <span style={{ fontSize: '1.25rem' }}>🎨</span> Text Styling
-          </h3>
+          <div 
+            onClick={() => toggleSection('textStyling')}
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '1rem',
+              cursor: 'pointer',
+              background: expandedSections.textStyling ? '#ede9fe' : 'transparent',
+              transition: 'background 0.2s'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.875rem', transition: 'transform 0.2s', transform: expandedSections.textStyling ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                ▶
+              </span>
+              <h3 style={{ 
+                fontSize: '1.125rem', 
+                fontWeight: '600',
+                margin: 0,
+                color: '#1f2937',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <span style={{ fontSize: '1.125rem' }}>🎨</span> Text Styling
+              </h3>
+            </div>
+          </div>
+          
+          {expandedSections.textStyling && (
+            <div style={{ padding: '1.5rem', background: 'white' }}>
 
           {/* Title Styling */}
           <div style={{ 
@@ -1654,14 +1734,36 @@ export default function SiteBuilder() {
               </div>
             </div>
           </div>
+            </div>
+          )}
         </div>
 
         {/* Background Customization */}
-        <div style={{ marginBottom: '2rem', padding: '1rem', background: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
-            Background Settings
-          </h3>
+        <div style={{ marginBottom: '1rem', background: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+          <div 
+            onClick={() => toggleSection('backgroundSettings')}
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '1rem',
+              cursor: 'pointer',
+              background: expandedSections.backgroundSettings ? '#ede9fe' : 'transparent',
+              transition: 'background 0.2s'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.875rem', transition: 'transform 0.2s', transform: expandedSections.backgroundSettings ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                ▶
+              </span>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>
+                Background Settings
+              </h3>
+            </div>
+          </div>
           
+          {expandedSections.backgroundSettings && (
+            <div style={{ padding: '1rem' }}>
           {/* Background Type Selection */}
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>
@@ -2033,39 +2135,61 @@ export default function SiteBuilder() {
                 </div>
               </div>
             </>
+            </div>
           )}
         </div>
 
         {/* Products Management Section */}
-        <div style={{ marginBottom: '2rem', padding: '1rem', background: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: '600' }}>
-              Products ({products.length})
-            </h3>
-            <button
-              onClick={() => {
-                setShowAddProduct(!showAddProduct);
-                if (showAddProduct) {
-                  setEditingProduct(null);
-                  setProductForm({ name: '', description: '', price: '', stock: '', image: null });
-                  setProductImagePreview(null);
-                }
-              }}
-              style={{
-                padding: '0.375rem 0.75rem',
-                background: '#8b5cf6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '0.375rem',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                fontWeight: '500'
-              }}
-            >
-              {showAddProduct ? 'Cancel' : '+ Add Product'}
-            </button>
+        <div style={{ marginBottom: '1rem', background: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+          <div 
+            onClick={() => toggleSection('products')}
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '1rem',
+              cursor: 'pointer',
+              background: expandedSections.products ? '#ede9fe' : 'transparent',
+              transition: 'background 0.2s'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.875rem', transition: 'transform 0.2s', transform: expandedSections.products ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                ▶
+              </span>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>
+                Products ({products.length})
+              </h3>
+            </div>
+            {expandedSections.products && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAddProduct(!showAddProduct);
+                  if (showAddProduct) {
+                    setEditingProduct(null);
+                    setProductForm({ name: '', description: '', price: '', stock: '', image: null });
+                    setProductImagePreview(null);
+                  }
+                }}
+                style={{
+                  padding: '0.375rem 0.75rem',
+                  background: '#8b5cf6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                {showAddProduct ? 'Cancel' : '+ Add Product'}
+              </button>
+            )}
           </div>
-
+          
+          {expandedSections.products && (
+            <div style={{ padding: '1rem' }}>
           {/* Add/Edit Product Form */}
           {showAddProduct && (
             <form onSubmit={handleProductSubmit} style={{ marginBottom: '1rem', padding: '1rem', background: 'white', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
@@ -2286,6 +2410,8 @@ export default function SiteBuilder() {
               ))
             )}
           </div>
+            </div>
+          )}
         </div>
 
         {/* Save Button */}
