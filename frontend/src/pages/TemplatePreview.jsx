@@ -11,7 +11,8 @@ const TemplatePreview = () => {
     pottery: 'truvara.html',
     balisong: 'ructon.html',
     weavery: 'urastra.html',
-    woodcarving: 'caturis.html'
+    woodcarving: 'caturis.html',
+    fireandsteel: 'fireandsteel.html'
   };
 
   const templateFile = templateMap[templateId];
