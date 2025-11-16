@@ -1,5 +1,8 @@
 import nodemailer from 'nodemailer';
 
+// Send via Resend (HTTPS) if RESEND_API_KEY is set, else use SMTP.
+// HTTPS avoids outbound SMTP port blocking on some hosts.
+
 export function createTransport() {
   // Trim to avoid trailing spaces/newlines from env UI
   const host = (process.env.SMTP_HOST || '').trim();
@@ -40,6 +43,40 @@ export function createTransport() {
 
 export async function sendEmail({ to, subject, html, text }) {
   const from = (process.env.EMAIL_FROM || 'no-reply@structura.app').trim();
+
+  // Prefer HTTPS provider if configured
+  const resendKey = (process.env.RESEND_API_KEY || '').trim();
+  if (resendKey) {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from,
+          to: Array.isArray(to) ? to : [to],
+          subject,
+          html,
+          text
+        })
+      });
+      if (!response.ok) {
+        const bodyText = await response.text().catch(() => '');
+        throw new Error(`Resend API error: ${response.status} ${response.statusText} ${bodyText}`);
+      }
+      const data = await response.json();
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[mail] Resend sent:', data?.id);
+      }
+      return { messageId: data?.id, provider: 'resend' };
+    } catch (err) {
+      console.error('[mail] Resend send error:', err?.message || err);
+      // If HTTPS provider fails, fall through to SMTP as a backup
+    }
+  }
+
   const transporter = createTransport();
   try {
     // Quick capability check (non-blocking when SMTP is healthy)
