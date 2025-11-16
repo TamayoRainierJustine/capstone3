@@ -2587,12 +2587,22 @@ const PublishedStore = () => {
                           </div>
                           <div className="flex justify-center mb-3">
                             <div className="bg-white p-4 rounded-lg">
-                              <QRCodeSVG 
-                                value={`GCASH:${store?.phone || store?.contactEmail || 'N/A'}:${calculateTotal().toFixed(2)}`}
-                                size={200}
-                                level="H"
-                                includeMargin={true}
-                              />
+                              {/* Check if uploaded GCash QR code exists in store content */}
+                              {store?.content?.payment?.gcashQrImage || store?.content?.gcashQrImage ? (
+                                <img
+                                  src={store.content.payment?.gcashQrImage || store.content.gcashQrImage}
+                                  alt="GCash QR Code"
+                                  className="w-48 h-48 object-contain"
+                                  style={{ maxWidth: '200px', maxHeight: '200px' }}
+                                />
+                              ) : (
+                                <QRCodeSVG 
+                                  value={`GCASH:${store?.phone || store?.contactEmail || 'N/A'}:${calculateTotal().toFixed(2)}`}
+                                  size={200}
+                                  level="H"
+                                  includeMargin={true}
+                                />
+                              )}
                             </div>
                           </div>
                           <div className="text-center text-sm text-gray-700">
