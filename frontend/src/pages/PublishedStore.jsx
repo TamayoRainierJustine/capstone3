@@ -5,7 +5,6 @@ import { getImageUrl } from '../utils/imageUrl';
 import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
 import { useAuth } from '../context/AuthContext';
 import { FaUserCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { QRCodeSVG } from 'qrcode.react';
 
 // Template mapping
 const templateFileMap = {
@@ -2587,7 +2586,7 @@ const PublishedStore = () => {
                           </div>
                           <div className="flex justify-center mb-3">
                             <div className="bg-white p-4 rounded-lg">
-                              {/* Check if uploaded GCash QR code exists in store content */}
+                              {/* Display uploaded GCash QR code from store content */}
                               {store?.content?.payment?.gcashQrImage || store?.content?.gcashQrImage ? (
                                 <img
                                   src={store.content.payment?.gcashQrImage || store.content.gcashQrImage}
@@ -2596,12 +2595,9 @@ const PublishedStore = () => {
                                   style={{ maxWidth: '200px', maxHeight: '200px' }}
                                 />
                               ) : (
-                                <QRCodeSVG 
-                                  value={`GCASH:${store?.phone || store?.contactEmail || 'N/A'}:${calculateTotal().toFixed(2)}`}
-                                  size={200}
-                                  level="H"
-                                  includeMargin={true}
-                                />
+                                <div className="w-48 h-48 flex items-center justify-center text-gray-500 text-sm text-center p-4">
+                                  <p>Please upload your GCash QR code in Payment Settings</p>
+                                </div>
                               )}
                             </div>
                           </div>
