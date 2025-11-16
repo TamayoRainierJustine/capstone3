@@ -397,13 +397,6 @@ const PublishPage = () => {
                   <li>Click "Publish Website" to make your site live</li>
                   <li>Copy and share your website URL with customers - it's free and works immediately!</li>
                 </ol>
-                <div className="mt-4 p-3 bg-white rounded border border-blue-200">
-                  <p className="text-xs text-blue-900 font-semibold mb-1">💡 Want a Custom Domain?</p>
-                  <p className="text-xs text-blue-700">
-                    You can add your own custom domain (like mystore.com) to Vercel for free if you own a domain. 
-                    See <code className="bg-blue-100 px-1 rounded">CUSTOM_DOMAIN_SETUP.md</code> in the project for instructions.
-                  </p>
-                </div>
               </div>
 
               {/* Quick Actions */}
