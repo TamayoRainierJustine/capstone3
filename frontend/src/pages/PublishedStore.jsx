@@ -30,7 +30,7 @@ const PublishedStore = () => {
   
   // Login/Register modal state
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showScrollModal, setShowScrollModal] = useState(false);
+  const [showInitialLoginModal, setShowInitialLoginModal] = useState(false);
   const [modalMode, setModalMode] = useState('login'); // 'login' or 'register'
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -218,58 +218,18 @@ const PublishedStore = () => {
     };
   }, []);
 
-  // Scroll detection - show login/register modal when user scrolls down
+  // Show login modal immediately when page loads (if not logged in)
   useEffect(() => {
-    const handleScroll = () => {
-      const token = localStorage.getItem('token');
-      // Only show scroll modal if user is not logged in and hasn't seen it yet
-      if (!token && !showScrollModal) {
-        // Check both window scroll and iframe scroll
-        const windowScroll = window.scrollY || document.documentElement.scrollTop;
-        const iframe = iframeRef.current;
-        let iframeScroll = 0;
-        
-        if (iframe && iframe.contentWindow) {
-          try {
-            iframeScroll = iframe.contentWindow.scrollY || iframe.contentDocument?.documentElement?.scrollTop || 0;
-          } catch (e) {
-            // Cross-origin or not ready
-          }
-        }
-        
-        const totalScroll = Math.max(windowScroll, iframeScroll);
-        
-        if (totalScroll > 300) {
-          setShowScrollModal(true);
-          setModalMode('login');
-        }
-      }
-    };
-
-    // Listen to window scroll
-    window.addEventListener('scroll', handleScroll, true);
-    
-    // Also listen to iframe scroll if available
-    const iframe = iframeRef.current;
-    if (iframe && iframe.contentWindow) {
-      try {
-        iframe.contentWindow.addEventListener('scroll', handleScroll, true);
-      } catch (e) {
-        // Cross-origin or not ready
-      }
+    const token = localStorage.getItem('token');
+    if (!token && !loading) {
+      // Small delay to ensure store content is loaded
+      const timer = setTimeout(() => {
+        setShowInitialLoginModal(true);
+        setModalMode('login');
+      }, 500);
+      return () => clearTimeout(timer);
     }
-    
-    return () => {
-      window.removeEventListener('scroll', handleScroll, true);
-      if (iframe && iframe.contentWindow) {
-        try {
-          iframe.contentWindow.removeEventListener('scroll', handleScroll, true);
-        } catch (e) {
-          // Ignore
-        }
-      }
-    };
-  }, [showScrollModal, iframeRef]);
+  }, [loading]);
   
   // Handle login submission
   const handleLogin = async (e) => {
@@ -297,7 +257,7 @@ const PublishedStore = () => {
         
         // Close both modals
         setShowLoginModal(false);
-        setShowScrollModal(false);
+        setShowInitialLoginModal(false);
         
         // If there was a pending order, open the order modal now
         if (pendingOrderProduct) {
@@ -1870,36 +1830,7 @@ const PublishedStore = () => {
     window.addEventListener('message', handleMessage);
     // Try to listen for clicks on the iframe (may not work due to cross-origin)
     if (iframeRef.current) {
-      // Add scroll listener to iframe when it loads
-      const setupIframeScrollListener = () => {
-        const iframe = iframeRef.current;
-        if (iframe && iframe.contentWindow) {
-          try {
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            if (iframeDoc) {
-              // Listen to scroll events inside iframe
-              const scrollHandler = () => {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                  const scrollY = iframe.contentWindow.scrollY || iframeDoc.documentElement.scrollTop || 0;
-                  if (scrollY > 300) {
-                    setShowScrollModal(true);
-                    setModalMode('login');
-                  }
-                }
-              };
-              iframe.contentWindow.addEventListener('scroll', scrollHandler, true);
-              // Store handler for cleanup
-              iframe._scrollHandler = scrollHandler;
-            }
-          } catch (e) {
-            console.log('Cannot access iframe scroll:', e);
-          }
-        }
-      };
-
       iframeRef.current.addEventListener('load', () => {
-        setupIframeScrollListener();
         try {
           const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
           if (iframeDoc) {
@@ -1918,10 +1849,6 @@ const PublishedStore = () => {
           const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
           if (iframeDoc) {
             iframeDoc.removeEventListener('click', handleIframeClick, true);
-          }
-          // Remove scroll handler if it exists
-          if (iframeRef.current.contentWindow && iframeRef.current._scrollHandler) {
-            iframeRef.current.contentWindow.removeEventListener('scroll', iframeRef.current._scrollHandler, true);
           }
         } catch (err) {
           // Ignore
@@ -2136,14 +2063,14 @@ const PublishedStore = () => {
 
   return (
     <>
-      {/* Scroll-triggered Login/Register Modal */}
-      {showScrollModal && (
+      {/* Initial Login/Register Modal - shown on page load */}
+      {showInitialLoginModal && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowScrollModal(false)}
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}
         >
           <div 
-            className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
@@ -2151,7 +2078,7 @@ const PublishedStore = () => {
                 {modalMode === 'login' ? 'Login' : 'Create Account'}
               </h2>
               <button
-                onClick={() => setShowScrollModal(false)}
+                onClick={() => setShowInitialLoginModal(false)}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
                 ×
@@ -2232,6 +2159,20 @@ const PublishedStore = () => {
                 >
                   {loginLoading ? 'Signing in...' : 'LOGIN'}
                 </button>
+                <div className="mt-4 text-center text-sm text-gray-600">
+                  Don't have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalMode('register');
+                      setLoginError('');
+                      setRegisterError('');
+                    }}
+                    className="text-purple-600 font-semibold hover:underline"
+                  >
+                    Sign up
+                  </button>
+                </div>
               </form>
             )}
 
@@ -2310,6 +2251,20 @@ const PublishedStore = () => {
                 >
                   {registerLoading ? 'Creating Account...' : 'REGISTER'}
                 </button>
+                <div className="mt-4 text-center text-sm text-gray-600">
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalMode('login');
+                      setLoginError('');
+                      setRegisterError('');
+                    }}
+                    className="text-purple-600 font-semibold hover:underline"
+                  >
+                    Sign in
+                  </button>
+                </div>
               </form>
             )}
           </div>
