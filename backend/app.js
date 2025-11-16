@@ -249,6 +249,18 @@ sequelize.sync(syncOptions)
       await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "total" DECIMAL(10,2) DEFAULT 0');
       // Add unique index on orderNumber (only for non-null values)
       await sequelize.query('CREATE UNIQUE INDEX IF NOT EXISTS "Orders_orderNumber_unique" ON "Orders" ("orderNumber") WHERE "orderNumber" IS NOT NULL');
+
+      // Legacy column from initial schema: totalAmount (not used by current model)
+      // Make it nullable and keep it in sync with total so NOT NULL does not break inserts
+      try {
+        await sequelize.query('ALTER TABLE "Orders" ALTER COLUMN "totalAmount" DROP NOT NULL');
+        await sequelize.query('ALTER TABLE "Orders" ALTER COLUMN "totalAmount" SET DEFAULT 0');
+        // Backfill existing rows where totalAmount is NULL
+        await sequelize.query('UPDATE "Orders" SET "totalAmount" = COALESCE("total", 0) WHERE "totalAmount" IS NULL');
+        console.log('✅ Orders.totalAmount relaxed and backfilled');
+      } catch (legacyErr) {
+        console.warn('⚠️ Could not adjust Orders.totalAmount column (may not exist):', legacyErr.message);
+      }
       console.log('✅ Orders schema verified');
     } catch (schemaErr) {
       console.error('⚠️ Failed to ensure Orders schema:', schemaErr.message);
