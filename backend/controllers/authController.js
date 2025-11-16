@@ -139,6 +139,19 @@ export const register = async (req, res) => {
   }
 };
 
+export const testEmailSend = async (req, res) => {
+  const { to } = req.body;
+  if (!to) return res.status(400).json({ message: 'Recipient email `to` is required' });
+  try {
+    const subject = 'Structura SMTP Test';
+    const html = `<p>This is a test email from Structura backend at ${new Date().toISOString()}.</p>`;
+    const text = `This is a test email from Structura backend at ${new Date().toISOString()}.`;
+    const info = await sendEmail({ to, subject, html, text });
+    return res.json({ message: 'Test email sent', messageId: info?.messageId, response: info?.response });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to send test email', error: err?.message || String(err) });
+  }
+};
 export const login = async (req, res) => {
   const startTime = Date.now();
   const { email, password } = req.body;

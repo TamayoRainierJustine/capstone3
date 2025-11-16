@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, requestPasswordReset, resetPasswordWithCode, verifyEmailWithCode, resendVerificationCode, verifyEmailLink } from '../controllers/authController.js';
+import { register, login, requestPasswordReset, resetPasswordWithCode, verifyEmailWithCode, resendVerificationCode, verifyEmailLink, testEmailSend } from '../controllers/authController.js';
 
 const router = express.Router();
 
@@ -10,5 +10,7 @@ router.post('/reset-password', resetPasswordWithCode);
 router.post('/verify-email', verifyEmailWithCode);
 router.post('/resend-verification', resendVerificationCode);
 router.get('/verify', verifyEmailLink);
+// Diagnostic: send a test email and return provider response
+router.post('/test-email', testEmailSend);
 
 export default router;
