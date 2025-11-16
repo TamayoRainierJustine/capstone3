@@ -278,6 +278,16 @@ sequelize.sync(syncOptions)
       console.error('⚠️ Failed to ensure Orders schema:', schemaErr.message);
     }
 
+    // Ensure Products table has required columns (e.g., weight)
+    try {
+      console.log('🛠️ Ensuring Products schema is up to date...');
+      // Add weight column (in kilograms) if missing
+      await sequelize.query('ALTER TABLE "Products" ADD COLUMN IF NOT EXISTS "weight" DECIMAL(10,2) DEFAULT 0');
+      console.log('✅ Products schema verified');
+    } catch (prodSchemaErr) {
+      console.error('⚠️ Failed to ensure Products schema:', prodSchemaErr.message);
+    }
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📝 Test endpoint: http://localhost:${PORT}/api/test`);

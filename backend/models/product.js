@@ -38,6 +38,12 @@ const Product = sequelize.define('Product', {
     allowNull: false,
     defaultValue: 0
   },
+  // Product weight in kilograms (used for shipping rate calculation)
+  weight: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    defaultValue: 0
+  },
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true

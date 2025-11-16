@@ -145,6 +145,16 @@ const PublishedStore = () => {
       setSelectedProduct(product);
       setShowOrderModal(true);
       
+      // Determine default weight band from product weight (in kg), if provided
+      let defaultWeightBand = '';
+      const weightValue = product && product.weight ? parseFloat(product.weight) : 0;
+      if (weightValue > 0) {
+        if (weightValue <= 0.5) defaultWeightBand = '0-0.5';
+        else if (weightValue > 0.5 && weightValue <= 1) defaultWeightBand = '0.5-1';
+        else if (weightValue > 1 && weightValue <= 3) defaultWeightBand = '1-3';
+        else if (weightValue >= 5 && weightValue <= 6) defaultWeightBand = '5-6';
+      }
+      
       // Reset order form
       setOrderData({
         customerName: '',
@@ -156,6 +166,7 @@ const PublishedStore = () => {
         province: '',
         municipality: '',
         barangay: '',
+        weightBand: defaultWeightBand,
         shipping: 0
       });
       setProvincesList([]);

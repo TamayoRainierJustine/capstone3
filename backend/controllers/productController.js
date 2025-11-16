@@ -124,7 +124,7 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    const { name, description, price, stock, isActive } = req.body;
+    const { name, description, price, stock, isActive, weight } = req.body;
     
     // Validate required fields
     if (!name || !description || !price) {
@@ -179,6 +179,7 @@ export const createProduct = async (req, res) => {
         description,
         price: parseFloat(price),
         stock: parseInt(stock) || 0,
+        weight: weight !== undefined && weight !== null && weight !== '' ? parseFloat(weight) : 0,
         image: imagePath,
         isActive: isActive !== undefined ? isActive : true
       }),
@@ -251,7 +252,7 @@ export const updateProduct = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const { name, description, price, stock, isActive } = req.body;
+    const { name, description, price, stock, isActive, weight } = req.body;
     let imagePath = product.image;
 
     // Handle file upload if new image provided (with timeout)
@@ -297,6 +298,7 @@ export const updateProduct = async (req, res) => {
         description: description || product.description,
         price: price !== undefined ? parseFloat(price) : product.price,
         stock: stock !== undefined ? parseInt(stock) : product.stock,
+        weight: weight !== undefined && weight !== null && weight !== '' ? parseFloat(weight) : (product.weight || 0),
         image: imagePath,
         isActive: isActive !== undefined ? isActive : product.isActive
       }),

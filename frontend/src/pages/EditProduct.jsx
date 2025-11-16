@@ -13,7 +13,8 @@ const EditProduct = () => {
     description: '',
     price: '',
     image: null,
-    stock: ''
+    stock: '',
+    weight: ''
   });
 
   const [imagePreview, setImagePreview] = useState(null);
@@ -39,6 +40,7 @@ const EditProduct = () => {
           description: product.description || '',
           price: product.price || '',
           stock: product.stock || 0,
+          weight: product.weight || 0,
           image: null
         });
 
@@ -118,6 +120,7 @@ const EditProduct = () => {
       productData.append('description', formData.description);
       productData.append('price', formData.price);
       productData.append('stock', formData.stock || 0);
+      productData.append('weight', formData.weight || 0);
       if (formData.image) {
         productData.append('image', formData.image);
       }
@@ -223,6 +226,21 @@ const EditProduct = () => {
                 required
                 min="0"
                 placeholder="0"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="weight">Weight (kg)</label>
+              <input
+                type="number"
+                id="weight"
+                name="weight"
+                value={formData.weight}
+                onChange={handleChange}
+                required
+                min="0"
+                step="0.01"
+                placeholder="e.g. 0.5"
               />
             </div>
           </div>
