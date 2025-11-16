@@ -230,8 +230,21 @@ console.log(`📊 NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
 console.log(`📊 PORT: ${process.env.PORT || 'not set'}`);
 
 sequelize.sync(syncOptions)
-  .then(() => {
+  .then(async () => {
     console.log('✅ Database synced');
+
+    // Ensure Orders table has required columns without destructive alters
+    try {
+      console.log('🛠️ Ensuring Orders schema is up to date...');
+      // Add orderNumber column if missing
+      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "orderNumber" VARCHAR');
+      // Add unique index on orderNumber (only for non-null values)
+      await sequelize.query('CREATE UNIQUE INDEX IF NOT EXISTS "Orders_orderNumber_unique" ON "Orders" ("orderNumber") WHERE "orderNumber" IS NOT NULL');
+      console.log('✅ Orders schema verified');
+    } catch (schemaErr) {
+      console.error('⚠️ Failed to ensure Orders schema:', schemaErr.message);
+    }
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📝 Test endpoint: http://localhost:${PORT}/api/test`);
