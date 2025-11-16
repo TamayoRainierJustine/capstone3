@@ -649,6 +649,57 @@ const PublishedStore = () => {
                 titleEl.textContent = product.name || '';
               }
 
+              // Ensure an Add-to-Cart button exists alongside Order in existing template cards
+              try {
+                const footerEl = card.querySelector('.product-footer, .product-actions, .product-info, .product');
+                const orderBtn = card.querySelector('button.product-button, .product button, button.add-to-cart, button:contains("Order")');
+                const hasCartBtn = card.querySelector('.cart-button');
+                if (footerEl && orderBtn && !hasCartBtn) {
+                  // Style footer to align items
+                  footerEl.style.display = 'flex';
+                  footerEl.style.alignItems = 'center';
+                  footerEl.style.justifyContent = 'space-between';
+                  footerEl.style.gap = '.5rem';
+
+                  // Container for action buttons if not present
+                  let actionWrap = footerEl.querySelector('.product-actions-wrap');
+                  if (!actionWrap) {
+                    actionWrap = iframeDoc.createElement('div');
+                    actionWrap.className = 'product-actions-wrap';
+                    actionWrap.style.display = 'flex';
+                    actionWrap.style.gap = '.5rem';
+                    // Place actions next to price if a price element exists
+                    const priceEl = footerEl.querySelector('.product-price, .price');
+                    if (priceEl && priceEl.nextSibling) {
+                      footerEl.insertBefore(actionWrap, priceEl.nextSibling);
+                    } else {
+                      footerEl.appendChild(actionWrap);
+                    }
+                  }
+
+                  // Move existing order button into actions wrap
+                  actionWrap.appendChild(orderBtn);
+                  orderBtn.classList.add('order-button', 'product-button');
+                  orderBtn.style.padding = '.5rem .75rem';
+                  orderBtn.style.borderRadius = '8px';
+
+                  // Create cart button before order button
+                  const cartBtn = iframeDoc.createElement('button');
+                  cartBtn.className = 'product-button cart-button add-to-cart';
+                  cartBtn.title = 'Add to Cart';
+                  cartBtn.setAttribute('aria-label', 'Add to Cart');
+                  cartBtn.style.display = 'inline-flex';
+                  cartBtn.style.alignItems = 'center';
+                  cartBtn.style.gap = '.4rem';
+                  cartBtn.style.padding = '.5rem .75rem';
+                  cartBtn.style.borderRadius = '8px';
+                  cartBtn.innerHTML = '<span aria-hidden="true">🛒</span><span class="sr-only" style="position:absolute;left:-9999px;">Add to Cart</span>';
+                  actionWrap.insertBefore(cartBtn, orderBtn);
+                }
+              } catch (e) {
+                // non-fatal if DOM differs
+              }
+
               const priceEl = card.querySelector('.product-price, .price');
               if (priceEl) {
                 const price = parseFloat(product.price) || 0;
