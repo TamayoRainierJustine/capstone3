@@ -127,9 +127,18 @@ export default function SiteBuilder() {
               baseTop: 0
             };
 
+            // Add helper styles
+            (function addStyles(){
+              if (document.getElementById('__structura-move-style')) return;
+              const style = document.createElement('style');
+              style.id = '__structura-move-style';
+              style.textContent = '[data-move-selected]{outline:2px dashed #8B5CF6 !important; cursor: move !important;}';
+              document.head.appendChild(style);
+            })();
+
             const selectableSelectors = [
               '.hero h1', '.hero h2', '.hero h3', '.hero p', '.hero .title', '.hero .subtitle',
-              '.welcome-title', 'h1', 'h2', 'h3', '.product-title'
+              '.welcome-title', 'h1', 'h2', 'h3', 'p', '.product-title', '.section-title', '.headline', '.subhead'
             ];
 
             function isTextNodeElement(el){
@@ -158,11 +167,11 @@ export default function SiteBuilder() {
 
             function select(el){
               if (state.selected && state.selected !== el){
-                state.selected.style.outline = '';
+                state.selected.removeAttribute('data-move-selected');
               }
               state.selected = el;
               if (state.selected){
-                state.selected.style.outline = '2px dashed #8B5CF6';
+                state.selected.setAttribute('data-move-selected','true');
                 if (!state.selected.style.position || state.selected.style.position === 'static'){
                   state.selected.style.position = 'relative';
                 }
@@ -173,6 +182,11 @@ export default function SiteBuilder() {
 
             function onMouseDown(e){
               if (!state.active) return;
+              // Prevent links/buttons from triggering navigation while moving
+              const tag = (e.target.tagName || '').toLowerCase();
+              if (tag === 'a' || tag === 'button') {
+                e.preventDefault();
+              }
               const target = findSelectable(e.target);
               if (!target) return;
               e.preventDefault();
@@ -233,7 +247,7 @@ export default function SiteBuilder() {
             window.__structuraMoveMode = {
               disable: function(){
                 state.active = false;
-                if (state.selected){ state.selected.style.outline = ''; }
+                if (state.selected){ state.selected.removeAttribute('data-move-selected'); }
                 document.removeEventListener('mousedown', onMouseDown, true);
                 document.removeEventListener('mousemove', onMouseMove, true);
                 document.removeEventListener('mouseup', onMouseUp, true);
@@ -244,6 +258,9 @@ export default function SiteBuilder() {
           })();
         `;
         doc.head.appendChild(script);
+        // Focus iframe document so it receives key events
+        if (iframe.contentWindow) { iframe.contentWindow.focus(); }
+        if (doc && doc.body && doc.body.focus) { try { doc.body.setAttribute('tabindex','-1'); doc.body.focus(); } catch(_){} }
       } catch (err) {
         console.error('Move mode enable failed:', err);
       }
