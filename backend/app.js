@@ -235,6 +235,7 @@ sequelize.sync(syncOptions)
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📝 Test endpoint: http://localhost:${PORT}/api/test`);
+      console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
       console.log(`🔍 Debug routes: http://localhost:${PORT}/api/debug/routes`);
       console.log(`📦 Test products: POST http://localhost:${PORT}/api/products/test`);
     });
