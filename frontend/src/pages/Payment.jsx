@@ -6,11 +6,14 @@ const Payment = () => {
   const [config, setConfig] = useState({
     gcashEnabled: false,
     paypalEnabled: false, // Reused as COD toggle to avoid breaking existing saved configs
-    cardEnabled: false,
-    gcashMerchantId: '', // Legacy field (not used anymore, kept for backward compatibility)
-    gcashQrImage: '', // New: GCash QR code image (base64)
-    paypalClientId: '', // Legacy field (not used anymore)
-    stripePublishableKey: '' // Legacy field (not used anymore)
+    cardEnabled: false,   // Reused as Bank Transfer toggle to avoid breaking existing saved configs
+    gcashMerchantId: '',  // Legacy field (not used anymore, kept for backward compatibility)
+    gcashQrImage: '',     // GCash QR code image (base64)
+    paypalClientId: '',   // Legacy field (not used anymore)
+    stripePublishableKey: '', // Legacy field (not used anymore)
+    bankName: '',
+    bankAccountName: '',
+    bankAccountNumber: ''
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -156,13 +159,13 @@ const Payment = () => {
               )}
             </div>
 
-            {/* Credit/Debit Card Configuration */}
+            {/* Bank Transfer Configuration (reusing cardEnabled) */}
             <div className="pb-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold">Credit/Debit Cards</h3>
+                  <h3 className="text-lg font-semibold">Bank Transfer / Bank Deposit</h3>
                   <p className="text-sm text-gray-600">
-                    Enable direct card payments (processed via PayPal)
+                    Allow customers to pay via bank transfer or bank deposit using your bank account details.
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -175,6 +178,49 @@ const Payment = () => {
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                 </label>
               </div>
+              {config.cardEnabled && (
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Bank Name
+                    </label>
+                    <input
+                      type="text"
+                      value={config.bankName}
+                      onChange={(e) => setConfig({ ...config, bankName: e.target.value })}
+                      placeholder="e.g. BDO, BPI, Metrobank"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Account Name
+                    </label>
+                    <input
+                      type="text"
+                      value={config.bankAccountName}
+                      onChange={(e) => setConfig({ ...config, bankAccountName: e.target.value })}
+                      placeholder="Name on the bank account"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Account Number
+                    </label>
+                    <input
+                      type="text"
+                      value={config.bankAccountNumber}
+                      onChange={(e) => setConfig({ ...config, bankAccountNumber: e.target.value })}
+                      placeholder="Enter your bank account number"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    These details will be used when coordinating bank transfer payments with your customers.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
