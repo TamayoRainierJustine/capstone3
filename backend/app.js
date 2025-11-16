@@ -288,6 +288,28 @@ sequelize.sync(syncOptions)
       console.error('⚠️ Failed to ensure Products schema:', prodSchemaErr.message);
     }
 
+    // Ensure PasswordResetTokens table exists (for email OTP password reset)
+    try {
+      console.log('🛠️ Ensuring PasswordResetTokens table exists...');
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS "PasswordResetTokens" (
+          "id" SERIAL PRIMARY KEY,
+          "email" VARCHAR NOT NULL,
+          "code" VARCHAR NOT NULL,
+          "expiresAt" TIMESTAMPTZ NOT NULL,
+          "used" BOOLEAN DEFAULT FALSE NOT NULL,
+          "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+      // Indexes for faster lookups/cleanup
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS "prt_email_idx" ON "PasswordResetTokens" ("email")`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS "prt_expires_idx" ON "PasswordResetTokens" ("expiresAt")`);
+      console.log('✅ PasswordResetTokens table verified');
+    } catch (prtErr) {
+      console.warn('⚠️ Could not ensure PasswordResetTokens table exists:', prtErr.message);
+    }
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📝 Test endpoint: http://localhost:${PORT}/api/test`);

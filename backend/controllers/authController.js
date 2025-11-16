@@ -2,6 +2,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
 import sequelize from '../config/db.js';
+import PasswordResetToken from '../models/passwordResetToken.js';
+import { sendEmail } from '../utils/email.js';
+import { Op } from 'sequelize';
 
 export const register = async (req, res) => {
   const startTime = Date.now();
@@ -205,5 +208,76 @@ export const login = async (req, res) => {
       message: 'Login failed', 
       error: err.message || 'Unknown error occurred'
     });
+  }
+};
+
+export const requestPasswordReset = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: 'Email is required' });
+
+  try {
+    // Always respond success to avoid email enumeration, but actually create code only if user exists
+    const user = await User.findOne({ where: { email }, attributes: ['id', 'email'] });
+    const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    if (user) {
+      // Invalidate previous active tokens for this email
+      await PasswordResetToken.update({ used: true }, { where: { email, used: false } });
+      await PasswordResetToken.create({ email, code, expiresAt });
+
+      const subject = 'Your Structura password reset code';
+      const html = `<p>Use this verification code to reset your password:</p>
+        <p style="font-size:20px;font-weight:bold;letter-spacing:4px">${code}</p>
+        <p>This code expires in 15 minutes.</p>`;
+      const text = `Your password reset code is: ${code} (expires in 15 minutes)`;
+      try {
+        await sendEmail({ to: email, subject, html, text });
+      } catch (e) {
+        // Log but still respond 200 to avoid leaking
+        console.error('Email send failed:', e.message);
+      }
+    }
+
+    return res.json({ message: 'If that email exists, a code has been sent.' });
+  } catch (err) {
+    console.error('requestPasswordReset error:', err);
+    return res.status(500).json({ message: 'Failed to process request' });
+  }
+};
+
+export const resetPasswordWithCode = async (req, res) => {
+  const { email, code, newPassword } = req.body;
+  if (!email || !code || !newPassword) {
+    return res.status(400).json({ message: 'Email, code and newPassword are required' });
+  }
+  try {
+    const token = await PasswordResetToken.findOne({
+      where: {
+        email,
+        code,
+        used: false,
+        expiresAt: { [Op.gt]: new Date() },
+      },
+      order: [['createdAt', 'DESC']],
+    });
+    if (!token) {
+      return res.status(400).json({ message: 'Invalid or expired code' });
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) return res.status(400).json({ message: 'Invalid request' });
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    token.used = true;
+    await token.save();
+
+    return res.json({ message: 'Password reset successfully' });
+  } catch (err) {
+    console.error('resetPasswordWithCode error:', err);
+    return res.status(500).json({ message: 'Failed to reset password' });
   }
 };

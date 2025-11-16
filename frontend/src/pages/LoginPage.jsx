@@ -168,7 +168,7 @@ const LoginPage = () => {
                 <span>
                   <input type="checkbox" id="remember-me" style={{ marginRight: 6 }} /> Remember me
                 </span>
-                <a href="#" style={{ color: '#7f53ac', textDecoration: 'none' }}>Forgot password?</a>
+                <Link to="/forgot-password" style={{ color: '#7f53ac', textDecoration: 'none' }}>Forgot password?</Link>
               </div>
             </form>
             <div style={{ marginTop: 24, fontSize: 14, color: '#aaa' }}>
