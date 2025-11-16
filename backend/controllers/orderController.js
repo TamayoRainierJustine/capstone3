@@ -112,11 +112,38 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: 'Complete shipping address is required' });
     }
 
-    // Validate store exists and is published
-    const store = await Store.findOne({
-      where: { id: storeId, status: 'published' },
-      attributes: ['id', 'status']
-    });
+    // Test database connection before proceeding
+    try {
+      await sequelize.authenticate();
+    } catch (dbError) {
+      console.error('Database connection test failed:', dbError.message);
+      return res.status(503).json({ 
+        message: 'Database connection error - please try again',
+        error: 'DATABASE_ERROR',
+        details: 'Unable to connect to database'
+      });
+    }
+
+    // Validate store exists and is published - with retry
+    let store;
+    try {
+      store = await Store.findOne({
+        where: { id: storeId, status: 'published' },
+        attributes: ['id', 'status']
+      });
+    } catch (storeError) {
+      console.error('Error fetching store:', storeError.message);
+      // If connection error, return 503
+      if (storeError.name?.startsWith('Sequelize') || 
+          storeError.code === 'ECONNREFUSED' ||
+          storeError.code === 'ETIMEDOUT') {
+        return res.status(503).json({ 
+          message: 'Database connection error - please try again',
+          error: 'DATABASE_ERROR'
+        });
+      }
+      throw storeError;
+    }
 
     if (!store) {
       return res.status(404).json({ message: 'Store not found or not published' });
@@ -125,15 +152,30 @@ export const createOrder = async (req, res) => {
     // Validate products and calculate totals - OPTIMIZED: fetch all products in parallel
     const productIds = items.map(item => item.productId);
     
-    // Fetch all products in parallel instead of sequentially
-    const products = await Product.findAll({
-      where: { 
-        id: { [Op.in]: productIds },
-        storeId, 
-        isActive: true 
-      },
-      attributes: ['id', 'name', 'price', 'stock']
-    });
+    // Fetch all products in parallel instead of sequentially - with retry
+    let products;
+    try {
+      products = await Product.findAll({
+        where: { 
+          id: { [Op.in]: productIds },
+          storeId, 
+          isActive: true 
+        },
+        attributes: ['id', 'name', 'price', 'stock']
+      });
+    } catch (productError) {
+      console.error('Error fetching products:', productError.message);
+      // If connection error, return 503
+      if (productError.name?.startsWith('Sequelize') || 
+          productError.code === 'ECONNREFUSED' ||
+          productError.code === 'ETIMEDOUT') {
+        return res.status(503).json({ 
+          message: 'Database connection error - please try again',
+          error: 'DATABASE_ERROR'
+        });
+      }
+      throw productError;
+    }
 
     // Create a map for quick lookup
     const productMap = new Map(products.map(p => [p.id, p]));
@@ -175,7 +217,27 @@ export const createOrder = async (req, res) => {
     const total = subtotal + shippingCost;
 
     // Use transaction to ensure all operations succeed or fail together
-    const transaction = await sequelize.transaction();
+    // Retry transaction creation if connection fails
+    let transaction;
+    let transactionRetries = 3;
+    while (transactionRetries > 0) {
+      try {
+        transaction = await sequelize.transaction();
+        break; // Success
+      } catch (txError) {
+        transactionRetries--;
+        console.error(`Transaction creation failed (${3 - transactionRetries} attempts):`, txError.message);
+        if (transactionRetries === 0) {
+          return res.status(503).json({ 
+            message: 'Database connection error - please try again',
+            error: 'DATABASE_ERROR',
+            details: 'Unable to create database transaction'
+          });
+        }
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
 
     try {
       // Create order within transaction

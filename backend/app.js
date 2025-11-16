@@ -111,6 +111,27 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'Server is running', routes: ['/api/auth', '/api/stores', '/api/products', '/api/orders', '/api/payments'] });
 });
 
+// Health check endpoint with database status
+app.get('/api/health', async (req, res) => {
+  try {
+    // Test database connection
+    await sequelize.authenticate();
+    res.json({ 
+      status: 'healthy', 
+      database: 'connected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Health check failed:', error.message);
+    res.status(503).json({ 
+      status: 'unhealthy', 
+      database: 'disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Test route for store publish (to verify route exists)
 app.put('/api/stores/test-publish', (req, res) => {
   console.log('✅ Test publish route hit!');

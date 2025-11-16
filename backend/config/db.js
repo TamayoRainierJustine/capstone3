@@ -68,4 +68,61 @@ const sequelize = new Sequelize(databaseUrl, {
 // Connection will be established on first query
 // This prevents cold start issues in serverless environments
 
+// Helper function to test and reconnect if needed
+export const testConnection = async (retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await sequelize.authenticate();
+      return true;
+    } catch (error) {
+      console.error(`Connection test attempt ${i + 1} failed:`, error.message);
+      if (i < retries - 1) {
+        // Wait before retry (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, (i + 1) * 1000));
+      }
+    }
+  }
+  return false;
+};
+
+// Helper function to execute with connection retry
+export const executeWithRetry = async (operation, retries = 3) => {
+  let lastError = null;
+  for (let i = 0; i < retries; i++) {
+    try {
+      // Test connection before operation
+      await testConnection(1);
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      console.error(`Operation attempt ${i + 1} failed:`, error.message);
+      
+      // Check if it's a connection error
+      const isConnectionError = 
+        error.name?.startsWith('Sequelize') ||
+        error.code === 'ECONNREFUSED' ||
+        error.code === 'ENOTFOUND' ||
+        error.code === 'ETIMEDOUT' ||
+        error.message?.includes('Connection') ||
+        error.message?.includes('connect') ||
+        error.message?.includes('timeout');
+      
+      if (isConnectionError && i < retries - 1) {
+        // Wait before retry (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, (i + 1) * 1000));
+        // Close all connections to force reconnect
+        try {
+          await sequelize.connectionManager.close();
+        } catch (closeError) {
+          // Ignore close errors
+        }
+      } else {
+        // Don't retry for non-connection errors or if retries exhausted
+        throw error;
+      }
+    }
+  }
+  throw lastError;
+};
+
 export default sequelize;
