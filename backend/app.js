@@ -218,12 +218,33 @@ app.use((req, res) => {
 console.log(`📊 NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
 console.log(`📊 PORT: ${process.env.PORT || 'not set'}`);
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📝 Test endpoint: http://localhost:${PORT}/api/test`);
   console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
   console.log(`🔍 Debug routes: http://localhost:${PORT}/api/debug/routes`);
 });
+
+// Graceful shutdown to handle platform SIGTERM/SIGINT
+const shutdown = async (signal) => {
+  try {
+    console.log(`\n🔻 Received ${signal}. Shutting down gracefully...`);
+    await new Promise((resolve) => server.close(resolve));
+    console.log('🔒 HTTP server closed');
+    try {
+      await sequelize.close();
+      console.log('🔌 Database connections closed');
+    } catch (dbCloseErr) {
+      console.warn('⚠️ Error closing DB connections:', dbCloseErr.message);
+    }
+  } catch (err) {
+    console.error('❌ Error during shutdown:', err);
+  } finally {
+    process.exit(0);
+  }
+};
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 // After server starts, perform DB sync and schema ensures without blocking startup
 (async () => {
