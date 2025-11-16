@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
 import sequelize from '../config/db.js';
 import PasswordResetToken from '../models/passwordResetToken.js';
-import { sendEmail } from '../utils/email.js';
 import { Op } from 'sequelize';
 import EmailVerificationToken from '../models/emailVerificationToken.js';
 
@@ -49,32 +48,25 @@ export const register = async (req, res) => {
       isVerified: user.isVerified,
     };
 
-    // Send verification code via email (expires in 30 minutes)
-    try {
-      await EmailVerificationToken.update({ used: true }, { where: { email, used: false } });
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-      await EmailVerificationToken.create({ email, code, expiresAt });
-
-      const subject = 'Verify your Structura account';
-      const html = `<p>Use this verification code to verify your account:</p>
-        <p style="font-size:20px;font-weight:bold;letter-spacing:4px">${code}</p>
-        <p>This code expires in 30 minutes.</p>`;
-      const text = `Your verification code is: ${code} (expires in 30 minutes)`;
-      await sendEmail({ to: email, subject, html, text });
-    } catch (mailErr) {
-      console.error('Failed to send verification email:', mailErr.message);
-      // Continue; user can request a new code later
-    }
+    // Generate OTP (expires in 30 minutes) and return it instead of sending email
+    await EmailVerificationToken.update({ used: true }, { where: { email, used: false } });
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    await EmailVerificationToken.create({ email, code, expiresAt });
 
     const duration = Date.now() - startTime;
-    if (duration > 3000) {
-      console.warn(`Slow registration: took ${duration}ms`);
+    // Suppress slow-registration log in production
+    if (process.env.NODE_ENV !== 'production') {
+      if (duration > 3000) {
+        console.warn(`Slow registration: took ${duration}ms`);
+      }
     }
 
     res.status(201).json({
-      message: 'User registered. Please verify your email with the code we sent.',
-      user: userWithoutPassword
+      message: 'User registered. Please verify using the OTP code.',
+      user: userWithoutPassword,
+      otp: code,
+      otpExpiresAt: expiresAt
     });
   } catch (err) {
     const duration = Date.now() - startTime;
@@ -262,10 +254,51 @@ export const verifyEmailWithCode = async (req, res) => {
     token.used = true;
     await token.save();
 
-    return res.json({ message: 'Email verified successfully' });
+    return res.json({ message: 'OTP verified successfully' });
   } catch (err) {
     console.error('verifyEmailWithCode error:', err);
     return res.status(500).json({ message: 'Failed to verify email' });
+  }
+};
+
+// GET link-based verification: /api/auth/verify?email=...&code=...
+export const verifyEmailLink = async (req, res) => {
+  const email = req.query.email;
+  const code = req.query.code;
+  const frontendBase = (process.env.FRONTEND_URL || '').trim() || 'https://structurawebbuilder.vercel.app';
+  try {
+    if (!email || !code) {
+      return res.redirect(`${frontendBase.replace(/\/+$/, '')}/login?verified=0&reason=missing_params`);
+    }
+    const token = await EmailVerificationToken.findOne({
+      where: {
+        email,
+        code,
+        used: false,
+        expiresAt: { [Op.gt]: new Date() },
+      },
+      order: [['createdAt', 'DESC']],
+    });
+    if (!token) {
+      return res.redirect(`${frontendBase.replace(/\/+$/, '')}/login?verified=0&reason=invalid_or_expired`);
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.redirect(`${frontendBase.replace(/\/+$/, '')}/login?verified=0&reason=user_not_found`);
+    }
+
+    user.isVerified = true;
+    user.emailVerifiedAt = new Date();
+    await user.save();
+
+    token.used = true;
+    await token.save();
+
+    return res.redirect(`${frontendBase.replace(/\/+$/, '')}/login?verified=1`);
+  } catch (err) {
+    console.error('verifyEmailLink error:', err);
+    return res.redirect(`${frontendBase.replace(/\/+$/, '')}/login?verified=0&reason=server_error`);
   }
 };
 
@@ -281,18 +314,9 @@ export const resendVerificationCode = async (req, res) => {
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
       await EmailVerificationToken.create({ email, code, expiresAt });
 
-      const subject = 'Your new Structura verification code';
-      const html = `<p>Use this verification code to verify your account:</p>
-        <p style="font-size:20px;font-weight:bold;letter-spacing:4px">${code}</p>
-        <p>This code expires in 30 minutes.</p>`;
-      const text = `Your verification code is: ${code} (expires in 30 minutes)`;
-      try {
-        await sendEmail({ to: email, subject, html, text });
-      } catch (e) {
-        console.error('Resend verification email failed:', e.message);
-      }
+      return res.json({ message: 'New OTP generated.', otp: code, otpExpiresAt: expiresAt });
     }
-    return res.json({ message: 'If the account is unverified, a new code was sent.' });
+    return res.json({ message: 'If the account is unverified, a new OTP was generated.' });
   } catch (err) {
     console.error('resendVerificationCode error:', err);
     return res.status(500).json({ message: 'Failed to resend verification code' });

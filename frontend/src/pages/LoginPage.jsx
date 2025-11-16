@@ -26,6 +26,18 @@ const LoginPage = () => {
     }
   }, [location]);
 
+  // Handle verify link redirect (?verified=1)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const verified = params.get('verified');
+    const reason = params.get('reason');
+    if (verified === '1') {
+      setSuccess('Email verified. Please log in.');
+    } else if (verified === '0') {
+      setError(reason === 'invalid_or_expired' ? 'Verification link is invalid or expired.' : 'Email verification failed. Please request a new link.');
+    }
+  }, [location.search]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -101,10 +113,14 @@ const LoginPage = () => {
         setError('No token received from server');
       }
     } catch (error) {
-      setError(
-        error.response?.data?.message || 
-        'An error occurred during login. Please try again.'
-      );
+      const msg = error.response?.data?.message;
+      if (error.response?.status === 403) {
+        setError(msg || 'Please verify your email to continue.');
+      } else {
+        setError(
+          msg || 'An error occurred during login. Please try again.'
+        );
+      }
     } finally {
       setIsLoading(false);
     }

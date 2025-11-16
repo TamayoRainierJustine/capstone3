@@ -610,15 +610,16 @@ export const getSalesAnalytics = async (req, res) => {
     }
 
     // Get monthly sales data
+    const monthExpr = sequelize.fn('to_char', sequelize.col('createdAt'), 'YYYY-MM');
     const orders = await Order.findAll({
       where: whereClause,
       attributes: [
-        [sequelize.fn('DATE_FORMAT', sequelize.col('createdAt'), '%Y-%m'), 'month'],
+        [monthExpr, 'month'],
         [sequelize.fn('SUM', sequelize.col('total')), 'totalSales'],
         [sequelize.fn('COUNT', sequelize.col('id')), 'orderCount']
       ],
-      group: [sequelize.fn('DATE_FORMAT', sequelize.col('createdAt'), '%Y-%m')],
-      order: [[sequelize.fn('DATE_FORMAT', sequelize.col('createdAt'), '%Y-%m'), 'ASC']],
+      group: [monthExpr],
+      order: [[monthExpr, 'ASC']],
       raw: true
     });
 
