@@ -5,6 +5,7 @@ import { getImageUrl } from '../utils/imageUrl';
 import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
 import { useAuth } from '../context/AuthContext';
 import { FaUserCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { QRCodeSVG } from 'qrcode.react';
 
 // Template mapping
 const templateFileMap = {
@@ -20,12 +21,13 @@ const templateFileMap = {
 const PublishedStore = () => {
   const { domain } = useParams();
   const navigate = useNavigate();
-  const { login: loginContext } = useAuth();
+  const { login: loginContext, user } = useAuth();
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
+  const [customerInfo, setCustomerInfo] = useState(null);
   const iframeRef = React.useRef(null);
   
   // Login/Register modal state
@@ -181,31 +183,7 @@ const PublishedStore = () => {
       // User is logged in - open order modal directly
       setSelectedProduct(product);
       setShowOrderModal(true);
-      
-      // Determine default weight band from product weight (in kg), if provided
-      let defaultWeightBand = '';
-      const weightValue = product && product.weight ? parseFloat(product.weight) : 0;
-      if (weightValue > 0) {
-        if (weightValue <= 0.5) defaultWeightBand = '0-0.5';
-        else if (weightValue > 0.5 && weightValue <= 1) defaultWeightBand = '0.5-1';
-        else if (weightValue > 1 && weightValue <= 3) defaultWeightBand = '1-3';
-        else if (weightValue >= 5 && weightValue <= 6) defaultWeightBand = '5-6';
-      }
-      
-      // Reset order form
-      setOrderData({
-        customerName: '',
-        customerEmail: '',
-        customerPhone: '',
-        quantity: 1,
-        paymentMethod: 'gcash',
-        region: '',
-        province: '',
-        municipality: '',
-        barangay: '',
-        weightBand: defaultWeightBand,
-        shipping: 0
-      });
+      setOrderData(prefillOrderForm(product));
       setProvincesList([]);
       setMunicipalitiesList([]);
       setBarangaysList([]);
@@ -250,6 +228,9 @@ const PublishedStore = () => {
         
         // Update auth context
         loginContext(response.data.user);
+        
+        // Store customer info for pre-filling order form
+        setCustomerInfo(response.data.user);
         
         // Clear form
         setLoginEmail('');
@@ -442,20 +423,7 @@ const PublishedStore = () => {
     orderButtonCallbackRef.current = (product) => {
       setSelectedProduct(product);
       setShowOrderModal(true);
-      
-      // Reset order form
-      setOrderData({
-        customerName: '',
-        customerEmail: '',
-        customerPhone: '',
-        quantity: 1,
-        paymentMethod: 'gcash',
-        region: '',
-        province: '',
-        municipality: '',
-        barangay: '',
-        shipping: 0
-      });
+      setOrderData(prefillOrderForm(product));
       setProvincesList([]);
       setMunicipalitiesList([]);
       setBarangaysList([]);
@@ -1740,20 +1708,7 @@ const PublishedStore = () => {
         if (product) {
           setSelectedProduct(product);
           setShowOrderModal(true);
-          
-          // Reset order form
-          setOrderData({
-            customerName: '',
-            customerEmail: '',
-            customerPhone: '',
-            quantity: 1,
-            paymentMethod: 'gcash',
-            region: '',
-            province: '',
-            municipality: '',
-            barangay: '',
-            shipping: 0
-          });
+          setOrderData(prefillOrderForm(product));
           setProvincesList([]);
           setMunicipalitiesList([]);
           setBarangaysList([]);
@@ -1802,18 +1757,7 @@ const PublishedStore = () => {
             if (matchingProduct) {
               setSelectedProduct(matchingProduct);
               setShowOrderModal(true);
-              setOrderData({
-                customerName: '',
-                customerEmail: '',
-                customerPhone: '',
-                quantity: 1,
-                paymentMethod: 'gcash',
-                region: '',
-                province: '',
-                municipality: '',
-                barangay: '',
-                shipping: 0
-              });
+              setOrderData(prefillOrderForm(matchingProduct));
               setProvincesList([]);
               setMunicipalitiesList([]);
               setBarangaysList([]);
@@ -2586,40 +2530,39 @@ const PublishedStore = () => {
                           onChange={(e) => handleOrderChange('paymentMethod', e.target.value)}
                           className="mr-3"
                         />
-                    <div>
-                      <div className="font-medium">GCash</div>
-                      <div className="text-xs text-gray-500">
-                        You can pay via GCash. After placing your order, the seller will send you their GCash QR code or payment details.
-                      </div>
-                    </div>
+                        <div className="flex-1">
+                          <div className="font-medium">GCash</div>
+                          <div className="text-xs text-gray-500">
+                            Scan the QR code below to pay via GCash.
+                          </div>
+                        </div>
                       </label>
-                      <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          value="paypal"
-                          checked={orderData.paymentMethod === 'paypal'}
-                          onChange={(e) => handleOrderChange('paymentMethod', e.target.value)}
-                          className="mr-3"
-                        />
-                    <div>
-                      <div className="font-medium">Cash On Delivery (COD)</div>
-                      <div className="text-xs text-gray-500">
-                        Pay in cash when your order is delivered.
-                      </div>
-                    </div>
-                      </label>
-                      <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          value="card"
-                          checked={orderData.paymentMethod === 'card'}
-                          onChange={(e) => handleOrderChange('paymentMethod', e.target.value)}
-                          className="mr-3"
-                        />
-                        <span>Credit/Debit Card</span>
-                      </label>
+                      
+                      {/* GCash QR Code */}
+                      {orderData.paymentMethod === 'gcash' && selectedProduct && (
+                        <div className="mt-4 p-4 bg-gray-50 rounded-lg border-2 border-green-500">
+                          <div className="text-center mb-3">
+                            <h4 className="font-semibold text-gray-800 mb-1">GCash Payment QR Code</h4>
+                            <p className="text-sm text-gray-600">Scan this QR code with your GCash app</p>
+                          </div>
+                          <div className="flex justify-center mb-3">
+                            <div className="bg-white p-4 rounded-lg">
+                              <QRCodeSVG 
+                                value={`GCASH:${store?.phone || store?.contactEmail || 'N/A'}:${calculateTotal().toFixed(2)}`}
+                                size={200}
+                                level="H"
+                                includeMargin={true}
+                              />
+                            </div>
+                          </div>
+                          <div className="text-center text-sm text-gray-700">
+                            <p><strong>Amount:</strong> ₱{calculateTotal().toFixed(2)}</p>
+                            {store?.phone && (
+                              <p className="mt-1"><strong>GCash Number:</strong> {store.phone}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -2713,18 +2656,7 @@ const PublishedStore = () => {
                 if (matchingProduct) {
                   setSelectedProduct(matchingProduct);
                   setShowOrderModal(true);
-                  setOrderData({
-                    customerName: '',
-                    customerEmail: '',
-                    customerPhone: '',
-                    quantity: 1,
-                    paymentMethod: 'gcash',
-                    region: '',
-                    province: '',
-                    municipality: '',
-                    barangay: '',
-                    shipping: 0
-                  });
+                  setOrderData(prefillOrderForm(matchingProduct));
                   setProvincesList([]);
                   setMunicipalitiesList([]);
                   setBarangaysList([]);
