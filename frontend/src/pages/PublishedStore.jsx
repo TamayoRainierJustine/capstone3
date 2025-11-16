@@ -39,9 +39,8 @@ const PublishedStore = () => {
     province: '',
     municipality: '',
     barangay: '',
-    shipping: 0,
-    shippingMin: 0,
-    shippingMax: 0
+    weightBand: '', // e.g. '0-0.5', '0.5-1', '1-3', '5-6'
+    shipping: 0
   });
   const [regionsList] = useState(regions);
   const [provincesList, setProvincesList] = useState([]);
@@ -50,9 +49,94 @@ const PublishedStore = () => {
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [orderSuccess, setOrderSuccess] = useState(false);
+
+  // Helper: classify destination area based on region/province
+  const getDestinationArea = (regionCode, provinceCode) => {
+    if (!regionCode) return null;
+    const code = String(regionCode);
+
+    // Metro Manila (NCR)
+    if (code === '13') return 'Metro Manila';
+
+    // Visayas regions (Region VI, VII, VIII)
+    if (['06', '07', '08'].includes(code)) return 'Visayas';
+
+    // Mindanao regions (IX, X, XI, XII, XIII/Caraga, BARMM)
+    if (['09', '10', '11', '12', '16', '17', '15'].includes(code)) return 'Mindanao';
+
+    // Island provinces (special handling) - based on province name
+    if (provinceCode && provincesList && provincesList.length > 0) {
+      const prov = provincesList.find(p => String(p.prov_code) === String(provinceCode));
+      const name = prov?.name?.toUpperCase() || '';
+      const islandProvinces = ['PALAWAN', 'BATANES', 'SIQUIJOR', 'CAMIGUIN', 'GUIMARAS', 'DINAGAT', 'BASILAN', 'SULU', 'TAWI-TAWI'];
+      if (islandProvinces.some(island => name.includes(island))) {
+        return 'Island';
+      }
+    }
+
+    // Default: Luzon
+    return 'Luzon';
+  };
+
+  // Helper: shipping rate table by weight band and destination
+  const getShippingRate = (weightBand, destinationArea) => {
+    if (!weightBand || !destinationArea) return 0;
+
+    const rates = {
+      '0-0.5': {
+        'Visayas': 85,
+        'Metro Manila': 100,
+        'Luzon': 100,
+        'Mindanao': 105,
+        'Island': 115
+      },
+      '0.5-1': {
+        'Visayas': 155,
+        'Metro Manila': 180,
+        'Luzon': 180,
+        'Mindanao': 175,
+        'Island': 185
+      },
+      '1-3': {
+        'Visayas': 180,
+        'Metro Manila': 200,
+        'Luzon': 200,
+        'Mindanao': 200,
+        'Island': 210
+      },
+      '5-6': {
+        'Visayas': 455,
+        'Metro Manila': 500,
+        'Luzon': 500,
+        'Mindanao': 475,
+        'Island': 485
+      }
+    };
+
+    return rates[weightBand]?.[destinationArea] || 0;
+  };
   
   // Ref to store callback function for order button clicks
   const orderButtonCallbackRef = React.useRef(null);
+
+  // Automatically calculate shipping fee when address or weight changes
+  useEffect(() => {
+    try {
+      if (!orderData.region || !orderData.weightBand) {
+        return;
+      }
+      const destinationArea = getDestinationArea(orderData.region, orderData.province);
+      const rate = getShippingRate(orderData.weightBand, destinationArea);
+      if (rate && !Number.isNaN(rate)) {
+        setOrderData(prev => ({
+          ...prev,
+          shipping: rate
+        }));
+      }
+    } catch (err) {
+      console.error('Error calculating shipping rate:', err);
+    }
+  }, [orderData.region, orderData.province, orderData.weightBand]);
   
   // Create a global function that the iframe can call
   useEffect(() => {
@@ -1841,72 +1925,36 @@ const PublishedStore = () => {
                     </div>
                   </div>
 
-                  {/* Shipping Fee Range */}
+                  {/* Shipping Fee - Domestic rates by weight and destination */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Shipping Fee (₱)</label>
+                    <h3 className="font-semibold text-lg mb-3">Shipping Fee</h3>
                     <div className="space-y-2">
-                      <div className="flex items-center gap-4">
-                        <div className="flex-1">
-                          <label className="block text-xs text-gray-500 mb-1">Minimum</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={orderData.shippingMin || orderData.shipping || 0}
-                            onChange={(e) => {
-                              const min = parseFloat(e.target.value) || 0;
-                              handleOrderChange('shippingMin', min);
-                              if (!orderData.shippingMax || min > orderData.shippingMax) {
-                                handleOrderChange('shipping', min);
-                              }
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            placeholder="0.00"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-xs text-gray-500 mb-1">Maximum</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={orderData.shippingMax || orderData.shipping || 0}
-                            onChange={(e) => {
-                              const max = parseFloat(e.target.value) || 0;
-                              handleOrderChange('shippingMax', max);
-                              if (!orderData.shippingMin || max < orderData.shippingMin) {
-                                handleOrderChange('shipping', max);
-                              }
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            placeholder="0.00"
-                          />
-                        </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Package Weight *</label>
+                        <select
+                          required
+                          value={orderData.weightBand}
+                          onChange={(e) => handleOrderChange('weightBand', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        >
+                          <option value="">Select weight range</option>
+                          <option value="0-0.5">500g and below</option>
+                          <option value="0.5-1">500g - 1kg</option>
+                          <option value="1-3">1kg - 3kg</option>
+                          <option value="5-6">5kg - 6kg</option>
+                        </select>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Shipping fee is automatically calculated based on weight and destination (Visayas, Metro Manila, Luzon, Mindanao, Island).
+                        </p>
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-500 mb-1">Enter Your Shipping Fee</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Calculated Shipping Fee</label>
                         <input
-                          type="number"
-                          min={orderData.shippingMin || 0}
-                          max={orderData.shippingMax || 999999}
-                          step="0.01"
-                          value={orderData.shipping}
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value) || 0;
-                            const min = parseFloat(orderData.shippingMin) || 0;
-                            const max = parseFloat(orderData.shippingMax) || 999999;
-                            if (value >= min && value <= max) {
-                              handleOrderChange('shipping', value);
-                            }
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          placeholder="Enter amount within range"
+                          type="text"
+                          readOnly
+                          value={orderData.shipping ? `₱${parseFloat(orderData.shipping).toFixed(2)}` : 'Select weight and address to see shipping fee'}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700"
                         />
-                        {(orderData.shippingMin || orderData.shippingMax) && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            Range: ₱{parseFloat(orderData.shippingMin || 0).toFixed(2)} - ₱{parseFloat(orderData.shippingMax || 0).toFixed(2)}
-                          </p>
-                        )}
                       </div>
                     </div>
                   </div>
