@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
+import Customer from '../models/customer.js';
 import sequelize from '../config/db.js';
 import PasswordResetToken from '../models/passwordResetToken.js';
 import { Op } from 'sequelize';
@@ -412,5 +413,169 @@ export const resetPasswordWithCode = async (req, res) => {
   } catch (err) {
     console.error('resetPasswordWithCode error:', err);
     return res.status(500).json({ message: 'Failed to reset password' });
+  }
+};
+
+// Customer registration (for published store buyers)
+export const registerCustomer = async (req, res) => {
+  const startTime = Date.now();
+  const { firstName, lastName, email, password } = req.body;
+  
+  try {
+    // Validate input
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Check if customer exists
+    const existingCustomer = await Customer.findOne({ 
+      where: { email },
+      attributes: ['id', 'email']
+    });
+
+    if (existingCustomer) {
+      return res.status(400).json({ message: 'Customer already exists' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create customer
+    const customer = await Customer.create({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+    });
+
+    // Remove password from response
+    const customerWithoutPassword = {
+      id: customer.id,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      email: customer.email,
+    };
+
+    const duration = Date.now() - startTime;
+    if (process.env.NODE_ENV !== 'production' && duration > 3000) {
+      console.warn(`Slow customer registration: took ${duration}ms`);
+    }
+
+    res.status(201).json({
+      message: 'Customer registered successfully.',
+      customer: customerWithoutPassword
+    });
+  } catch (err) {
+    const duration = Date.now() - startTime;
+    console.error(`Customer registration error (${duration}ms):`, err.message);
+    
+    // Handle unique constraint (duplicate email)
+    if (err.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ 
+        message: 'Customer already exists',
+        error: 'DUPLICATE_EMAIL'
+      });
+    }
+    
+    // Handle database errors
+    if (err.name && err.name.startsWith('Sequelize')) {
+      return res.status(503).json({ 
+        message: 'Database error - please try again',
+        error: 'DATABASE_ERROR',
+        details: err.message
+      });
+    }
+    
+    res.status(500).json({ 
+      message: 'Registration failed', 
+      error: err.message || 'Unknown error occurred'
+    });
+  }
+};
+
+// Customer login (for published store buyers)
+export const loginCustomer = async (req, res) => {
+  const startTime = Date.now();
+  const { email, password } = req.body;
+  
+  try {
+    // Validate JWT_SECRET exists
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is not set in environment variables');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    // Find customer
+    const customer = await Customer.findOne({ 
+      where: { email },
+      attributes: ['id', 'firstName', 'lastName', 'email', 'password'],
+      raw: false
+    });
+
+    if (!customer) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, customer.password);
+
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Generate token with customer type
+    const token = jwt.sign(
+      { 
+        id: customer.id, 
+        email: customer.email,
+        type: 'customer' // Mark as customer token
+      }, 
+      process.env.JWT_SECRET, 
+      {
+        expiresIn: '1d',
+      }
+    );
+
+    // Remove password from customer object before sending
+    const customerWithoutPassword = {
+      id: customer.id,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      email: customer.email,
+      type: 'customer'
+    };
+
+    const duration = Date.now() - startTime;
+    if (duration > 3000) {
+      console.warn(`Slow customer login: took ${duration}ms`);
+    }
+
+    res.json({ 
+      message: 'Logged in successfully', 
+      token, 
+      user: customerWithoutPassword 
+    });
+  } catch (err) {
+    const duration = Date.now() - startTime;
+    console.error(`Customer login error (${duration}ms):`, err.message);
+    
+    // Handle database errors
+    if (err.name && err.name.startsWith('Sequelize')) {
+      return res.status(503).json({ 
+        message: 'Database error - please try again',
+        error: 'DATABASE_ERROR',
+        details: err.message
+      });
+    }
+    
+    res.status(500).json({ 
+      message: 'Login failed', 
+      error: err.message || 'Unknown error occurred'
+    });
   }
 };

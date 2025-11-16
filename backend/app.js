@@ -15,6 +15,7 @@ import { servePublishedStoreHTML } from './controllers/publicStoreController.js'
 // Import models to ensure they are registered with Sequelize
 // Import order matters to avoid circular dependencies
 import User from './models/user.js';
+import Customer from './models/customer.js';
 import Store from './models/store.js';
 import Product from './models/product.js';
 import Order from './models/order.js';

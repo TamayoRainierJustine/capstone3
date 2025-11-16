@@ -238,7 +238,7 @@ const PublishedStore = () => {
     setLoginLoading(true);
 
     try {
-      const response = await apiClient.post('/auth/login', {
+      const response = await apiClient.post('/auth/customer/login', {
         email: loginEmail,
         password: loginPassword
       });
@@ -296,7 +296,7 @@ const PublishedStore = () => {
     setRegisterLoading(true);
 
     try {
-      const response = await apiClient.post('/auth/register', {
+      const response = await apiClient.post('/auth/customer/register', {
         firstName: registerForm.firstName,
         lastName: registerForm.lastName,
         email: registerForm.email,
