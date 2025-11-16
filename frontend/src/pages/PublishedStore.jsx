@@ -627,9 +627,14 @@ const PublishedStore = () => {
                   <div class="product-info">
                     <h3 class="product-title">${product.name || 'Product'}</h3>
                     <p class="product-description">${descText}</p>
-                    <div class="product-footer">
+                    <div class="product-footer" style="display:flex; align-items:center; justify-content:space-between; gap:.5rem;">
                       <span class="product-price">₱${price.toFixed(2)}</span>
-                      <button class="product-button add-to-cart">Order</button>
+                      <div style="display:flex; gap:.5rem;">
+                        <button class="product-button cart-button add-to-cart" title="Add to Cart" aria-label="Add to Cart" style="display:inline-flex; align-items:center; gap:.4rem; padding:.5rem .75rem; border-radius:8px;">
+                          <span aria-hidden="true">🛒</span><span class="sr-only" style="position:absolute;left:-9999px;">Add to Cart</span>
+                        </button>
+                        <button class="product-button order-button" style="padding:.5rem .75rem; border-radius:8px;">Order</button>
+                      </div>
                     </div>
                   </div>
                 `;
