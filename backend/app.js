@@ -238,6 +238,13 @@ sequelize.sync(syncOptions)
       console.log('🛠️ Ensuring Orders schema is up to date...');
       // Add orderNumber column if missing
       await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "orderNumber" VARCHAR');
+      // Core payment / totals columns used by the current Order model
+      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentMethod" VARCHAR(50)');
+      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentStatus" VARCHAR(50) DEFAULT \'pending\'');
+      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentTransactionId" VARCHAR');
+      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "subtotal" DECIMAL(10,2) DEFAULT 0');
+      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "shipping" DECIMAL(10,2) DEFAULT 0');
+      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "total" DECIMAL(10,2) DEFAULT 0');
       // Add unique index on orderNumber (only for non-null values)
       await sequelize.query('CREATE UNIQUE INDEX IF NOT EXISTS "Orders_orderNumber_unique" ON "Orders" ("orderNumber") WHERE "orderNumber" IS NOT NULL');
       console.log('✅ Orders schema verified');
