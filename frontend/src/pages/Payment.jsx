@@ -5,11 +5,12 @@ import Header from '../components/Header';
 const Payment = () => {
   const [config, setConfig] = useState({
     gcashEnabled: false,
-    paypalEnabled: false,
+    paypalEnabled: false, // Reused as COD toggle to avoid breaking existing saved configs
     cardEnabled: false,
-    gcashMerchantId: '',
-    paypalClientId: '',
-    stripePublishableKey: ''
+    gcashMerchantId: '', // Legacy field (not used anymore, kept for backward compatibility)
+    gcashQrImage: '', // New: GCash QR code image (base64)
+    paypalClientId: '', // Legacy field (not used anymore)
+    stripePublishableKey: '' // Legacy field (not used anymore)
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -64,7 +65,7 @@ const Payment = () => {
                 <div>
                   <h3 className="text-lg font-semibold">GCash</h3>
                   <p className="text-sm text-gray-600">
-                    Enable GCash payments for customers
+                    Enable GCash payments and upload your QR code so customers can easily scan and pay.
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -78,28 +79,62 @@ const Payment = () => {
                 </label>
               </div>
               {config.gcashEnabled && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    GCash Merchant ID
-                  </label>
-                  <input
-                    type="text"
-                    value={config.gcashMerchantId}
-                    onChange={(e) => setConfig({ ...config, gcashMerchantId: e.target.value })}
-                    placeholder="Enter your GCash Merchant ID"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      GCash QR Code Image
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const result = event.target?.result;
+                          if (typeof result === 'string') {
+                            setConfig((prev) => ({ ...prev, gcashQrImage: result }));
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                      className="w-full text-sm text-gray-700"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Upload the GCash QR code you want your customers to scan when they choose GCash.
+                    </p>
+                  </div>
+                  {config.gcashQrImage && (
+                    <div className="mt-3">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Preview</p>
+                      <div className="inline-block border rounded-lg p-2 bg-gray-50">
+                        <img
+                          src={config.gcashQrImage}
+                          alt="GCash QR Code"
+                          className="max-h-48 w-auto object-contain"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setConfig((prev) => ({ ...prev, gcashQrImage: '' }))}
+                        className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-100"
+                      >
+                        Remove QR Code
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
-            {/* PayPal Configuration */}
+            {/* Cash On Delivery (reusing PayPal toggle) */}
             <div className="border-b pb-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold">PayPal</h3>
+                  <h3 className="text-lg font-semibold">Cash On Delivery (COD)</h3>
                   <p className="text-sm text-gray-600">
-                    Enable PayPal payments (Credit/Debit cards and PayPal accounts)
+                    Allow customers to pay with cash when their orders are delivered.
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -113,19 +148,10 @@ const Payment = () => {
                 </label>
               </div>
               {config.paypalEnabled && (
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      PayPal Client ID
-                    </label>
-                    <input
-                      type="text"
-                      value={config.paypalClientId}
-                      onChange={(e) => setConfig({ ...config, paypalClientId: e.target.value })}
-                      placeholder="Enter your PayPal Client ID"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    />
-                  </div>
+                <div className="mt-4">
+                  <p className="text-sm text-gray-600">
+                    No additional setup required. Couriers will collect payment in cash upon delivery.
+                  </p>
                 </div>
               )}
             </div>
