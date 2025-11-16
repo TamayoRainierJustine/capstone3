@@ -268,6 +268,36 @@ export const verifyEmailWithCode = async (req, res) => {
     return res.status(500).json({ message: 'Failed to verify email' });
   }
 };
+
+export const resendVerificationCode = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: 'Email is required' });
+  try {
+    const user = await User.findOne({ where: { email }, attributes: ['id', 'email', 'isVerified'] });
+    // Always return 200 to avoid enumeration; only send if user exists and not verified
+    if (user && user.isVerified === false) {
+      await EmailVerificationToken.update({ used: true }, { where: { email, used: false } });
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+      await EmailVerificationToken.create({ email, code, expiresAt });
+
+      const subject = 'Your new Structura verification code';
+      const html = `<p>Use this verification code to verify your account:</p>
+        <p style="font-size:20px;font-weight:bold;letter-spacing:4px">${code}</p>
+        <p>This code expires in 30 minutes.</p>`;
+      const text = `Your verification code is: ${code} (expires in 30 minutes)`;
+      try {
+        await sendEmail({ to: email, subject, html, text });
+      } catch (e) {
+        console.error('Resend verification email failed:', e.message);
+      }
+    }
+    return res.json({ message: 'If the account is unverified, a new code was sent.' });
+  } catch (err) {
+    console.error('resendVerificationCode error:', err);
+    return res.status(500).json({ message: 'Failed to resend verification code' });
+  }
+};
 export const requestPasswordReset = async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ message: 'Email is required' });

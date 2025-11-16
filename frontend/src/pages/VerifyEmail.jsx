@@ -36,13 +36,11 @@ const VerifyEmail = () => {
     setMessage('');
     setError('');
     try {
-      await apiClient.post('/auth/forgot-password', { email }); // reuse sending infra? No, this sends reset code, not verify
-    } catch {}
-    try {
-      // Request a fresh verification code by hitting register again is not correct; backend lacks resend endpoint.
-      // Fallback: show instruction.
-      setMessage('If you did not get the email, please check spam or register again.');
-    } catch {}
+      await apiClient.post('/auth/resend-verification', { email });
+      setMessage('If the account is unverified, a new code was sent.');
+    } catch (err) {
+      setError('Failed to resend code. Try again later.');
+    }
   };
 
   return (
