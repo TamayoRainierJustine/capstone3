@@ -116,6 +116,7 @@ const PublishedStore = () => {
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [orderReferenceNumber, setOrderReferenceNumber] = useState(null);
 
   // Helper: classify destination area based on region/province
   const getDestinationArea = (regionCode, provinceCode) => {
@@ -228,6 +229,7 @@ const PublishedStore = () => {
       setBarangaysList([]);
       setOrderError('');
       setOrderSuccess(false);
+      setOrderReferenceNumber(null);
     };
     
     return () => {
@@ -468,6 +470,7 @@ const PublishedStore = () => {
       setBarangaysList([]);
       setOrderError('');
       setOrderSuccess(false);
+      setOrderReferenceNumber(null);
     };
   }, [products]);
 
@@ -1978,15 +1981,21 @@ const PublishedStore = () => {
             });
             clearTimeout(timeoutId);
 
+            // Store the reference number from the response
+            if (response.data?.orderNumber) {
+              setOrderReferenceNumber(response.data.orderNumber);
+            }
+
             setOrderSuccess(true);
             setOrderError('');
             
-            // Close modal after 3 seconds
+            // Close modal after 5 seconds (increased to give time to see reference number)
             setTimeout(() => {
               setShowOrderModal(false);
               setOrderSuccess(false);
+              setOrderReferenceNumber(null);
               setSelectedProduct(null);
-            }, 3000);
+            }, 5000);
             
             return; // Success, exit retry loop
           } catch (apiError) {
@@ -2394,6 +2403,13 @@ const PublishedStore = () => {
                 <div className="text-center py-8">
                   <div className="text-green-600 text-5xl mb-4">✓</div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Order Placed Successfully!</h3>
+                  {orderReferenceNumber && (
+                    <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4 mb-4">
+                      <p className="text-sm font-medium text-purple-800 mb-1">Transaction Reference Number:</p>
+                      <p className="text-2xl font-bold text-purple-900 font-mono">{orderReferenceNumber}</p>
+                      <p className="text-xs text-purple-700 mt-2">Please provide this reference number when making payment</p>
+                    </div>
+                  )}
                   <p className="text-gray-600">Thank you for your order. The store owner will contact you soon.</p>
                 </div>
               ) : (

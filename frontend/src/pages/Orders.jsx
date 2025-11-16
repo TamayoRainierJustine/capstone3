@@ -146,7 +146,11 @@ const Orders = () => {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="text-lg font-semibold">Order #{order.orderNumber}</h3>
-                    <p className="text-sm text-gray-600">
+                    <div className="mt-2 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 inline-block">
+                      <p className="text-xs font-medium text-purple-700 mb-0.5">Reference Number:</p>
+                      <p className="text-sm font-bold text-purple-900 font-mono">{order.orderNumber}</p>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">
                       {new Date(order.createdAt).toLocaleDateString()} at{' '}
                       {new Date(order.createdAt).toLocaleTimeString()}
                     </p>
