@@ -96,6 +96,177 @@ export default function SiteBuilder() {
     backgroundSettings: false,
     products: true
   });
+
+  // Move Mode - allow dragging/nudging text inside the iframe
+  const [moveMode, setMoveMode] = useState(false);
+
+  // Enable/disable move mode inside iframe
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe || !iframe.contentWindow) return;
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    if (!doc) return;
+
+    // Helper to inject or remove handlers
+    const enableMove = () => {
+      try {
+        // Avoid duplicate injection
+        if (doc.getElementById('__structura-move-mode')) return;
+        const script = doc.createElement('script');
+        script.id = '__structura-move-mode';
+        script.textContent = `
+          (function(){
+            if (window.__structuraMoveMode) return;
+            const state = {
+              active: true,
+              selected: null,
+              dragging: false,
+              startX: 0,
+              startY: 0,
+              baseLeft: 0,
+              baseTop: 0
+            };
+
+            const selectableSelectors = [
+              '.hero h1', '.hero h2', '.hero h3', '.hero p', '.hero .title', '.hero .subtitle',
+              '.welcome-title', 'h1', 'h2', 'h3', '.product-title'
+            ];
+
+            function isTextNodeElement(el){
+              if (!el) return false;
+              const style = window.getComputedStyle(el);
+              // Heuristic: display inline/inline-block/block and has some text
+              return !!(el.textContent && style && (style.display === 'block' || style.display === 'inline' || style.display === 'inline-block'));
+            }
+
+            function findSelectable(el){
+              if (!el) return null;
+              // If matches known selectors
+              for (const sel of selectableSelectors){
+                if (el.matches && el.matches(sel)) return el;
+              }
+              // Climb up to find a text element
+              let cur = el;
+              let steps = 0;
+              while (cur && steps < 5){
+                if (isTextNodeElement(cur)) return cur;
+                cur = cur.parentElement;
+                steps++;
+              }
+              return null;
+            }
+
+            function select(el){
+              if (state.selected && state.selected !== el){
+                state.selected.style.outline = '';
+              }
+              state.selected = el;
+              if (state.selected){
+                state.selected.style.outline = '2px dashed #8B5CF6';
+                if (!state.selected.style.position || state.selected.style.position === 'static'){
+                  state.selected.style.position = 'relative';
+                }
+                if (!state.selected.dataset.offsetLeft){ state.selected.dataset.offsetLeft = '0'; }
+                if (!state.selected.dataset.offsetTop){ state.selected.dataset.offsetTop = '0'; }
+              }
+            }
+
+            function onMouseDown(e){
+              if (!state.active) return;
+              const target = findSelectable(e.target);
+              if (!target) return;
+              e.preventDefault();
+              select(target);
+              state.dragging = true;
+              state.startX = e.clientX;
+              state.startY = e.clientY;
+              state.baseLeft = parseFloat(state.selected.dataset.offsetLeft || '0');
+              state.baseTop = parseFloat(state.selected.dataset.offsetTop || '0');
+            }
+            function onMouseMove(e){
+              if (!state.active || !state.dragging || !state.selected) return;
+              const dx = e.clientX - state.startX;
+              const dy = e.clientY - state.startY;
+              const newLeft = state.baseLeft + dx;
+              const newTop = state.baseTop + dy;
+              state.selected.style.transform = 'translate(' + newLeft + 'px,' + newTop + 'px)';
+            }
+            function onMouseUp(e){
+              if (!state.active || !state.dragging || !state.selected) return;
+              const dx = e.clientX - state.startX;
+              const dy = e.clientY - state.startY;
+              state.selected.dataset.offsetLeft = String(state.baseLeft + dx);
+              state.selected.dataset.offsetTop = String(state.baseTop + dy);
+              state.dragging = false;
+            }
+            function onClick(e){
+              if (!state.active) return;
+              const target = findSelectable(e.target);
+              if (target){
+                select(target);
+              }
+            }
+            function onKeyDown(e){
+              if (!state.active || !state.selected) return;
+              const step = e.shiftKey ? 10 : 1;
+              let left = parseFloat(state.selected.dataset.offsetLeft || '0');
+              let top = parseFloat(state.selected.dataset.offsetTop || '0');
+              let changed = false;
+              if (e.key === 'ArrowLeft'){ left -= step; changed = true; }
+              if (e.key === 'ArrowRight'){ left += step; changed = true; }
+              if (e.key === 'ArrowUp'){ top -= step; changed = true; }
+              if (e.key === 'ArrowDown'){ top += step; changed = true; }
+              if (changed){
+                e.preventDefault();
+                state.selected.dataset.offsetLeft = String(left);
+                state.selected.dataset.offsetTop = String(top);
+                state.selected.style.transform = 'translate(' + left + 'px,' + top + 'px)';
+              }
+            }
+
+            document.addEventListener('mousedown', onMouseDown, true);
+            document.addEventListener('mousemove', onMouseMove, true);
+            document.addEventListener('mouseup', onMouseUp, true);
+            document.addEventListener('click', onClick, true);
+            document.addEventListener('keydown', onKeyDown, true);
+
+            window.__structuraMoveMode = {
+              disable: function(){
+                state.active = false;
+                if (state.selected){ state.selected.style.outline = ''; }
+                document.removeEventListener('mousedown', onMouseDown, true);
+                document.removeEventListener('mousemove', onMouseMove, true);
+                document.removeEventListener('mouseup', onMouseUp, true);
+                document.removeEventListener('click', onClick, true);
+                document.removeEventListener('keydown', onKeyDown, true);
+              }
+            };
+          })();
+        `;
+        doc.head.appendChild(script);
+      } catch (err) {
+        console.error('Move mode enable failed:', err);
+      }
+    };
+
+    const disableMove = () => {
+      try {
+        if (iframe.contentWindow && iframe.contentWindow.__structuraMoveMode) {
+          iframe.contentWindow.__structuraMoveMode.disable();
+        }
+        const injected = doc.getElementById('__structura-move-mode');
+        if (injected) injected.remove();
+      } catch (err) {
+        console.error('Move mode disable failed:', err);
+      }
+    };
+
+    if (moveMode) enableMove(); else disableMove();
+
+    return () => {
+      disableMove();
+    };
+  }, [moveMode]);
   
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -1003,6 +1174,33 @@ export default function SiteBuilder() {
           
           {expandedSections.textStyling && (
             <div style={{ padding: '1.5rem', background: 'white' }}>
+              {/* Move Mode Controls */}
+              <div style={{
+                marginBottom: '1rem',
+                padding: '0.75rem 1rem',
+                background: '#f9fafb',
+                border: '1px solid #e5e7eb',
+                borderRadius: '0.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '1rem'
+              }}>
+                <div>
+                  <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1f2937' }}>Move Mode</div>
+                  <div style={{ fontSize: '0.8125rem', color: '#6b7280' }}>Select text in the preview, then drag with mouse or use Arrow Keys (Shift = 10px)</div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={moveMode}
+                    onChange={(e) => setMoveMode(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+              </div>
+
               {/* Title Styling */}
               <div style={{ 
                 marginBottom: '1.25rem', 
