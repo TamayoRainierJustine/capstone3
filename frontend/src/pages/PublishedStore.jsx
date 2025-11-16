@@ -526,13 +526,15 @@ const PublishedStore = () => {
                 }
                 
                 card.innerHTML = `
-                  <img src="${imageUrl}" alt="${product.name || 'Product'}" class="product-image" />
+                  <div class="product-image">
+                    <img src="${imageUrl}" alt="${product.name || 'Product'}" />
+                  </div>
                   <div class="product-info">
                     <h3 class="product-title">${product.name || 'Product'}</h3>
                     <p class="product-description">${descText}</p>
                     <div class="product-footer">
                       <span class="product-price">₱${price.toFixed(2)}</span>
-                      <button class="product-button">Order</button>
+                      <button class="product-button add-to-cart">Order</button>
                     </div>
                   </div>
                 `;
@@ -564,8 +566,19 @@ const PublishedStore = () => {
                 }
               }
 
-              const imageEl = card.querySelector('.product-image, img, .product-image img');
-              if (imageEl) {
+              // Update image - check both wrapped and unwrapped image structures
+              let imageEl = card.querySelector('.product-image img');
+              if (!imageEl) {
+                // Check if .product-image itself is an img tag
+                const productImageDiv = card.querySelector('.product-image');
+                if (productImageDiv && productImageDiv.tagName === 'IMG') {
+                  imageEl = productImageDiv;
+                } else {
+                  // Fallback to any img tag
+                  imageEl = card.querySelector('img');
+                }
+              }
+              if (imageEl && imageEl.tagName === 'IMG') {
                 if (product.image && product.image !== '/imgplc.jpg') {
                   const imageUrl = product.image.startsWith('http') 
                     ? product.image 
@@ -584,8 +597,21 @@ const PublishedStore = () => {
               }
               
               // Add click handler to Order/Inquire button
-              const orderButton = card.querySelector('.product-button, button');
+              const orderButton = card.querySelector('.product-button, .add-to-cart, button');
               if (orderButton) {
+                // Ensure button has both classes for compatibility
+                if (!orderButton.classList.contains('product-button')) {
+                  orderButton.classList.add('product-button');
+                }
+                if (!orderButton.classList.contains('add-to-cart')) {
+                  orderButton.classList.add('add-to-cart');
+                }
+                
+                // Ensure button is visible
+                orderButton.style.display = 'inline-block';
+                orderButton.style.visibility = 'visible';
+                orderButton.style.opacity = '1';
+                
                 // Remove any existing handlers
                 orderButton.onclick = null;
                 // Clone the product to avoid closure issues
@@ -647,16 +673,34 @@ const PublishedStore = () => {
                   }
                 }, { capture: true, once: false });
                 
-                // Ensure button is fully clickable
+                // Ensure button is fully clickable and visible
                 orderButton.style.cursor = 'pointer';
                 orderButton.style.pointerEvents = 'auto';
                 orderButton.style.zIndex = '9999';
                 orderButton.style.position = 'relative';
+                orderButton.style.display = 'inline-block';
+                orderButton.style.visibility = 'visible';
+                orderButton.style.opacity = '1';
                 orderButton.disabled = false;
                 orderButton.removeAttribute('disabled');
                 orderButton.setAttribute('data-product-id', product.id || index);
                 orderButton.setAttribute('type', 'button');
                 orderButton.setAttribute('tabindex', '0');
+                
+                // Ensure minimum button styling if template CSS doesn't apply
+                try {
+                  const computedStyle = iframeDoc.defaultView?.getComputedStyle(orderButton);
+                  if (computedStyle && (computedStyle.display === 'none' || computedStyle.visibility === 'hidden' || computedStyle.opacity === '0')) {
+                    orderButton.style.display = 'inline-block';
+                    orderButton.style.visibility = 'visible';
+                    orderButton.style.opacity = '1';
+                  }
+                } catch (e) {
+                  // Cross-origin or other error, just ensure inline styles
+                  orderButton.style.display = 'inline-block';
+                  orderButton.style.visibility = 'visible';
+                  orderButton.style.opacity = '1';
+                }
                 
                 // Remove any CSS that might block clicks
                 const card = orderButton.closest('.product-card, .product');
@@ -670,8 +714,26 @@ const PublishedStore = () => {
             
             // Add click handlers to ALL product buttons in the template (including existing ones)
             // This ensures buttons that weren't updated in the loop above still get handlers
-            const allProductButtons = iframeDoc.querySelectorAll('.product-button, .product-card button, .product button');
+            const allProductButtons = iframeDoc.querySelectorAll('.product-button, .add-to-cart, .product-card button, .product button');
             allProductButtons.forEach((button, btnIndex) => {
+              // Skip CTA buttons in hero section
+              if (button.closest('.hero') && button.classList.contains('cta-button')) {
+                return;
+              }
+              
+              // Ensure button has both classes for compatibility
+              if (!button.classList.contains('product-button')) {
+                button.classList.add('product-button');
+              }
+              if (!button.classList.contains('add-to-cart')) {
+                button.classList.add('add-to-cart');
+              }
+              
+              // Ensure button is visible
+              button.style.display = 'inline-block';
+              button.style.visibility = 'visible';
+              button.style.opacity = '1';
+              
               // Skip if already has a handler (from the loop above)
               if (button.hasAttribute('data-product-id')) {
                 return;
@@ -752,16 +814,27 @@ const PublishedStore = () => {
                     }
                   }, { capture: true, once: false });
                   
-                  // Ensure button is fully clickable
+                  // Ensure button is fully clickable and visible
                   button.style.cursor = 'pointer';
                   button.style.pointerEvents = 'auto';
                   button.style.zIndex = '9999';
                   button.style.position = 'relative';
+                  button.style.display = 'inline-block';
+                  button.style.visibility = 'visible';
+                  button.style.opacity = '1';
                   button.disabled = false;
                   button.removeAttribute('disabled');
                   button.setAttribute('data-product-id', matchingProduct.id || btnIndex);
                   button.setAttribute('type', 'button');
                   button.setAttribute('tabindex', '0');
+                  
+                  // Ensure minimum button styling if template CSS doesn't apply
+                  const computedStyle = window.getComputedStyle ? window.getComputedStyle(button) : null;
+                  if (computedStyle && (computedStyle.display === 'none' || computedStyle.visibility === 'hidden' || computedStyle.opacity === '0')) {
+                    button.style.display = 'inline-block';
+                    button.style.visibility = 'visible';
+                    button.style.opacity = '1';
+                  }
                   
                   // Remove any CSS that might block clicks
                   const card = button.closest('.product-card, .product');
