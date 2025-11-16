@@ -28,14 +28,29 @@ const PublishedStore = () => {
   const [htmlContent, setHtmlContent] = useState('');
   const iframeRef = React.useRef(null);
   
-  // Login modal state
+  // Login/Register modal state
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showScrollModal, setShowScrollModal] = useState(false);
+  const [modalMode, setModalMode] = useState('login'); // 'login' or 'register'
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [pendingOrderProduct, setPendingOrderProduct] = useState(null);
+  
+  // Register form state
+  const [registerForm, setRegisterForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [registerError, setRegisterError] = useState('');
+  const [registerLoading, setRegisterLoading] = useState(false);
   
   // Order modal state
   const [showOrderModal, setShowOrderModal] = useState(false);
@@ -202,6 +217,59 @@ const PublishedStore = () => {
       delete window.openOrderModal;
     };
   }, []);
+
+  // Scroll detection - show login/register modal when user scrolls down
+  useEffect(() => {
+    const handleScroll = () => {
+      const token = localStorage.getItem('token');
+      // Only show scroll modal if user is not logged in and hasn't seen it yet
+      if (!token && !showScrollModal) {
+        // Check both window scroll and iframe scroll
+        const windowScroll = window.scrollY || document.documentElement.scrollTop;
+        const iframe = iframeRef.current;
+        let iframeScroll = 0;
+        
+        if (iframe && iframe.contentWindow) {
+          try {
+            iframeScroll = iframe.contentWindow.scrollY || iframe.contentDocument?.documentElement?.scrollTop || 0;
+          } catch (e) {
+            // Cross-origin or not ready
+          }
+        }
+        
+        const totalScroll = Math.max(windowScroll, iframeScroll);
+        
+        if (totalScroll > 300) {
+          setShowScrollModal(true);
+          setModalMode('login');
+        }
+      }
+    };
+
+    // Listen to window scroll
+    window.addEventListener('scroll', handleScroll, true);
+    
+    // Also listen to iframe scroll if available
+    const iframe = iframeRef.current;
+    if (iframe && iframe.contentWindow) {
+      try {
+        iframe.contentWindow.addEventListener('scroll', handleScroll, true);
+      } catch (e) {
+        // Cross-origin or not ready
+      }
+    }
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      if (iframe && iframe.contentWindow) {
+        try {
+          iframe.contentWindow.removeEventListener('scroll', handleScroll, true);
+        } catch (e) {
+          // Ignore
+        }
+      }
+    };
+  }, [showScrollModal, iframeRef]);
   
   // Handle login submission
   const handleLogin = async (e) => {
@@ -227,8 +295,9 @@ const PublishedStore = () => {
         setLoginEmail('');
         setLoginPassword('');
         
-        // Close login modal
+        // Close both modals
         setShowLoginModal(false);
+        setShowScrollModal(false);
         
         // If there was a pending order, open the order modal now
         if (pendingOrderProduct) {
@@ -250,6 +319,52 @@ const PublishedStore = () => {
       }
     } finally {
       setLoginLoading(false);
+    }
+  };
+
+  // Handle registration submission
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setRegisterError('');
+
+    // Validate passwords match
+    if (registerForm.password !== registerForm.confirmPassword) {
+      setRegisterError('Passwords do not match');
+      return;
+    }
+
+    setRegisterLoading(true);
+
+    try {
+      const response = await apiClient.post('/auth/register', {
+        firstName: registerForm.firstName,
+        lastName: registerForm.lastName,
+        email: registerForm.email,
+        password: registerForm.password
+      });
+
+      // After successful registration, switch to login mode
+      setRegisterError('');
+      setModalMode('login');
+      setLoginEmail(registerForm.email);
+      setRegisterForm({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+      });
+      
+      // Show success message
+      setLoginError('');
+      alert('Registration successful! Please log in to continue.');
+    } catch (error) {
+      setRegisterError(
+        error.response?.data?.message || 
+        'An error occurred during registration. Please try again.'
+      );
+    } finally {
+      setRegisterLoading(false);
     }
   };
 
@@ -1755,7 +1870,36 @@ const PublishedStore = () => {
     window.addEventListener('message', handleMessage);
     // Try to listen for clicks on the iframe (may not work due to cross-origin)
     if (iframeRef.current) {
+      // Add scroll listener to iframe when it loads
+      const setupIframeScrollListener = () => {
+        const iframe = iframeRef.current;
+        if (iframe && iframe.contentWindow) {
+          try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            if (iframeDoc) {
+              // Listen to scroll events inside iframe
+              const scrollHandler = () => {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                  const scrollY = iframe.contentWindow.scrollY || iframeDoc.documentElement.scrollTop || 0;
+                  if (scrollY > 300) {
+                    setShowScrollModal(true);
+                    setModalMode('login');
+                  }
+                }
+              };
+              iframe.contentWindow.addEventListener('scroll', scrollHandler, true);
+              // Store handler for cleanup
+              iframe._scrollHandler = scrollHandler;
+            }
+          } catch (e) {
+            console.log('Cannot access iframe scroll:', e);
+          }
+        }
+      };
+
       iframeRef.current.addEventListener('load', () => {
+        setupIframeScrollListener();
         try {
           const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
           if (iframeDoc) {
@@ -1774,6 +1918,10 @@ const PublishedStore = () => {
           const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
           if (iframeDoc) {
             iframeDoc.removeEventListener('click', handleIframeClick, true);
+          }
+          // Remove scroll handler if it exists
+          if (iframeRef.current.contentWindow && iframeRef.current._scrollHandler) {
+            iframeRef.current.contentWindow.removeEventListener('scroll', iframeRef.current._scrollHandler, true);
           }
         } catch (err) {
           // Ignore
@@ -1988,6 +2136,186 @@ const PublishedStore = () => {
 
   return (
     <>
+      {/* Scroll-triggered Login/Register Modal */}
+      {showScrollModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowScrollModal(false)}
+        >
+          <div 
+            className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">
+                {modalMode === 'login' ? 'Login' : 'Create Account'}
+              </h2>
+              <button
+                onClick={() => setShowScrollModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Tabs for Login/Register */}
+            <div className="flex border-b mb-4">
+              <button
+                onClick={() => {
+                  setModalMode('login');
+                  setLoginError('');
+                  setRegisterError('');
+                }}
+                className={`flex-1 py-2 px-4 text-center font-medium ${
+                  modalMode === 'login'
+                    ? 'border-b-2 border-purple-600 text-purple-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Login
+              </button>
+              <button
+                onClick={() => {
+                  setModalMode('register');
+                  setLoginError('');
+                  setRegisterError('');
+                }}
+                className={`flex-1 py-2 px-4 text-center font-medium ${
+                  modalMode === 'register'
+                    ? 'border-b-2 border-purple-600 text-purple-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Register
+              </button>
+            </div>
+
+            {/* Login Form */}
+            {modalMode === 'login' && (
+              <form onSubmit={handleLogin}>
+                <div className="space-y-3 mb-4">
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={loginEmail}
+                    onChange={e => setLoginEmail(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Password"
+                      value={loginPassword}
+                      onChange={e => setLoginPassword(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                    </button>
+                  </div>
+                </div>
+                {loginError && (
+                  <div className="text-red-600 text-sm mb-4">
+                    {loginError}
+                  </div>
+                )}
+                <button 
+                  type="submit" 
+                  disabled={loginLoading}
+                  className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loginLoading ? 'Signing in...' : 'LOGIN'}
+                </button>
+              </form>
+            )}
+
+            {/* Register Form */}
+            {modalMode === 'register' && (
+              <form onSubmit={handleRegister}>
+                <div className="space-y-3 mb-4">
+                  <input
+                    type="text"
+                    placeholder="First Name"
+                    value={registerForm.firstName}
+                    onChange={e => setRegisterForm(prev => ({ ...prev, firstName: e.target.value }))}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Last Name"
+                    value={registerForm.lastName}
+                    onChange={e => setRegisterForm(prev => ({ ...prev, lastName: e.target.value }))}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={registerForm.email}
+                    onChange={e => setRegisterForm(prev => ({ ...prev, email: e.target.value }))}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <div className="relative">
+                    <input
+                      type={showRegisterPassword ? 'text' : 'password'}
+                      placeholder="Password"
+                      value={registerForm.password}
+                      onChange={e => setRegisterForm(prev => ({ ...prev, password: e.target.value }))}
+                      required
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showRegisterPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      placeholder="Confirm Password"
+                      value={registerForm.confirmPassword}
+                      onChange={e => setRegisterForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      required
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showConfirmPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                    </button>
+                  </div>
+                </div>
+                {registerError && (
+                  <div className="text-red-600 text-sm mb-4">
+                    {registerError}
+                  </div>
+                )}
+                <button 
+                  type="submit" 
+                  disabled={registerLoading}
+                  className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {registerLoading ? 'Creating Account...' : 'REGISTER'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Login Modal - shown when user tries to order without being logged in */}
       {showLoginModal && (
         <div 
