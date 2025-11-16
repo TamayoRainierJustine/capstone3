@@ -12,9 +12,7 @@ const __dirname = path.dirname(__filename);
 const templateFileMap = {
   bladesmith: 'struvaris.html',
   pottery: 'truvara.html',
-  balisong: 'ructon.html',
-  weavery: 'urastra.html',
-  woodcarving: 'caturis.html'
+  balisong: 'ructon.html'
 };
 
 // Serve published store as standalone HTML page (works even if frontend is down)

@@ -11,8 +11,6 @@ const templateFileMap = {
   bladesmith: 'struvaris.html',
   pottery: 'truvara.html',
   balisong: 'ructon.html',
-  weavery: 'urastra.html',
-  woodcarving: 'caturis.html',
   fireandsteel: 'fireandsteel.html',
   carved: 'carved.html',
   revolve: 'revolve.html',
@@ -23,8 +21,6 @@ const templateNames = {
   bladesmith: 'Struvaris',
   pottery: 'Truvara',
   balisong: 'Ructon',
-  weavery: 'Urastra',
-  woodcarving: 'Caturis',
   fireandsteel: 'Fire and Steel',
   carved: 'Carved',
   revolve: 'Revolve',
@@ -36,8 +32,6 @@ const templateDefaultColors = {
   bladesmith: '#0a0a0a', // Dark black
   pottery: '#faf8f3', // Warm beige
   balisong: '#0f0f23', // Dark blue
-  weavery: '#ffffff', // White
-  woodcarving: '#f5efe6', // Light beige
   fireandsteel: '#ffffff', // White (like Fire and Steel website)
   carved: '#fafafa', // Light gray
   revolve: '#ffffff', // White

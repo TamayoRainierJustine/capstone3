@@ -10,8 +10,6 @@ const TemplatePreview = () => {
     bladesmith: 'struvaris.html',
     pottery: 'truvara.html',
     balisong: 'ructon.html',
-    weavery: 'urastra.html',
-    woodcarving: 'caturis.html',
     fireandsteel: 'fireandsteel.html',
     carved: 'carved.html',
     revolve: 'revolve.html',

@@ -49,11 +49,15 @@ const RegisterPage = () => {
         password: formData.password
       });
 
-      // After registration, redirect to login with return URL if provided
+      // After registration, if returnUrl is a published store, redirect back there
+      // Otherwise, redirect to login or verify email
       setError('');
       const returnUrl = location.state?.returnUrl;
-      if (returnUrl) {
-        // Redirect to login with return URL so user can log in and go back to store
+      if (returnUrl && returnUrl.startsWith('/published/')) {
+        // Redirect back to published store - user will need to log in there
+        navigate(returnUrl, { replace: true });
+      } else if (returnUrl) {
+        // Redirect to login with return URL
         navigate('/login', { 
           state: { 
             returnUrl: returnUrl,

@@ -34,8 +34,6 @@ import StoreSettings from './pages/StoreSettings';
 import BladesmithStore from './pages/stores/BladesmithStore';
 import PotteryStore from './pages/stores/PotteryStore';
 import BalisongStore from './pages/stores/BalisongStore';
-import WeaveryStore from './pages/stores/WeaveryStore';
-import WoodCarvingStore from './pages/stores/WoodCarvingStore';
 import './App.css';
 
 const DynamicStore = () => {
@@ -44,9 +42,7 @@ const DynamicStore = () => {
   const storeComponents = {
     bladesmith: BladesmithStore,
     pottery: PotteryStore,
-    balisong: BalisongStore,
-    weavery: WeaveryStore,
-    woodcarving: WoodCarvingStore
+    balisong: BalisongStore
   };
 
   const StoreComponent = storeComponents[templateId];

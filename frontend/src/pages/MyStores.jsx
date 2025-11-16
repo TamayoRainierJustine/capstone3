@@ -7,9 +7,7 @@ import '../styles/MyStores.css';
 const templateNames = {
   bladesmith: 'Struvaris',
   pottery: 'Truvara',
-  balisong: 'Ructon',
-  weavery: 'Urastra',
-  woodcarving: 'Caturis'
+  balisong: 'Ructon'
 };
 
 const MyStores = () => {

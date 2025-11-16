@@ -35,8 +35,6 @@ const StoreTemplates = () => {
     bladesmith: 'struvaris.html',
     pottery: 'truvara.html',
     balisong: 'ructon.html',
-    weavery: 'urastra.html',
-    woodcarving: 'caturis.html',
     fireandsteel: 'fireandsteel.html',
     carved: 'carved.html',
     revolve: 'revolve.html',
@@ -59,16 +57,6 @@ const StoreTemplates = () => {
       id: 'balisong',
       title: 'Ructon',
       colorPalette: ['#0f0f23', '#1a1b3e', '#6366f1', '#8b5cf6', '#e4e4e7']
-    },
-    {
-      id: 'weavery',
-      title: 'Urastra',
-      colorPalette: ['#ffffff', '#faf9f7', '#8b6f47', '#2c2c2c', '#e8e8e8']
-    },
-    {
-      id: 'woodcarving',
-      title: 'Caturis',
-      colorPalette: ['#f5efe6', '#8b6f47', '#6b4e37', '#4a3728', '#d4c4b0']
     },
     {
       id: 'fireandsteel',
