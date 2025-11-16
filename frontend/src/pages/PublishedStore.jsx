@@ -41,6 +41,46 @@ const PublishedStore = () => {
   const [loginLoading, setLoginLoading] = useState(false);
   const [pendingOrderProduct, setPendingOrderProduct] = useState(null);
   
+  // Helper function to get customer data
+  const getCustomerData = () => {
+    let customerData = customerInfo;
+    
+    // If customerInfo not in state, try to get from auth context
+    if (!customerData && user && user.type === 'customer') {
+      customerData = user;
+    }
+    
+    return customerData;
+  };
+  
+  // Helper function to pre-fill order form with customer info
+  const prefillOrderForm = (product) => {
+    const customerData = getCustomerData();
+    const weightValue = product && product.weight ? parseFloat(product.weight) : 0;
+    let defaultWeightBand = '';
+    
+    if (weightValue > 0) {
+      if (weightValue <= 0.5) defaultWeightBand = '0-0.5';
+      else if (weightValue > 0.5 && weightValue <= 1) defaultWeightBand = '0.5-1';
+      else if (weightValue > 1 && weightValue <= 3) defaultWeightBand = '1-3';
+      else if (weightValue >= 5 && weightValue <= 6) defaultWeightBand = '5-6';
+    }
+    
+    return {
+      customerName: customerData ? `${customerData.firstName || ''} ${customerData.lastName || ''}`.trim() : '',
+      customerEmail: customerData?.email || '',
+      customerPhone: customerData?.phone || '',
+      quantity: 1,
+      paymentMethod: 'gcash',
+      region: '',
+      province: '',
+      municipality: '',
+      barangay: '',
+      weightBand: defaultWeightBand,
+      shipping: 0
+    };
+  };
+  
   // Register form state
   const [registerForm, setRegisterForm] = useState({
     firstName: '',
