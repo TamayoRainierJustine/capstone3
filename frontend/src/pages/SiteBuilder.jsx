@@ -266,7 +266,7 @@ export default function SiteBuilder() {
     return () => {
       disableMove();
     };
-  }, [moveMode]);
+  }, [moveMode, htmlContent, templateId]);
   
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
