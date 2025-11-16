@@ -56,6 +56,8 @@ export default function SiteBuilder() {
   const [htmlContent, setHtmlContent] = useState('');
   const iframeRef = useRef(null);
   const [storeId, setStoreId] = useState(null);
+  // Responsive preview
+  const [previewSize, setPreviewSize] = useState('desktop'); // desktop | tablet | mobile
   
   // Products state
   const [products, setProducts] = useState([]);
@@ -127,6 +129,37 @@ export default function SiteBuilder() {
               baseTop: 0
             };
 
+            // History for undo/redo
+            const history = [];
+            let historyIndex = -1;
+            function pushHistory(action){
+              // Trim future
+              history.splice(historyIndex + 1);
+              history.push(action);
+              historyIndex = history.length - 1;
+            }
+            function applyAction(action, direction){
+              if (!action) return;
+              try{
+                if (action.type === 'move' && action.el){
+                  const el = document.querySelector('[data-move-id=\"' + action.id + '\"]') || action.el;
+                  if (!el) return;
+                  const left = direction === 'undo' ? action.from.left : action.to.left;
+                  const top = direction === 'undo' ? action.from.top : action.to.top;
+                  el.dataset.offsetLeft = String(left);
+                  el.dataset.offsetTop = String(top);
+                  el.style.transform = 'translate(' + left + 'px,' + top + 'px)';
+                }
+                if (action.type === 'text' && action.id){
+                  const el = document.querySelector('[data-move-id=\"' + action.id + '\"]');
+                  if (!el) return;
+                  el.innerHTML = direction === 'undo' ? action.from : action.to;
+                }
+              }catch(_){}
+            }
+            function undo(){ if (historyIndex >= 0){ const a = history[historyIndex]; historyIndex--; applyAction(a, 'undo'); } }
+            function redo(){ if (historyIndex < history.length - 1){ historyIndex++; const a = history[historyIndex]; applyAction(a, 'redo'); } }
+
             // Add helper styles
             (function addStyles(){
               if (document.getElementById('__structura-move-style')) return;
@@ -151,7 +184,32 @@ export default function SiteBuilder() {
                 h.id = '__structura-center-h';
                 document.body.appendChild(h);
               }
+              if (!document.getElementById('__structura-dist')){
+                const d = document.createElement('div');
+                d.id = '__structura-dist';
+                d.style.position = 'fixed';
+                d.style.right = '12px';
+                d.style.top = '12px';
+                d.style.padding = '6px 8px';
+                d.style.background = 'rgba(17,24,39,0.75)';
+                d.style.color = '#fff';
+                d.style.fontSize = '12px';
+                d.style.borderRadius = '6px';
+                d.style.pointerEvents = 'none';
+                d.style.zIndex = '99999';
+                d.style.display = 'none';
+                document.body.appendChild(d);
+              }
             })();
+
+            // Assign stable ids to selectable elements
+            let idSeq = 1;
+            function ensureId(el){
+              if (!el.getAttribute('data-move-id')){
+                el.setAttribute('data-move-id', String(idSeq++));
+              }
+              return el.getAttribute('data-move-id');
+            }
 
             const selectableSelectors = [
               '.hero h1', '.hero h2', '.hero h3', '.hero p', '.hero .title', '.hero .subtitle',
@@ -218,17 +276,60 @@ export default function SiteBuilder() {
               if (!state.active || !state.dragging || !state.selected) return;
               const dx = e.clientX - state.startX;
               const dy = e.clientY - state.startY;
-              const newLeft = state.baseLeft + dx;
-              const newTop = state.baseTop + dy;
+              let newLeft = state.baseLeft + dx;
+              let newTop = state.baseTop + dy;
+              // Snap to center
+              const rect = state.selected.getBoundingClientRect();
+              const midX = rect.left + rect.width / 2 + (parseFloat(state.selected.dataset.offsetLeft || '0'));
+              const midY = rect.top + rect.height / 2 + (parseFloat(state.selected.dataset.offsetTop || '0'));
+              const viewportMidX = window.innerWidth / 2;
+              const viewportMidY = window.innerHeight / 2;
+              const threshold = 8;
+              // compute offsets relative to element's base position
+              const curLeft = newLeft;
+              const curTop = newTop;
+              // Estimate element center after transform relative to viewport
+              const elemCenterX = rect.left + rect.width / 2 + (curLeft - (parseFloat(state.selected.dataset.offsetLeft || '0')));
+              const elemCenterY = rect.top + rect.height / 2 + (curTop - (parseFloat(state.selected.dataset.offsetTop || '0')));
+              if (Math.abs(elemCenterX - viewportMidX) <= threshold){
+                // align center horizontally
+                const delta = viewportMidX - (rect.left + rect.width / 2);
+                newLeft = delta;
+              }
+              if (Math.abs(elemCenterY - viewportMidY) <= threshold){
+                const deltaY = viewportMidY - (rect.top + rect.height / 2);
+                newTop = deltaY;
+              }
               state.selected.style.transform = 'translate(' + newLeft + 'px,' + newTop + 'px)';
+              // Update distance label
+              const d = document.getElementById('__structura-dist');
+              if (d){
+                const dxCenter = Math.round(elemCenterX - viewportMidX);
+                const dyCenter = Math.round(elemCenterY - viewportMidY);
+                d.textContent = 'ΔX center: ' + dxCenter + 'px, ΔY center: ' + dyCenter + 'px';
+                d.style.display = 'block';
+              }
             }
             function onMouseUp(e){
               if (!state.active || !state.dragging || !state.selected) return;
               const dx = e.clientX - state.startX;
               const dy = e.clientY - state.startY;
-              state.selected.dataset.offsetLeft = String(state.baseLeft + dx);
-              state.selected.dataset.offsetTop = String(state.baseTop + dy);
+              const newLeft = state.baseLeft + dx;
+              const newTop = state.baseTop + dy;
+              const id = ensureId(state.selected);
+              // Record history
+              pushHistory({
+                type: 'move',
+                id,
+                el: state.selected,
+                from: { left: parseFloat(state.selected.dataset.offsetLeft || '0'), top: parseFloat(state.selected.dataset.offsetTop || '0') },
+                to: { left: newLeft, top: newTop }
+              });
+              state.selected.dataset.offsetLeft = String(newLeft);
+              state.selected.dataset.offsetTop = String(newTop);
               state.dragging = false;
+              const d = document.getElementById('__structura-dist');
+              if (d) d.style.display = 'none';
             }
             function onClick(e){
               if (!state.active) return;
@@ -239,6 +340,11 @@ export default function SiteBuilder() {
             }
             function onKeyDown(e){
               if (!state.active || !state.selected) return;
+              if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'){
+                e.preventDefault();
+                if (e.shiftKey) { redo(); } else { undo(); }
+                return;
+              }
               const step = e.shiftKey ? 10 : 1;
               let left = parseFloat(state.selected.dataset.offsetLeft || '0');
               let top = parseFloat(state.selected.dataset.offsetTop || '0');
@@ -249,10 +355,62 @@ export default function SiteBuilder() {
               if (e.key === 'ArrowDown'){ top += step; changed = true; }
               if (changed){
                 e.preventDefault();
+                const id = ensureId(state.selected);
+                pushHistory({
+                  type: 'move',
+                  id,
+                  el: state.selected,
+                  from: { left: parseFloat(state.selected.dataset.offsetLeft || '0'), top: parseFloat(state.selected.dataset.offsetTop || '0') },
+                  to: { left, top }
+                });
                 state.selected.dataset.offsetLeft = String(left);
                 state.selected.dataset.offsetTop = String(top);
                 state.selected.style.transform = 'translate(' + left + 'px,' + top + 'px)';
               }
+            }
+
+            // Inline editing (dblclick to edit text, blur or Ctrl+Enter to finish)
+            function onDblClick(e){
+              if (!state.active) return;
+              const target = findSelectable(e.target);
+              if (!target) return;
+              e.preventDefault();
+              select(target);
+              if (!state.selected) return;
+              // Make editable
+              state.selected.setAttribute('contenteditable','true');
+              state.selected.focus();
+              // Keep current outline while editing
+              const finish = () => {
+                if (!state.selected) return;
+                const id = ensureId(state.selected);
+                pushHistory({
+                  type: 'text',
+                  id,
+                  from: state.selected.getAttribute('data-prev-html') || state.selected.innerHTML,
+                  to: state.selected.innerHTML
+                });
+                state.selected.removeAttribute('contenteditable');
+                state.selected.removeAttribute('data-prev-html');
+                // Notify parent that content changed
+                try {
+                  if (window.parent && window.parent !== window){
+                    window.parent.postMessage({ type: 'IFRAME_CONTENT_CHANGED' }, '*');
+                  }
+                } catch(_){}
+              };
+              const onKey = (ke) => {
+                if ((ke.key === 'Enter' && ke.ctrlKey) || (ke.key === 'Escape')) {
+                  ke.preventDefault();
+                  state.selected.blur();
+                }
+              };
+              state.selected.setAttribute('data-prev-html', state.selected.innerHTML);
+              state.selected.addEventListener('keydown', onKey, { capture: true, once: false });
+              state.selected.addEventListener('blur', () => {
+                state.selected && state.selected.removeEventListener('keydown', onKey, { capture: true });
+                finish();
+              }, { once: true });
             }
 
             document.addEventListener('mousedown', onMouseDown, true);
@@ -260,6 +418,7 @@ export default function SiteBuilder() {
             document.addEventListener('mouseup', onMouseUp, true);
             document.addEventListener('click', onClick, true);
             document.addEventListener('keydown', onKeyDown, true);
+            document.addEventListener('dblclick', onDblClick, true);
 
             window.__structuraMoveMode = {
               disable: function(){
@@ -270,6 +429,7 @@ export default function SiteBuilder() {
                 document.removeEventListener('mouseup', onMouseUp, true);
                 document.removeEventListener('click', onClick, true);
                 document.removeEventListener('keydown', onKeyDown, true);
+                document.removeEventListener('dblclick', onDblClick, true);
                 // Remove guides
                 const v = document.getElementById('__structura-center-v');
                 const h = document.getElementById('__structura-center-h');
@@ -1073,6 +1233,49 @@ export default function SiteBuilder() {
           <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
             Customize your store content
           </p>
+
+          {/* Responsive preview toggles */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+            <button
+              onClick={() => setPreviewSize('desktop')}
+              style={{
+                padding: '0.5rem 0.75rem',
+                borderRadius: '0.375rem',
+                border: '1px solid #d1d5db',
+                background: previewSize === 'desktop' ? '#e0e7ff' : 'white',
+                cursor: 'pointer',
+                fontSize: '0.8125rem'
+              }}
+            >
+              Desktop
+            </button>
+            <button
+              onClick={() => setPreviewSize('tablet')}
+              style={{
+                padding: '0.5rem 0.75rem',
+                borderRadius: '0.375rem',
+                border: '1px solid #d1d5db',
+                background: previewSize === 'tablet' ? '#e0e7ff' : 'white',
+                cursor: 'pointer',
+                fontSize: '0.8125rem'
+              }}
+            >
+              Tablet
+            </button>
+            <button
+              onClick={() => setPreviewSize('mobile')}
+              style={{
+                padding: '0.5rem 0.75rem',
+                borderRadius: '0.375rem',
+                border: '1px solid #d1d5db',
+                background: previewSize === 'mobile' ? '#e0e7ff' : 'white',
+                cursor: 'pointer',
+                fontSize: '0.8125rem'
+              }}
+            >
+              Mobile
+            </button>
+          </div>
         </div>
 
         {/* Hero Section Editor */}
