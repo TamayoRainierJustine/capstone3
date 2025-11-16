@@ -292,6 +292,11 @@ const Orders = () => {
                         Method: {order.paymentMethod.toUpperCase()}
                       </p>
                     )}
+                    {order.paymentTransactionId && (
+                      <p className="text-xs text-gray-500 mt-1 break-all max-w-xs">
+                        TXN: {order.paymentTransactionId}
+                      </p>
+                    )}
                   </div>
                 </div>
 
