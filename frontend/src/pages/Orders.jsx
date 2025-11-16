@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
+import { FaCopy, FaCheck } from 'react-icons/fa';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [copiedRef, setCopiedRef] = useState(null);
+  const [editingPayment, setEditingPayment] = useState(null);
+  const [paymentTransactionId, setPaymentTransactionId] = useState('');
 
   useEffect(() => {
     fetchOrders();
@@ -43,6 +47,32 @@ const Orders = () => {
       console.error('Error updating order status:', error);
       alert('Failed to update order status');
     }
+  };
+
+  const updatePaymentStatus = async (orderId, newPaymentStatus, transactionId = null) => {
+    try {
+      const token = localStorage.getItem('token');
+      await apiClient.put(
+        `/orders/${orderId}/payment`,
+        { 
+          paymentStatus: newPaymentStatus,
+          paymentTransactionId: transactionId || undefined
+        }
+      );
+
+      setEditingPayment(null);
+      setPaymentTransactionId('');
+      fetchOrders();
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      alert('Failed to update payment status');
+    }
+  };
+
+  const copyReferenceNumber = (refNumber) => {
+    navigator.clipboard.writeText(refNumber);
+    setCopiedRef(refNumber);
+    setTimeout(() => setCopiedRef(null), 2000);
   };
 
   const getStatusColor = (status) => {
@@ -144,18 +174,32 @@ const Orders = () => {
             {orders.map((order) => (
               <div key={order.id} className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex justify-between items-start mb-4">
-                  <div>
+                  <div className="flex-1">
                     <h3 className="text-lg font-semibold">Order #{order.orderNumber}</h3>
-                    <div className="mt-2 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 inline-block">
-                      <p className="text-xs font-medium text-purple-700 mb-0.5">Reference Number:</p>
-                      <p className="text-sm font-bold text-purple-900 font-mono">{order.orderNumber}</p>
+                    <div className="mt-2 bg-purple-50 border-2 border-purple-300 rounded-lg px-4 py-3 inline-block">
+                      <p className="text-xs font-medium text-purple-700 mb-1">Transaction Reference Number:</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-base font-bold text-purple-900 font-mono">{order.orderNumber}</p>
+                        <button
+                          onClick={() => copyReferenceNumber(order.orderNumber)}
+                          className="p-1.5 hover:bg-purple-100 rounded transition-colors"
+                          title="Copy reference number"
+                        >
+                          {copiedRef === order.orderNumber ? (
+                            <FaCheck className="text-green-600" size={14} />
+                          ) : (
+                            <FaCopy className="text-purple-600" size={14} />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-xs text-purple-600 mt-1">Use this number to verify customer payments</p>
                     </div>
                     <p className="text-sm text-gray-600 mt-2">
                       {new Date(order.createdAt).toLocaleDateString()} at{' '}
                       {new Date(order.createdAt).toLocaleTimeString()}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right ml-4">
                     <div className="mb-2">
                       <label className="block text-xs font-medium text-gray-700 mb-1">Order Status</label>
                       <select
@@ -170,9 +214,84 @@ const Orders = () => {
                         <option value="cancelled">Cancelled</option>
                       </select>
                     </div>
-                    <p className={`px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusColor(order.paymentStatus)}`}>
-                      Payment: {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
-                    </p>
+                    <div className="mb-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Payment Status</label>
+                      {editingPayment === order.id ? (
+                        <div className="space-y-2">
+                          <select
+                            value={order.paymentStatus}
+                            onChange={(e) => {
+                              const newStatus = e.target.value;
+                              if (newStatus === 'completed') {
+                                // If marking as completed, use the transaction ID if provided
+                                updatePaymentStatus(order.id, newStatus, paymentTransactionId || order.paymentTransactionId || null);
+                              } else {
+                                updatePaymentStatus(order.id, newStatus);
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 ${getPaymentStatusColor(order.paymentStatus)} cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="completed">Completed</option>
+                            <option value="failed">Failed</option>
+                            <option value="refunded">Refunded</option>
+                          </select>
+                          <div className="mt-2">
+                            <input
+                              type="text"
+                              placeholder="Payment Transaction ID (e.g., GCash reference)"
+                              value={paymentTransactionId}
+                              onChange={(e) => setPaymentTransactionId(e.target.value)}
+                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  updatePaymentStatus(order.id, 'completed', paymentTransactionId);
+                                }
+                              }}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Enter the transaction ID from GCash/PayPal receipt</p>
+                            <button
+                              onClick={() => updatePaymentStatus(order.id, 'completed', paymentTransactionId)}
+                              className="mt-2 w-full px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                            >
+                              Mark Payment as Completed
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setEditingPayment(null);
+                              setPaymentTransactionId('');
+                            }}
+                            className="w-full px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded hover:bg-gray-300"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className={`px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusColor(order.paymentStatus)} mb-1`}>
+                            {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
+                          </p>
+                          {order.paymentStatus === 'pending' && (
+                            <button
+                              onClick={() => {
+                                setEditingPayment(order.id);
+                                setPaymentTransactionId(order.paymentTransactionId || '');
+                              }}
+                              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                            >
+                              Verify Payment
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {order.paymentMethod && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        Method: {order.paymentMethod.toUpperCase()}
+                      </p>
+                    )}
                   </div>
                 </div>
 
