@@ -94,6 +94,89 @@ try {
   app.use('/api/payments', paymentRoutes);
   console.log('✅ Payment routes registered at /api/payments');
 
+  // Register health and test routes directly (not via router)
+  // Test route to verify server is running
+  app.get('/api/test', (req, res) => {
+    res.json({ message: 'Server is running', routes: ['/api/auth', '/api/stores', '/api/products', '/api/orders', '/api/payments', '/api/health'] });
+  });
+  console.log('✅ Test route registered at /api/test');
+
+  // Health check endpoint with database status
+  app.get('/api/health', async (req, res) => {
+    try {
+      // Test database connection
+      await sequelize.authenticate();
+      res.json({ 
+        status: 'healthy', 
+        database: 'connected',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Health check failed:', error.message);
+      res.status(503).json({ 
+        status: 'unhealthy', 
+        database: 'disconnected',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+  console.log('✅ Health check route registered at /api/health');
+
+  // Debug: List all registered routes
+  app.get('/api/debug/routes', (req, res) => {
+    const routes = [];
+    const storeRoutes = [];
+    
+    app._router.stack.forEach(function(middleware){
+      if(middleware.route){
+        routes.push({
+          path: middleware.route.path,
+          methods: Object.keys(middleware.route.methods)
+        });
+      } else if(middleware.name === 'router'){
+        // This is a mounted router
+        const basePath = middleware.regexp.toString().replace(/^\^\\\//, '').replace(/\\\/\?\?\$/, '').replace(/\\/g, '').replace(/\$/g, '');
+        
+        middleware.handle.stack.forEach(function(handler){
+          if(handler.route){
+            const fullPath = basePath + handler.route.path;
+            routes.push({
+              path: fullPath,
+              methods: Object.keys(handler.route.methods)
+            });
+            if (basePath.includes('stores')) {
+              storeRoutes.push({
+                path: handler.route.path,
+                methods: Object.keys(handler.route.methods),
+                fullPath: fullPath
+              });
+            }
+          } else if(handler.name === 'router'){
+            // Nested router
+            const nestedPath = handler.regexp.toString().replace(/^\^\\\//, '').replace(/\\\/\?\?\$/, '').replace(/\\/g, '');
+            handler.handle.stack.forEach(function(nestedHandler){
+              if(nestedHandler.route){
+                routes.push({
+                  path: basePath + nestedPath + nestedHandler.route.path,
+                  methods: Object.keys(nestedHandler.route.methods)
+                });
+              }
+            });
+          }
+        });
+      }
+    });
+    
+    res.json({ 
+      routes: routes.sort((a, b) => a.path.localeCompare(b.path)),
+      storeRoutes: storeRoutes.sort((a, b) => a.path.localeCompare(b.path)),
+      totalRoutes: routes.length,
+      productRoutesRegistered: !!productRoutes
+    });
+  });
+  console.log('✅ Debug routes endpoint registered at /api/debug/routes');
+
   console.log('========================================');
   console.log('✅ All routes registered successfully!');
   console.log('========================================');
@@ -106,91 +189,12 @@ try {
   // Don't throw - let server start anyway to see other errors
 }
 
-// Test route to verify server is running
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'Server is running', routes: ['/api/auth', '/api/stores', '/api/products', '/api/orders', '/api/payments'] });
-});
-
-// Health check endpoint with database status
-app.get('/api/health', async (req, res) => {
-  try {
-    // Test database connection
-    await sequelize.authenticate();
-    res.json({ 
-      status: 'healthy', 
-      database: 'connected',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Health check failed:', error.message);
-    res.status(503).json({ 
-      status: 'unhealthy', 
-      database: 'disconnected',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
 // Test route for store publish (to verify route exists)
 app.put('/api/stores/test-publish', (req, res) => {
   console.log('✅ Test publish route hit!');
   res.json({ message: 'Test publish route works!' });
 });
 
-// Debug: List all registered routes
-app.get('/api/debug/routes', (req, res) => {
-  const routes = [];
-  const storeRoutes = [];
-  
-  app._router.stack.forEach(function(middleware){
-    if(middleware.route){
-      routes.push({
-        path: middleware.route.path,
-        methods: Object.keys(middleware.route.methods)
-      });
-    } else if(middleware.name === 'router'){
-      // This is a mounted router
-      const basePath = middleware.regexp.toString().replace(/^\^\\\//, '').replace(/\\\/\?\?\$/, '').replace(/\\/g, '').replace(/\$/g, '');
-      console.log('Router base path:', basePath);
-      
-      middleware.handle.stack.forEach(function(handler){
-        if(handler.route){
-          const fullPath = basePath + handler.route.path;
-          routes.push({
-            path: fullPath,
-            methods: Object.keys(handler.route.methods)
-          });
-          if (basePath.includes('stores')) {
-            storeRoutes.push({
-              path: handler.route.path,
-              methods: Object.keys(handler.route.methods),
-              fullPath: fullPath
-            });
-          }
-        } else if(handler.name === 'router'){
-          // Nested router
-          const nestedPath = handler.regexp.toString().replace(/^\^\\\//, '').replace(/\\\/\?\?\$/, '').replace(/\\/g, '');
-          handler.handle.stack.forEach(function(nestedHandler){
-            if(nestedHandler.route){
-              routes.push({
-                path: basePath + nestedPath + nestedHandler.route.path,
-                methods: Object.keys(nestedHandler.route.methods)
-              });
-            }
-          });
-        }
-      });
-    }
-  });
-  
-  res.json({ 
-    routes: routes.sort((a, b) => a.path.localeCompare(b.path)),
-    storeRoutes: storeRoutes.sort((a, b) => a.path.localeCompare(b.path)),
-    totalRoutes: routes.length,
-    productRoutesRegistered: !!productRoutes
-  });
-});
 
 // 404 handler - must be after all routes but before server starts
 app.use((req, res) => {
@@ -241,6 +245,7 @@ sequelize.sync(syncOptions)
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT} (DB connection failed)`);
       console.log(`📝 Test endpoint: http://localhost:${PORT}/api/test`);
+      console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
       console.log(`🔍 Debug routes: http://localhost:${PORT}/api/debug/routes`);
     });
   });
