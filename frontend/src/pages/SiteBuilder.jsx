@@ -477,21 +477,26 @@ export default function SiteBuilder() {
       if (!doc) return;
       const selectors = [
         '.hero h1', '.hero h2', '.hero h3', '.hero p', '.hero .title', '.hero .subtitle',
-        '.welcome-title', 'h1', 'h2', 'h3', 'p', '.product-title', '.section-title', '.headline', '.subhead'
+        '.welcome-title', 'h1', 'h2', 'h3', 'p', '.product-title', '.section-title', '.headline', '.subhead',
+        'button', '.button', '.cta-button', '.hero button', '.hero .button', 'a.button', 'a.cta-button'
       ];
       const found = [];
       let idSeq = 1;
       selectors.forEach(sel => {
         doc.querySelectorAll(sel).forEach(el => {
+          // Skip if element is marked as deleted
+          if (el.getAttribute('data-deleted') === 'true') return;
+          
           // assign stable id
           if (!el.getAttribute('data-move-id')) {
             el.setAttribute('data-move-id', String(idSeq++));
           }
           const id = el.getAttribute('data-move-id');
           const text = (el.textContent || '').trim().slice(0, 60);
+          const tag = el.tagName.toLowerCase();
           const hidden = el.style.display === 'none';
           const locked = el.getAttribute('data-move-locked') === 'true';
-          found.push({ id, text: text || sel, hidden, locked });
+          found.push({ id, text: text || `${tag} element`, hidden, locked, tag });
         });
       });
       setLayers(found);
@@ -540,6 +545,22 @@ export default function SiteBuilder() {
   const toggleHideLayer = (id) => {
     withIframeEl(id, (el) => {
       el.style.display = el.style.display === 'none' ? '' : 'none';
+    });
+    refreshLayers();
+  };
+
+  const deleteLayer = (id) => {
+    if (!window.confirm('Are you sure you want to delete this element? This action cannot be undone.')) {
+      return;
+    }
+    withIframeEl(id, (el) => {
+      // Mark as deleted instead of actually removing (so we can track it)
+      el.setAttribute('data-deleted', 'true');
+      el.style.display = 'none';
+      // Store original display value in case we need to restore
+      if (!el.getAttribute('data-original-display')) {
+        el.setAttribute('data-original-display', el.style.display || '');
+      }
     });
     refreshLayers();
   };
@@ -1316,7 +1337,7 @@ export default function SiteBuilder() {
       const selectors = [
         '.hero h1', '.hero h2', '.hero h3', '.hero p', '.hero .title', '.hero .subtitle',
         '.welcome-title', 'h1', 'h2', 'h3', 'p', '.product-title', '.section-title', '.headline', '.subhead',
-        'button', '.button', '.cta-button', '.hero button', '.hero .button'
+        'button', '.button', '.cta-button', '.hero button', '.hero .button', 'a.button', 'a.cta-button'
       ];
 
       selectors.forEach(sel => {
@@ -1332,6 +1353,9 @@ export default function SiteBuilder() {
             el.setAttribute('data-move-id', id);
           }
 
+          // Check if element is deleted
+          const isDeleted = el.getAttribute('data-deleted') === 'true';
+
           // Capture visibility state
           const display = el.style.display || '';
           const isHidden = display === 'none';
@@ -1341,11 +1365,11 @@ export default function SiteBuilder() {
           const offsetTop = el.getAttribute('data-offset-top') || '0';
           const transform = el.style.transform || '';
 
-          // Always save state if element has data-move-id (even if no changes, to track all editable elements)
-          // But prioritize saving if there are actual changes
-          if (isHidden || offsetLeft !== '0' || offsetTop !== '0' || transform) {
+          // Save state if element is deleted, hidden, moved, or has any changes
+          if (isDeleted || isHidden || offsetLeft !== '0' || offsetTop !== '0' || transform) {
             elementStates[id] = {
-              display: isHidden ? 'none' : '',
+              deleted: isDeleted,
+              display: isDeleted || isHidden ? 'none' : '',
               offsetLeft: offsetLeft,
               offsetTop: offsetTop,
               transform: transform,
@@ -1542,14 +1566,21 @@ export default function SiteBuilder() {
                         title={layer.locked ? 'Unlock' : 'Lock'}
                         style={{ border: '1px solid #d1d5db', background: layer.locked ? '#fde68a' : 'white', cursor: 'pointer', fontSize: '0.75rem', borderRadius: '0.375rem', padding: '0.25rem 0.5rem' }}
                       >
-                        {layer.locked ? 'Unlock' : 'Lock'}
+                        {layer.locked ? '🔒' : '🔓'}
                       </button>
                       <button
                         onClick={() => toggleHideLayer(layer.id)}
                         title={layer.hidden ? 'Show' : 'Hide'}
                         style={{ border: '1px solid #d1d5db', background: layer.hidden ? '#fecaca' : 'white', cursor: 'pointer', fontSize: '0.75rem', borderRadius: '0.375rem', padding: '0.25rem 0.5rem' }}
                       >
-                        {layer.hidden ? 'Show' : 'Hide'}
+                        {layer.hidden ? '👁️' : '👁️‍🗨️'}
+                      </button>
+                      <button
+                        onClick={() => deleteLayer(layer.id)}
+                        title="Delete element"
+                        style={{ border: '1px solid #fecaca', background: '#fee2e2', color: '#991b1b', cursor: 'pointer', fontSize: '0.75rem', borderRadius: '0.375rem', padding: '0.25rem 0.5rem' }}
+                      >
+                        🗑️
                       </button>
                     </div>
                   ))}

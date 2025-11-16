@@ -542,7 +542,7 @@ const PublishedStore = () => {
           const selectors = [
             '.hero h1', '.hero h2', '.hero h3', '.hero p', '.hero .title', '.hero .subtitle',
             '.welcome-title', 'h1', 'h2', 'h3', 'p', '.product-title', '.section-title', '.headline', '.subhead',
-            'button', '.button', '.cta-button', '.hero button', '.hero .button'
+            'button', '.button', '.cta-button', '.hero button', '.hero .button', 'a.button', 'a.cta-button'
           ];
           
           // Assign IDs to elements that match selectors (using same logic as SiteBuilder)
@@ -560,6 +560,13 @@ const PublishedStore = () => {
           
           // Helper function to apply state to an element
           const applyStateToElement = (el, state) => {
+            // Apply deletion first (highest priority)
+            if (state.deleted === true) {
+              el.setAttribute('data-deleted', 'true');
+              el.style.display = 'none';
+              return; // Don't apply other states if deleted
+            }
+            
             // Apply visibility
             if (state.display === 'none') {
               el.style.display = 'none';
@@ -623,6 +630,10 @@ const PublishedStore = () => {
                     applyStateToElement(el, state);
                     found = true;
                     console.log(`✅ Applied state to element ${id} (found by metadata):`, state);
+                    // If deleted, also mark it
+                    if (state.deleted === true) {
+                      el.setAttribute('data-deleted', 'true');
+                    }
                   }
                 });
               }
