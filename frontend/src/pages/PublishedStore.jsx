@@ -609,6 +609,34 @@ const PublishedStore = () => {
                 card = iframeDoc.createElement('div');
                 card.className = 'product-card';
                 
+                // Ensure base styles are present for neat layout (once)
+                try {
+                  if (!iframeDoc.getElementById('structura-published-style')) {
+                    const style = iframeDoc.createElement('style');
+                    style.id = 'structura-published-style';
+                    style.textContent = `
+                      /* Normalize product info layout across templates */
+                      .product-info, .product-title, .product-description { width: 100% !important; float: none !important; clear: both !important; }
+                      .product-title { margin: 0 0 .5rem 0; }
+                      .product-description { 
+                        display: -webkit-box; 
+                        -webkit-line-clamp: 4; 
+                        -webkit-box-orient: vertical; 
+                        overflow: hidden; 
+                        line-height: 1.6; 
+                        color: #444; 
+                        margin: .5rem 0 1rem; 
+                        white-space: normal; 
+                        word-break: normal; 
+                      }
+                      .product-price, .price { font-weight: 700; color: #111; font-size: 1.05rem; }
+                      .product-footer { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .5rem; }
+                      .product-footer .product-button { cursor: pointer; padding: .5rem .75rem; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; }
+                    `;
+                    (iframeDoc.head || iframeDoc.body).appendChild(style);
+                  }
+                } catch(_) {}
+                
                 // Create card structure based on template
                 const imageUrl = product.image && product.image !== '/imgplc.jpg'
                   ? (product.image.startsWith('http') ? product.image : getImageUrl(product.image) || product.image)
@@ -630,9 +658,6 @@ const PublishedStore = () => {
                     <div class="product-footer" style="display:flex; align-items:center; justify-content:space-between; gap:.5rem;">
                       <span class="product-price">₱${price.toFixed(2)}</span>
                       <div style="display:flex; gap:.5rem;">
-                        <button class="product-button cart-button add-to-cart" title="Add to Cart" aria-label="Add to Cart" style="display:inline-flex; align-items:center; gap:.4rem; padding:.5rem .75rem; border-radius:8px;">
-                          <span aria-hidden="true">🛒</span><span class="sr-only" style="position:absolute;left:-9999px;">Add to Cart</span>
-                        </button>
                         <button class="product-button order-button" style="padding:.5rem .75rem; border-radius:8px;">Order</button>
                       </div>
                     </div>
@@ -651,59 +676,7 @@ const PublishedStore = () => {
 
               // Ensure an Add-to-Cart button exists alongside Order in existing template cards
               try {
-                const footerEl = card.querySelector('.product-footer, .product-actions, .product-info, .product');
-                // Find an existing order button by common classes or text content
-                let orderBtn = card.querySelector('button.product-button, .product button, button.add-to-cart');
-                if (!orderBtn) {
-                  const allBtns = card.querySelectorAll('button');
-                  allBtns.forEach(b => {
-                    const txt = (b.textContent || '').trim().toLowerCase();
-                    if (!orderBtn && txt.includes('order')) orderBtn = b;
-                  });
-                }
-                const hasCartBtn = card.querySelector('.cart-button');
-                if (footerEl && orderBtn && !hasCartBtn) {
-                  // Style footer to align items
-                  footerEl.style.display = 'flex';
-                  footerEl.style.alignItems = 'center';
-                  footerEl.style.justifyContent = 'space-between';
-                  footerEl.style.gap = '.5rem';
-
-                  // Container for action buttons if not present
-                  let actionWrap = footerEl.querySelector('.product-actions-wrap');
-                  if (!actionWrap) {
-                    actionWrap = iframeDoc.createElement('div');
-                    actionWrap.className = 'product-actions-wrap';
-                    actionWrap.style.display = 'flex';
-                    actionWrap.style.gap = '.5rem';
-                    // Place actions next to price if a price element exists
-                    const priceEl = footerEl.querySelector('.product-price, .price');
-                    if (priceEl && priceEl.nextSibling) {
-                      footerEl.insertBefore(actionWrap, priceEl.nextSibling);
-                    } else {
-                      footerEl.appendChild(actionWrap);
-                    }
-                  }
-
-                  // Move existing order button into actions wrap
-                  actionWrap.appendChild(orderBtn);
-                  orderBtn.classList.add('order-button', 'product-button');
-                  orderBtn.style.padding = '.5rem .75rem';
-                  orderBtn.style.borderRadius = '8px';
-
-                  // Create cart button before order button
-                  const cartBtn = iframeDoc.createElement('button');
-                  cartBtn.className = 'product-button cart-button add-to-cart';
-                  cartBtn.title = 'Add to Cart';
-                  cartBtn.setAttribute('aria-label', 'Add to Cart');
-                  cartBtn.style.display = 'inline-flex';
-                  cartBtn.style.alignItems = 'center';
-                  cartBtn.style.gap = '.4rem';
-                  cartBtn.style.padding = '.5rem .75rem';
-                  cartBtn.style.borderRadius = '8px';
-                  cartBtn.innerHTML = '<span aria-hidden="true">🛒</span><span class="sr-only" style="position:absolute;left:-9999px;">Add to Cart</span>';
-                  actionWrap.insertBefore(cartBtn, orderBtn);
-                }
+                /* Cart button intentionally disabled per requirements */
               } catch (e) {
                 // non-fatal if DOM differs
               }
@@ -723,6 +696,7 @@ const PublishedStore = () => {
                 } else {
                   descEl.textContent = descText;
                 }
+                try { descEl.classList.add('product-description'); } catch(_) {}
               }
 
               // Update image - check both wrapped and unwrapped image structures
@@ -762,10 +736,6 @@ const PublishedStore = () => {
                 if (!orderButton.classList.contains('product-button')) {
                   orderButton.classList.add('product-button');
                 }
-                if (!orderButton.classList.contains('add-to-cart')) {
-                  orderButton.classList.add('add-to-cart');
-                }
-                
                 // Ensure button is visible
                 orderButton.style.display = 'inline-block';
                 orderButton.style.visibility = 'visible';
@@ -780,7 +750,8 @@ const PublishedStore = () => {
                 orderButton.onclick = (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  
+
+                  // Proceed with order modal only
                   // Method 1: Call parent's global function
                   try {
                     if (window.parent && window.parent.openOrderModal) {
@@ -812,12 +783,11 @@ const PublishedStore = () => {
                     console.log('Direct call failed:', err);
                   }
                 };
-                
+
                 // Also add event listener as backup
                 orderButton.addEventListener('click', (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  
                   try {
                     if (window.parent && window.parent.openOrderModal) {
                       window.parent.openOrderModal(productCopy);
@@ -831,7 +801,7 @@ const PublishedStore = () => {
                     console.error('Order button click error:', err);
                   }
                 }, { capture: true, once: false });
-                
+
                 // Ensure button is fully clickable and visible
                 orderButton.style.cursor = 'pointer';
                 orderButton.style.pointerEvents = 'auto';
@@ -845,30 +815,9 @@ const PublishedStore = () => {
                 orderButton.setAttribute('data-product-id', product.id || index);
                 orderButton.setAttribute('type', 'button');
                 orderButton.setAttribute('tabindex', '0');
-                
-                // Ensure minimum button styling if template CSS doesn't apply
-                try {
-                  const computedStyle = iframeDoc.defaultView?.getComputedStyle(orderButton);
-                  if (computedStyle && (computedStyle.display === 'none' || computedStyle.visibility === 'hidden' || computedStyle.opacity === '0')) {
-                    orderButton.style.display = 'inline-block';
-                    orderButton.style.visibility = 'visible';
-                    orderButton.style.opacity = '1';
-                  }
-                } catch (e) {
-                  // Cross-origin or other error, just ensure inline styles
-                  orderButton.style.display = 'inline-block';
-                  orderButton.style.visibility = 'visible';
-                  orderButton.style.opacity = '1';
-                }
-                
-                // Remove any CSS that might block clicks
-                const card = orderButton.closest('.product-card, .product');
-                if (card) {
-                  card.style.pointerEvents = 'auto';
-                  card.style.position = 'relative';
-                  card.style.zIndex = '1';
-                }
               }
+              
+              // Cart feature removed: no cart button or nav link injected
             });
             
             // Add click handlers to ALL product buttons in the template (including existing ones)
@@ -2334,4 +2283,5 @@ const PublishedStore = () => {
 };
 
 export default PublishedStore;
+
 
