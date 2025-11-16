@@ -11,7 +11,8 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  ComposedChart
 } from 'recharts';
 
 const SalesAnalytics = () => {
@@ -61,6 +62,22 @@ const SalesAnalytics = () => {
       sales: parseFloat(item.totalSales || 0),
       orders: parseInt(item.orderCount || 0)
     }));
+  };
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+          <p className="font-semibold mb-2">{label}</p>
+          {payload.map((entry, index) => (
+            <p key={index} style={{ color: entry.color }} className="text-sm">
+              {entry.name}: {entry.dataKey === 'sales' ? formatCurrency(entry.value) : entry.value}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
   };
 
   if (loading) {
@@ -139,52 +156,158 @@ const SalesAnalytics = () => {
           </div>
         </div>
 
-        {/* Monthly Sales Chart */}
+        {/* Combined Sales & Orders Overview */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Monthly Sales</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">Sales & Orders Overview</h2>
+          <p className="text-sm text-gray-600 mb-6">Combined view of sales revenue and order volume over time</p>
           {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip formatter={(value) => formatCurrency(value)} />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="sales"
-                  stroke="#8b5cf6"
-                  strokeWidth={2}
-                  name="Sales (₱)"
+            <ResponsiveContainer width="100%" height={400}>
+              <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis 
+                  dataKey="month" 
+                  stroke="#6b7280"
+                  style={{ fontSize: '12px' }}
+                  tick={{ fill: '#6b7280' }}
                 />
-              </LineChart>
+                <YAxis 
+                  yAxisId="sales"
+                  orientation="left"
+                  stroke="#8b5cf6"
+                  style={{ fontSize: '12px' }}
+                  tick={{ fill: '#8b5cf6' }}
+                  tickFormatter={(value) => `₱${(value / 1000).toFixed(0)}k`}
+                />
+                <YAxis 
+                  yAxisId="orders"
+                  orientation="right"
+                  stroke="#6366f1"
+                  style={{ fontSize: '12px' }}
+                  tick={{ fill: '#6366f1' }}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  iconType="line"
+                />
+                <Bar 
+                  yAxisId="orders"
+                  dataKey="orders" 
+                  fill="#6366f1" 
+                  name="Orders" 
+                  radius={[4, 4, 0, 0]}
+                  opacity={0.7}
+                />
+                <Line 
+                  yAxisId="sales"
+                  type="monotone" 
+                  dataKey="sales" 
+                  stroke="#8b5cf6" 
+                  strokeWidth={3}
+                  name="Sales (₱)"
+                  dot={{ fill: '#8b5cf6', r: 5 }}
+                  activeDot={{ r: 7 }}
+                />
+              </ComposedChart>
             </ResponsiveContainer>
           ) : (
             <div className="text-center py-12 text-gray-500">
-              No sales data available for the selected period
+              No data available for the selected period
             </div>
           )}
         </div>
 
-        {/* Monthly Orders Chart */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Monthly Orders</h2>
-          {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="orders" fill="#6366f1" name="Number of Orders" />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="text-center py-12 text-gray-500">
-              No order data available for the selected period
-            </div>
-          )}
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Sales Trend Line Graph */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">Sales Trend</h2>
+            <p className="text-sm text-gray-600 mb-4">Monthly sales revenue trend</p>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={350}>
+                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="#6b7280"
+                    style={{ fontSize: '12px' }}
+                    tick={{ fill: '#6b7280' }}
+                  />
+                  <YAxis 
+                    stroke="#8b5cf6"
+                    style={{ fontSize: '12px' }}
+                    tick={{ fill: '#8b5cf6' }}
+                    tickFormatter={(value) => `₱${(value / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip 
+                    formatter={(value) => formatCurrency(value)}
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="sales"
+                    stroke="#8b5cf6"
+                    strokeWidth={3}
+                    name="Sales (₱)"
+                    dot={{ fill: '#8b5cf6', r: 5 }}
+                    activeDot={{ r: 7 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                No sales data available
+              </div>
+            )}
+          </div>
+
+          {/* Orders Bar Graph */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">Order Volume</h2>
+            <p className="text-sm text-gray-600 mb-4">Number of orders per month</p>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="#6b7280"
+                    style={{ fontSize: '12px' }}
+                    tick={{ fill: '#6b7280' }}
+                  />
+                  <YAxis 
+                    stroke="#6366f1"
+                    style={{ fontSize: '12px' }}
+                    tick={{ fill: '#6366f1' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
+                  <Bar 
+                    dataKey="orders" 
+                    fill="#6366f1" 
+                    name="Orders" 
+                    radius={[8, 8, 0, 0]}
+                    opacity={0.8}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                No order data available
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Recent Orders */}
