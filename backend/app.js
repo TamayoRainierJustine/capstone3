@@ -262,6 +262,18 @@ sequelize.sync(syncOptions)
         console.warn('⚠️ Could not adjust Orders.totalAmount column (may not exist):', legacyErr.message);
       }
       console.log('✅ Orders schema verified');
+
+      // Ensure OrderItems table has required columns
+      try {
+        console.log('🛠️ Ensuring OrderItems schema is up to date...');
+        // Add subtotal column if missing
+        await sequelize.query('ALTER TABLE "OrderItems" ADD COLUMN IF NOT EXISTS "subtotal" DECIMAL(10,2) DEFAULT 0');
+        // Backfill existing rows where subtotal is NULL using price * quantity
+        await sequelize.query('UPDATE "OrderItems" SET "subtotal" = COALESCE("price",0) * COALESCE("quantity",0) WHERE "subtotal" IS NULL');
+        console.log('✅ OrderItems schema verified');
+      } catch (oiErr) {
+        console.warn('⚠️ Could not adjust OrderItems schema:', oiErr.message);
+      }
     } catch (schemaErr) {
       console.error('⚠️ Failed to ensure Orders schema:', schemaErr.message);
     }
