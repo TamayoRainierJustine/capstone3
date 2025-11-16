@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
 import sequelize from '../config/db.js';
 import PasswordResetToken from '../models/passwordResetToken.js';
+import { sendEmail } from '../utils/email.js';
 import { Op } from 'sequelize';
 import EmailVerificationToken from '../models/emailVerificationToken.js';
 
@@ -48,11 +49,34 @@ export const register = async (req, res) => {
       isVerified: user.isVerified,
     };
 
-    // Generate OTP (expires in 30 minutes) and return it instead of sending email
-    await EmailVerificationToken.update({ used: true }, { where: { email, used: false } });
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-    await EmailVerificationToken.create({ email, code, expiresAt });
+    // Generate OTP (expires in 30 minutes) and send via email
+    try {
+      await EmailVerificationToken.update({ used: true }, { where: { email, used: false } });
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+      await EmailVerificationToken.create({ email, code, expiresAt });
+
+      const backendBase = (process.env.BACKEND_URL || '').trim() || `${req.protocol}://${req.get('host')}`;
+      const verifyLink = `${backendBase.replace(/\/+$/, '')}/api/auth/verify?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
+
+      const subject = 'Verify your Structura account';
+      const html = `<p>Click the button below to verify your email:</p>
+        <p><a href="${verifyLink}" style="background:#6d28d9;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600">Verify my email</a></p>
+        <p>Or use this 6-digit code:</p>
+        <p style="font-size:20px;font-weight:bold;letter-spacing:4px">${code}</p>
+        <p>This link/code expires in 30 minutes.</p>`;
+      const text = `Verify your Structura account:\n\nClick: ${verifyLink}\n\nOr use code: ${code}\n\nExpires in 30 minutes.`;
+
+      // Fire-and-forget to avoid blocking registration on SMTP latency
+      Promise.resolve(sendEmail({ to: email, subject, html, text })).catch(e => {
+        console.error('Async verification email failed:', e.message);
+      });
+    } catch (mailErr) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Failed to send verification email:', mailErr.message);
+      }
+      // Continue; user can request a new code later
+    }
 
     const duration = Date.now() - startTime;
     // Suppress slow-registration log in production
@@ -63,10 +87,8 @@ export const register = async (req, res) => {
     }
 
     res.status(201).json({
-      message: 'User registered. Please verify using the OTP code.',
-      user: userWithoutPassword,
-      otp: code,
-      otpExpiresAt: expiresAt
+      message: 'User registered. Please check your email for the verification code.',
+      user: userWithoutPassword
     });
   } catch (err) {
     const duration = Date.now() - startTime;
@@ -314,9 +336,27 @@ export const resendVerificationCode = async (req, res) => {
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
       await EmailVerificationToken.create({ email, code, expiresAt });
 
-      return res.json({ message: 'New OTP generated.', otp: code, otpExpiresAt: expiresAt });
+      const backendBase = (process.env.BACKEND_URL || '').trim() || `${req.protocol}://${req.get('host')}`;
+      const verifyLink = `${backendBase.replace(/\/+$/, '')}/api/auth/verify?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
+
+      const subject = 'Your new Structura verification code';
+      const html = `<p>Click the button below to verify your email:</p>
+        <p><a href="${verifyLink}" style="background:#6d28d9;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600">Verify my email</a></p>
+        <p>Or use this code if prompted:</p>
+        <p style="font-size:20px;font-weight:bold;letter-spacing:4px">${code}</p>
+        <p>This link/code expires in 30 minutes.</p>`;
+      const text = `Verify your Structura account:\n\nClick: ${verifyLink}\n\nOr use code: ${code}\n\nExpires in 30 minutes.`;
+
+      // Fire-and-forget to avoid blocking the API call on SMTP latency
+      Promise.resolve(sendEmail({ to: email, subject, html, text })).catch(e => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('Resend verification email failed (async):', e.message);
+        }
+      });
+
+      return res.json({ message: 'A new verification code has been sent to your email.' });
     }
-    return res.json({ message: 'If the account is unverified, a new OTP was generated.' });
+    return res.json({ message: 'If the account is unverified, a new code was sent.' });
   } catch (err) {
     console.error('resendVerificationCode error:', err);
     return res.status(500).json({ message: 'Failed to resend verification code' });
