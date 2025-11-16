@@ -86,6 +86,9 @@ export const getOrderById = async (req, res) => {
 // Create a new order
 export const createOrder = async (req, res) => {
   const startTime = Date.now();
+  console.log('📦 Order creation request received');
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+  
   try {
     const {
       storeId,
@@ -98,25 +101,37 @@ export const createOrder = async (req, res) => {
       shipping
     } = req.body;
 
+    console.log(`Step 1: Validating request - storeId: ${storeId}, items: ${items?.length}`);
+
     // Validate required fields
     if (!storeId || !items || !Array.isArray(items) || items.length === 0) {
+      console.error('Validation failed: Store ID or items missing');
       return res.status(400).json({ message: 'Store ID and items are required' });
     }
 
     if (!customerName || !customerEmail || !paymentMethod) {
+      console.error('Validation failed: Customer info missing');
       return res.status(400).json({ message: 'Customer name, email, and payment method are required' });
     }
 
     if (!shippingAddress || !shippingAddress.region || !shippingAddress.province || 
         !shippingAddress.municipality || !shippingAddress.barangay) {
+      console.error('Validation failed: Shipping address incomplete');
       return res.status(400).json({ message: 'Complete shipping address is required' });
     }
 
     // Test database connection before proceeding
+    console.log('Step 2: Testing database connection...');
     try {
       await sequelize.authenticate();
+      console.log('✅ Database connection test passed');
     } catch (dbError) {
-      console.error('Database connection test failed:', dbError.message);
+      console.error('❌ Database connection test failed:', dbError.message);
+      console.error('Error details:', {
+        name: dbError.name,
+        code: dbError.code,
+        message: dbError.message
+      });
       return res.status(503).json({ 
         message: 'Database connection error - please try again',
         error: 'DATABASE_ERROR',
@@ -125,32 +140,43 @@ export const createOrder = async (req, res) => {
     }
 
     // Validate store exists and is published - with retry
+    console.log('Step 3: Fetching store...');
     let store;
     try {
       store = await Store.findOne({
         where: { id: storeId, status: 'published' },
         attributes: ['id', 'status']
       });
+      console.log(`✅ Store found: ${store ? store.id : 'NOT FOUND'}`);
     } catch (storeError) {
-      console.error('Error fetching store:', storeError.message);
+      console.error('❌ Error fetching store:', storeError.message);
+      console.error('Error details:', {
+        name: storeError.name,
+        code: storeError.code,
+        message: storeError.message,
+        stack: storeError.stack
+      });
       // If connection error, return 503
       if (storeError.name?.startsWith('Sequelize') || 
           storeError.code === 'ECONNREFUSED' ||
           storeError.code === 'ETIMEDOUT') {
         return res.status(503).json({ 
           message: 'Database connection error - please try again',
-          error: 'DATABASE_ERROR'
+          error: 'DATABASE_ERROR',
+          step: 'store_fetch'
         });
       }
       throw storeError;
     }
 
     if (!store) {
+      console.error(`❌ Store not found or not published: ${storeId}`);
       return res.status(404).json({ message: 'Store not found or not published' });
     }
 
     // Validate products and calculate totals - OPTIMIZED: fetch all products in parallel
     const productIds = items.map(item => item.productId);
+    console.log(`Step 4: Fetching products... (${productIds.length} products)`);
     
     // Fetch all products in parallel instead of sequentially - with retry
     let products;
@@ -163,15 +189,23 @@ export const createOrder = async (req, res) => {
         },
         attributes: ['id', 'name', 'price', 'stock']
       });
+      console.log(`✅ Products found: ${products.length}`);
     } catch (productError) {
-      console.error('Error fetching products:', productError.message);
+      console.error('❌ Error fetching products:', productError.message);
+      console.error('Error details:', {
+        name: productError.name,
+        code: productError.code,
+        message: productError.message,
+        stack: productError.stack
+      });
       // If connection error, return 503
       if (productError.name?.startsWith('Sequelize') || 
           productError.code === 'ECONNREFUSED' ||
           productError.code === 'ETIMEDOUT') {
         return res.status(503).json({ 
           message: 'Database connection error - please try again',
-          error: 'DATABASE_ERROR'
+          error: 'DATABASE_ERROR',
+          step: 'products_fetch'
         });
       }
       throw productError;
@@ -218,23 +252,33 @@ export const createOrder = async (req, res) => {
 
     // Use transaction to ensure all operations succeed or fail together
     // Retry transaction creation if connection fails
+    console.log('Step 5: Creating database transaction...');
     let transaction;
     let transactionRetries = 3;
     while (transactionRetries > 0) {
       try {
         transaction = await sequelize.transaction();
+        console.log('✅ Transaction created successfully');
         break; // Success
       } catch (txError) {
         transactionRetries--;
-        console.error(`Transaction creation failed (${3 - transactionRetries} attempts):`, txError.message);
+        console.error(`❌ Transaction creation failed (${4 - transactionRetries}/3 attempts):`, txError.message);
+        console.error('Transaction error details:', {
+          name: txError.name,
+          code: txError.code,
+          message: txError.message,
+          stack: txError.stack
+        });
         if (transactionRetries === 0) {
           return res.status(503).json({ 
             message: 'Database connection error - please try again',
             error: 'DATABASE_ERROR',
-            details: 'Unable to create database transaction'
+            details: 'Unable to create database transaction',
+            step: 'transaction_creation'
           });
         }
         // Wait before retry
+        console.log(`⏳ Waiting before retry... (${1000}ms)`);
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
@@ -320,25 +364,38 @@ export const createOrder = async (req, res) => {
       };
 
       const duration = Date.now() - startTime;
+      console.log(`✅ Order created successfully in ${duration}ms`);
       if (duration > 3000) {
-        console.warn(`Slow order creation: took ${duration}ms`);
+        console.warn(`⚠️ Slow order creation: took ${duration}ms`);
       }
 
       return res.status(201).json(orderResponse);
     } catch (transactionError) {
       // Rollback transaction on error
-      await transaction.rollback();
+      console.error('❌ Transaction error, rolling back...');
+      console.error('Transaction error:', transactionError.message);
+      if (transaction) {
+        try {
+          await transaction.rollback();
+          console.log('✅ Transaction rolled back');
+        } catch (rollbackError) {
+          console.error('❌ Rollback failed:', rollbackError.message);
+        }
+      }
       throw transactionError; // Re-throw to be caught by outer catch block
     }
 
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`Error creating order (${duration}ms):`, error.message);
-    console.error('Error stack:', error.stack);
+    console.error('========================================');
+    console.error(`❌ ERROR creating order (${duration}ms)`);
+    console.error('Error message:', error.message);
     console.error('Error name:', error.name);
     console.error('Error code:', error.code);
+    console.error('Error stack:', error.stack);
     console.error('Error original:', error.original);
     console.error('Request body:', JSON.stringify(req.body, null, 2));
+    console.error('========================================');
     
     // Handle all Sequelize errors as database errors
     if (error.name && error.name.startsWith('Sequelize')) {
