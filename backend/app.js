@@ -214,148 +214,122 @@ app.use((req, res) => {
   });
 }); 
 
-// Test DB connection & sync
-// Use force: false to only create missing tables, don't alter existing ones
-// This prevents PostgreSQL ENUM casting errors in production
-// Railway always sets PORT, so if PORT is set and not localhost, use safe mode
-const isLocalDev = !process.env.PORT || process.env.PORT === '5000';
-const useSafeSync = process.env.NODE_ENV === 'production' || !isLocalDev;
-
-const syncOptions = useSafeSync 
-  ? { force: false }  // Production/Railway: only create missing tables (safe)
-  : { alter: true };   // Development: alter tables to match models
-
-console.log(`📊 Sync mode: ${useSafeSync ? 'production (safe)' : 'development (alter)'}`);
+// Start server immediately to satisfy platform health checks, then sync DB in background
 console.log(`📊 NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
 console.log(`📊 PORT: ${process.env.PORT || 'not set'}`);
 
-sequelize.sync(syncOptions)
-  .then(async () => {
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📝 Test endpoint: http://localhost:${PORT}/api/test`);
+  console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
+  console.log(`🔍 Debug routes: http://localhost:${PORT}/api/debug/routes`);
+});
+
+// After server starts, perform DB sync and schema ensures without blocking startup
+(async () => {
+  // Use force: false in production; alter in local dev
+  const isLocalDev = !process.env.PORT || process.env.PORT === '5000';
+  const useSafeSync = process.env.NODE_ENV === 'production' || !isLocalDev;
+  const syncOptions = useSafeSync ? { force: false } : { alter: true };
+  console.log(`📊 Sync mode: ${useSafeSync ? 'production (safe)' : 'development (alter)'}`);
+
+  try {
+    await sequelize.sync(syncOptions);
     console.log('✅ Database synced');
+  } catch (syncErr) {
+    console.error('❌ DB sync failed (continuing):', syncErr.message);
+    return; // Skip schema ensure if sync failed
+  }
 
-    // Ensure Orders table has required columns without destructive alters
+  // Best-effort schema ensure; ignore permission issues in managed DBs
+  try {
+    console.log('🛠️ Ensuring Orders schema is up to date...');
+    await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "orderNumber" VARCHAR');
+    await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "customerId" INTEGER REFERENCES "Users"(id) ON DELETE SET NULL ON UPDATE CASCADE');
+    await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentMethod" VARCHAR(50)');
+    await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentStatus" VARCHAR(50) DEFAULT \'pending\'');
+    await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentTransactionId" VARCHAR');
+    await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "subtotal" DECIMAL(10,2) DEFAULT 0');
+    await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "shipping" DECIMAL(10,2) DEFAULT 0');
+    await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "total" DECIMAL(10,2) DEFAULT 0');
+    await sequelize.query('CREATE UNIQUE INDEX IF NOT EXISTS "Orders_orderNumber_unique" ON "Orders" ("orderNumber") WHERE "orderNumber" IS NOT NULL');
+
     try {
-      console.log('🛠️ Ensuring Orders schema is up to date...');
-      // Add orderNumber column if missing
-      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "orderNumber" VARCHAR');
-      // Add customerId foreign key column if missing (nullable, links to Users)
-      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "customerId" INTEGER REFERENCES "Users"(id) ON DELETE SET NULL ON UPDATE CASCADE');
-      // Core payment / totals columns used by the current Order model
-      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentMethod" VARCHAR(50)');
-      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentStatus" VARCHAR(50) DEFAULT \'pending\'');
-      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentTransactionId" VARCHAR');
-      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "subtotal" DECIMAL(10,2) DEFAULT 0');
-      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "shipping" DECIMAL(10,2) DEFAULT 0');
-      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "total" DECIMAL(10,2) DEFAULT 0');
-      // Add unique index on orderNumber (only for non-null values)
-      await sequelize.query('CREATE UNIQUE INDEX IF NOT EXISTS "Orders_orderNumber_unique" ON "Orders" ("orderNumber") WHERE "orderNumber" IS NOT NULL');
-
-      // Legacy column from initial schema: totalAmount (not used by current model)
-      // Make it nullable and keep it in sync with total so NOT NULL does not break inserts
-      try {
-        await sequelize.query('ALTER TABLE "Orders" ALTER COLUMN "totalAmount" DROP NOT NULL');
-        await sequelize.query('ALTER TABLE "Orders" ALTER COLUMN "totalAmount" SET DEFAULT 0');
-        // Backfill existing rows where totalAmount is NULL
-        await sequelize.query('UPDATE "Orders" SET "totalAmount" = COALESCE("total", 0) WHERE "totalAmount" IS NULL');
-        console.log('✅ Orders.totalAmount relaxed and backfilled');
-      } catch (legacyErr) {
-        console.warn('⚠️ Could not adjust Orders.totalAmount column (may not exist):', legacyErr.message);
-      }
-      console.log('✅ Orders schema verified');
-
-      // Ensure OrderItems table has required columns
-      try {
-        console.log('🛠️ Ensuring OrderItems schema is up to date...');
-        // Add subtotal column if missing
-        await sequelize.query('ALTER TABLE "OrderItems" ADD COLUMN IF NOT EXISTS "subtotal" DECIMAL(10,2) DEFAULT 0');
-        // Backfill existing rows where subtotal is NULL using price * quantity
-        await sequelize.query('UPDATE "OrderItems" SET "subtotal" = COALESCE("price",0) * COALESCE("quantity",0) WHERE "subtotal" IS NULL');
-        console.log('✅ OrderItems schema verified');
-      } catch (oiErr) {
-        console.warn('⚠️ Could not adjust OrderItems schema:', oiErr.message);
-      }
-    } catch (schemaErr) {
-      console.error('⚠️ Failed to ensure Orders schema:', schemaErr.message);
+      await sequelize.query('ALTER TABLE "Orders" ALTER COLUMN "totalAmount" DROP NOT NULL');
+      await sequelize.query('ALTER TABLE "Orders" ALTER COLUMN "totalAmount" SET DEFAULT 0');
+      await sequelize.query('UPDATE "Orders" SET "totalAmount" = COALESCE("total", 0) WHERE "totalAmount" IS NULL');
+      console.log('✅ Orders.totalAmount relaxed and backfilled');
+    } catch (legacyErr) {
+      console.warn('⚠️ Could not adjust Orders.totalAmount column (may not exist):', legacyErr.message);
     }
+    console.log('✅ Orders schema verified');
+  } catch (schemaErr) {
+    console.warn('⚠️ Skipping Orders schema ensure:', schemaErr.message);
+  }
 
-    // Ensure Products table has required columns (e.g., weight)
-    try {
-      console.log('🛠️ Ensuring Products schema is up to date...');
-      // Add weight column (in kilograms) if missing
-      await sequelize.query('ALTER TABLE "Products" ADD COLUMN IF NOT EXISTS "weight" DECIMAL(10,2) DEFAULT 0');
-      console.log('✅ Products schema verified');
-    } catch (prodSchemaErr) {
-      console.error('⚠️ Failed to ensure Products schema:', prodSchemaErr.message);
-    }
+  try {
+    console.log('🛠️ Ensuring OrderItems schema is up to date...');
+    await sequelize.query('ALTER TABLE "OrderItems" ADD COLUMN IF NOT EXISTS "subtotal" DECIMAL(10,2) DEFAULT 0');
+    await sequelize.query('UPDATE "OrderItems" SET "subtotal" = COALESCE("price",0) * COALESCE("quantity",0) WHERE "subtotal" IS NULL');
+    console.log('✅ OrderItems schema verified');
+  } catch (oiErr) {
+    console.warn('⚠️ Skipping OrderItems schema ensure:', oiErr.message);
+  }
 
-    // Ensure Users table has verification columns
-    try {
-      console.log('🛠️ Ensuring Users verification columns exist...');
-      await sequelize.query('ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "isVerified" BOOLEAN DEFAULT FALSE');
-      await sequelize.query('ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "emailVerifiedAt" TIMESTAMPTZ');
-      console.log('✅ Users verification columns verified');
-    } catch (uErr) {
-      console.warn('⚠️ Could not ensure Users verification columns:', uErr.message);
-    }
+  try {
+    console.log('🛠️ Ensuring Products schema is up to date...');
+    await sequelize.query('ALTER TABLE "Products" ADD COLUMN IF NOT EXISTS "weight" DECIMAL(10,2) DEFAULT 0');
+    console.log('✅ Products schema verified');
+  } catch (prodSchemaErr) {
+    console.warn('⚠️ Skipping Products schema ensure:', prodSchemaErr.message);
+  }
 
-    // Ensure PasswordResetTokens table exists (for email OTP password reset)
-    try {
-      console.log('🛠️ Ensuring PasswordResetTokens table exists...');
-      await sequelize.query(`
-        CREATE TABLE IF NOT EXISTS "PasswordResetTokens" (
-          "id" SERIAL PRIMARY KEY,
-          "email" VARCHAR NOT NULL,
-          "code" VARCHAR NOT NULL,
-          "expiresAt" TIMESTAMPTZ NOT NULL,
-          "used" BOOLEAN DEFAULT FALSE NOT NULL,
-          "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-          "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )
-      `);
-      // Indexes for faster lookups/cleanup
-      await sequelize.query(`CREATE INDEX IF NOT EXISTS "prt_email_idx" ON "PasswordResetTokens" ("email")`);
-      await sequelize.query(`CREATE INDEX IF NOT EXISTS "prt_expires_idx" ON "PasswordResetTokens" ("expiresAt")`);
-      console.log('✅ PasswordResetTokens table verified');
-    } catch (prtErr) {
-      console.warn('⚠️ Could not ensure PasswordResetTokens table exists:', prtErr.message);
-    }
+  try {
+    console.log('🛠️ Ensuring Users verification columns exist...');
+    await sequelize.query('ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "isVerified" BOOLEAN DEFAULT FALSE');
+    await sequelize.query('ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "emailVerifiedAt" TIMESTAMPTZ');
+    console.log('✅ Users verification columns verified');
+  } catch (uErr) {
+    console.warn('⚠️ Skipping Users verification columns ensure:', uErr.message);
+  }
 
-    // Ensure EmailVerificationTokens table exists
-    try {
-      console.log('🛠️ Ensuring EmailVerificationTokens table exists...');
-      await sequelize.query(`
-        CREATE TABLE IF NOT EXISTS "EmailVerificationTokens" (
-          "id" SERIAL PRIMARY KEY,
-          "email" VARCHAR NOT NULL,
-          "code" VARCHAR NOT NULL,
-          "expiresAt" TIMESTAMPTZ NOT NULL,
-          "used" BOOLEAN DEFAULT FALSE NOT NULL,
-          "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-          "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )
-      `);
-      await sequelize.query(`CREATE INDEX IF NOT EXISTS "evt_email_idx" ON "EmailVerificationTokens" ("email")`);
-      await sequelize.query(`CREATE INDEX IF NOT EXISTS "evt_expires_idx" ON "EmailVerificationTokens" ("expiresAt")`);
-      console.log('✅ EmailVerificationTokens table verified');
-    } catch (evtErr) {
-      console.warn('⚠️ Could not ensure EmailVerificationTokens table exists:', evtErr.message);
-    }
+  try {
+    console.log('🛠️ Ensuring PasswordResetTokens table exists...');
+    await sequelize.query(`
+      CREATE TABLE IF NOT EXISTS "PasswordResetTokens" (
+        "id" SERIAL PRIMARY KEY,
+        "email" VARCHAR NOT NULL,
+        "code" VARCHAR NOT NULL,
+        "expiresAt" TIMESTAMPTZ NOT NULL,
+        "used" BOOLEAN DEFAULT FALSE NOT NULL,
+        "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await sequelize.query(`CREATE INDEX IF NOT EXISTS "prt_email_idx" ON "PasswordResetTokens" ("email")`);
+    await sequelize.query(`CREATE INDEX IF NOT EXISTS "prt_expires_idx" ON "PasswordResetTokens" ("expiresAt")`);
+    console.log('✅ PasswordResetTokens table verified');
+  } catch (prtErr) {
+    console.warn('⚠️ Skipping PasswordResetTokens ensure:', prtErr.message);
+  }
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📝 Test endpoint: http://localhost:${PORT}/api/test`);
-      console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
-      console.log(`🔍 Debug routes: http://localhost:${PORT}/api/debug/routes`);
-      console.log(`📦 Test products: POST http://localhost:${PORT}/api/products/test`);
-    });
-  })
-  .catch((err) => {
-    console.error('❌ DB connection failed:', err);
-    // Still start server even if DB fails for testing
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT} (DB connection failed)`);
-      console.log(`📝 Test endpoint: http://localhost:${PORT}/api/test`);
-      console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
-      console.log(`🔍 Debug routes: http://localhost:${PORT}/api/debug/routes`);
-    });
-  });
+  try {
+    console.log('🛠️ Ensuring EmailVerificationTokens table exists...');
+    await sequelize.query(`
+      CREATE TABLE IF NOT EXISTS "EmailVerificationTokens" (
+        "id" SERIAL PRIMARY KEY,
+        "email" VARCHAR NOT NULL,
+        "code" VARCHAR NOT NULL,
+        "expiresAt" TIMESTAMPTZ NOT NULL,
+        "used" BOOLEAN DEFAULT FALSE NOT NULL,
+        "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await sequelize.query(`CREATE INDEX IF NOT EXISTS "evt_email_idx" ON "EmailVerificationTokens" ("email")`);
+    await sequelize.query(`CREATE INDEX IF NOT EXISTS "evt_expires_idx" ON "EmailVerificationTokens" ("expiresAt")`);
+    console.log('✅ EmailVerificationTokens table verified');
+  } catch (evtErr) {
+    console.warn('⚠️ Skipping EmailVerificationTokens ensure:', evtErr.message);
+  }
+})();
