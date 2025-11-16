@@ -1,0 +1,79 @@
+/* Global responsive improvements for mobile/tablet */
+
+/* Media queries use common breakpoints: 1024 (tablet landscape), 768 (tablet/large phone), 480 (small phone) */
+
+/* 1) Fluid typography using clamp for headings */
+h1 { font-size: clamp(1.75rem, 2.5vw + 1rem, 2.75rem); }
+h2 { font-size: clamp(1.5rem, 2vw + 0.75rem, 2.25rem); }
+h3 { font-size: clamp(1.25rem, 1.6vw + 0.6rem, 1.75rem); }
+h4 { font-size: clamp(1.125rem, 1.2vw + 0.5rem, 1.5rem); }
+h5 { font-size: clamp(1rem, 1vw + 0.4rem, 1.25rem); }
+h6 { font-size: clamp(0.95rem, 0.8vw + 0.35rem, 1.1rem); }
+
+/* 2) Images and media scale nicely */
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* 3) Section spacing – tighter on small screens */
+section, .section, .store-section, .hero-section, .about-section, .products-section {
+  padding-left: clamp(0.75rem, 1.5vw, 1.5rem);
+  padding-right: clamp(0.75rem, 1.5vw, 1.5rem);
+}
+
+/* 4) Buttons – larger touch targets */
+button, .btn, .cta-button, .select-button, .preview-button {
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+}
+
+/* 5) Forms – full width on mobile */
+input[type="text"], input[type="email"], input[type="password"], textarea, select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 6) Grid lists collapse cleanly */
+@media (max-width: 1024px) {
+  .products-grid, .categories-grid, .workshop-types, .process-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .products-grid, .categories-grid, .workshop-types, .process-steps {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* Fixed headers gain breathing space under */
+  .header ~ .hero, .header ~ .content, .header + * {
+    margin-top: 4rem;
+  }
+
+  /* Hero sections: softer sizes */
+  .hero-section { padding: 2rem 1rem; }
+  .hero-section h1 { font-size: clamp(1.75rem, 6vw, 2.25rem); }
+  .hero-section p { font-size: clamp(1rem, 3.5vw, 1.125rem); }
+}
+
+@media (max-width: 480px) {
+  /* Tighter layout on small phones */
+  .header, nav, .site-builder-sidebar { padding: 0.5rem; }
+  .nav { gap: 0.75rem; }
+
+  .product-card img { height: 180px; }
+  .template-preview { height: 160px; }
+
+  /* Prevent overflows in long words/titles */
+  h1, h2, h3, .logo, .template-title {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+}
+
+
