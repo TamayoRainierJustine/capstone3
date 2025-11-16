@@ -883,6 +883,15 @@ export default function SiteBuilder() {
             heroH1.style.color = heroContent.titleStyle.color || '#ffffff';
             heroH1.style.fontStyle = heroContent.titleStyle.fontStyle || 'normal';
             heroH1.style.textDecoration = heroContent.titleStyle.textDecoration || 'none';
+            if (heroContent.titleStyle.marginTop !== undefined) heroH1.style.marginTop = typeof heroContent.titleStyle.marginTop === 'string' ? heroContent.titleStyle.marginTop : heroContent.titleStyle.marginTop + 'px';
+            if (heroContent.titleStyle.marginBottom !== undefined) heroH1.style.marginBottom = typeof heroContent.titleStyle.marginBottom === 'string' ? heroContent.titleStyle.marginBottom : heroContent.titleStyle.marginBottom + 'px';
+            if (heroContent.titleStyle.padding !== undefined) heroH1.style.padding = typeof heroContent.titleStyle.padding === 'string' ? heroContent.titleStyle.padding : heroContent.titleStyle.padding + 'px';
+            if (heroContent.titleStyle.center) {
+              heroH1.style.display = 'block';
+              heroH1.style.marginLeft = 'auto';
+              heroH1.style.marginRight = 'auto';
+              heroH1.style.textAlign = 'center';
+            }
           }
         }
 
@@ -928,6 +937,15 @@ export default function SiteBuilder() {
             heroP.style.color = heroContent.subtitleStyle.color || '#e0e0e0';
             heroP.style.fontStyle = heroContent.subtitleStyle.fontStyle || 'normal';
             heroP.style.textDecoration = heroContent.subtitleStyle.textDecoration || 'none';
+            if (heroContent.subtitleStyle.marginTop !== undefined) heroP.style.marginTop = typeof heroContent.subtitleStyle.marginTop === 'string' ? heroContent.subtitleStyle.marginTop : heroContent.subtitleStyle.marginTop + 'px';
+            if (heroContent.subtitleStyle.marginBottom !== undefined) heroP.style.marginBottom = typeof heroContent.subtitleStyle.marginBottom === 'string' ? heroContent.subtitleStyle.marginBottom : heroContent.subtitleStyle.marginBottom + 'px';
+            if (heroContent.subtitleStyle.padding !== undefined) heroP.style.padding = typeof heroContent.subtitleStyle.padding === 'string' ? heroContent.subtitleStyle.padding : heroContent.subtitleStyle.padding + 'px';
+            if (heroContent.subtitleStyle.center) {
+              heroP.style.display = 'block';
+              heroP.style.marginLeft = 'auto';
+              heroP.style.marginRight = 'auto';
+              heroP.style.textAlign = 'center';
+            }
           }
         }
 
@@ -944,6 +962,15 @@ export default function SiteBuilder() {
             ctaButton.style.backgroundColor = heroContent.buttonStyle.backgroundColor || '#c9a961';
             ctaButton.style.fontStyle = heroContent.buttonStyle.fontStyle || 'normal';
             ctaButton.style.textDecoration = heroContent.buttonStyle.textDecoration || 'none';
+            if (heroContent.buttonStyle.marginTop !== undefined) ctaButton.style.marginTop = typeof heroContent.buttonStyle.marginTop === 'string' ? heroContent.buttonStyle.marginTop : heroContent.buttonStyle.marginTop + 'px';
+            if (heroContent.buttonStyle.marginBottom !== undefined) ctaButton.style.marginBottom = typeof heroContent.buttonStyle.marginBottom === 'string' ? heroContent.buttonStyle.marginBottom : heroContent.buttonStyle.marginBottom + 'px';
+            if (heroContent.buttonStyle.padding !== undefined) ctaButton.style.padding = typeof heroContent.buttonStyle.padding === 'string' ? heroContent.buttonStyle.padding : heroContent.buttonStyle.padding + 'px';
+            if (heroContent.buttonStyle.center) {
+              ctaButton.style.display = 'block';
+              ctaButton.style.marginLeft = 'auto';
+              ctaButton.style.marginRight = 'auto';
+              ctaButton.style.textAlign = 'center';
+            }
           }
         }
 
@@ -1768,6 +1795,30 @@ export default function SiteBuilder() {
                   <option value="oblique">Oblique</option>
                 </select>
               </div>
+            </div>
+
+            {/* Spacing controls */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '600', color: '#4b5563' }}>Margin Top (px)</label>
+                <input type="number" value={heroContent.titleStyle?.marginTop || 0} onChange={(e) => handleStyleChange('titleStyle', 'marginTop', parseInt(e.target.value || '0'))} style={{ width: '100%', padding: '0.4rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '600', color: '#4b5563' }}>Margin Bottom (px)</label>
+                <input type="number" value={heroContent.titleStyle?.marginBottom || 0} onChange={(e) => handleStyleChange('titleStyle', 'marginBottom', parseInt(e.target.value || '0'))} style={{ width: '100%', padding: '0.4rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '600', color: '#4b5563' }}>Padding (px)</label>
+                <input type="number" value={heroContent.titleStyle?.padding || 0} onChange={(e) => handleStyleChange('titleStyle', 'padding', parseInt(e.target.value || '0'))} style={{ width: '100%', padding: '0.4rem', border: '1px solid #d1d5db', borderRadius: '0.375rem' }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+              <button onClick={() => handleStyleChange('titleStyle', 'center', true)} style={{ padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.8125rem' }}>
+                Center Horizontally
+              </button>
+              <button onClick={() => handleStyleChange('titleStyle', 'center', false)} style={{ padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.8125rem' }}>
+                Uncenter
+              </button>
             </div>
 
             <div style={{ marginBottom: '0' }}>
