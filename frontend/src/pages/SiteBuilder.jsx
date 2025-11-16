@@ -1305,6 +1305,66 @@ export default function SiteBuilder() {
     }
   };
 
+  // Capture element states (visibility and position) from iframe
+  const captureElementStates = () => {
+    try {
+      const iframe = iframeRef.current;
+      const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+      if (!doc) return {};
+
+      const elementStates = {};
+      const selectors = [
+        '.hero h1', '.hero h2', '.hero h3', '.hero p', '.hero .title', '.hero .subtitle',
+        '.welcome-title', 'h1', 'h2', 'h3', 'p', '.product-title', '.section-title', '.headline', '.subhead',
+        'button', '.button', '.cta-button', '.hero button', '.hero .button'
+      ];
+
+      selectors.forEach(sel => {
+        doc.querySelectorAll(sel).forEach((el, idx) => {
+          // Get or assign stable id using same logic as refreshLayers and PublishedStore
+          let id = el.getAttribute('data-move-id');
+          if (!id) {
+            // Generate ID using same logic as when applying states
+            const text = (el.textContent || '').trim().slice(0, 60);
+            const tag = el.tagName.toLowerCase();
+            const className = (el.className || '').toString().trim();
+            id = `${tag}-${className}-${text}`.replace(/\s+/g, '-').replace(/[^a-z0-9-]/gi, '').slice(0, 50) || `${tag}-${idx}`;
+            el.setAttribute('data-move-id', id);
+          }
+
+          // Capture visibility state
+          const display = el.style.display || '';
+          const isHidden = display === 'none';
+
+          // Capture position state (from move mode)
+          const offsetLeft = el.getAttribute('data-offset-left') || '0';
+          const offsetTop = el.getAttribute('data-offset-top') || '0';
+          const transform = el.style.transform || '';
+
+          // Always save state if element has data-move-id (even if no changes, to track all editable elements)
+          // But prioritize saving if there are actual changes
+          if (isHidden || offsetLeft !== '0' || offsetTop !== '0' || transform) {
+            elementStates[id] = {
+              display: isHidden ? 'none' : '',
+              offsetLeft: offsetLeft,
+              offsetTop: offsetTop,
+              transform: transform,
+              selector: sel,
+              tag: el.tagName.toLowerCase(),
+              className: (el.className || '').toString().trim(),
+              text: (el.textContent || '').trim().slice(0, 60)
+            };
+          }
+        });
+      });
+
+      return elementStates;
+    } catch (err) {
+      console.error('Failed to capture element states:', err);
+      return {};
+    }
+  };
+
   const handleSave = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -1318,10 +1378,15 @@ export default function SiteBuilder() {
         return;
       }
 
-      // Save template content (hero, background) to backend - products are managed separately
+      // Capture element states (visibility and position) from iframe
+      const elementStates = captureElementStates();
+      console.log('💾 Captured element states:', elementStates);
+
+      // Save template content (hero, background, element states) to backend - products are managed separately
       const content = {
         hero: heroContent,
-        background: backgroundSettings
+        background: backgroundSettings,
+        elementStates: elementStates
       };
 
       console.log('💾 Saving content with background settings:', backgroundSettings);

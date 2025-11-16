@@ -17,12 +17,16 @@ const LoginPage = () => {
   const location = useLocation();
   const { login } = useAuth();
 
-  // Check for success message from registration
+  // Check for success message from registration or return URL
   useEffect(() => {
     if (location.state?.message) {
       setSuccess(location.state.message);
       // Clear the message from location state
       window.history.replaceState({}, document.title);
+    }
+    if (location.state?.returnUrl) {
+      // Store return URL in component state if needed
+      console.log('Return URL set:', location.state.returnUrl);
     }
   }, [location]);
 
@@ -60,6 +64,15 @@ const LoginPage = () => {
         
         // Small delay to ensure auth context is updated before navigation
         await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Check if there's a return URL (e.g., from published store)
+        const returnUrl = location.state?.returnUrl;
+        if (returnUrl && returnUrl.startsWith('/published/')) {
+          // Redirect back to the published store
+          console.log('Redirecting back to published store:', returnUrl);
+          navigate(returnUrl, { replace: true });
+          return;
+        }
         
         // Check if user has a store
         try {
@@ -189,7 +202,13 @@ const LoginPage = () => {
             </form>
             <div style={{ marginTop: 24, fontSize: 14, color: '#aaa' }}>
               Don't have an account?{' '}
-              <Link to="/register" style={{ color: '#7f53ac', fontWeight: 'bold', textDecoration: 'none' }}>Sign up</Link>
+              <Link 
+                to="/register" 
+                state={location.state?.returnUrl ? { returnUrl: location.state.returnUrl } : undefined}
+                style={{ color: '#7f53ac', fontWeight: 'bold', textDecoration: 'none' }}
+              >
+                Sign up
+              </Link>
             </div>
             {error && <div style={{ color: '#ff267a', marginTop: 16 }}>{error}</div>}
             {success && <div style={{ color: '#4ade80', marginTop: 16 }}>{success}</div>}

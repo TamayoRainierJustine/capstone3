@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import { getImageUrl } from '../utils/imageUrl';
 import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
@@ -19,6 +19,7 @@ const templateFileMap = {
 
 const PublishedStore = () => {
   const { domain } = useParams();
+  const navigate = useNavigate();
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -181,8 +182,32 @@ const PublishedStore = () => {
     };
   }, []);
 
+  // Check authentication first
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      // Redirect to login with return URL
+      const currentUrl = window.location.pathname;
+      navigate('/login', { 
+        state: { 
+          returnUrl: currentUrl,
+          message: 'Please create an account or log in to view this store and products.'
+        },
+        replace: true 
+      });
+      return;
+    }
+  }, [domain, navigate]);
+
   useEffect(() => {
     const fetchStore = async () => {
+      // Check authentication before fetching
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
       try {
         // Decode the domain from URL params first (React Router may have encoded it)
         const decodedDomain = decodeURIComponent(domain || '');
@@ -506,6 +531,109 @@ const PublishedStore = () => {
               heroP.textContent = subtitleText;
             }
           }
+        }
+
+        // Apply saved element states (visibility and position)
+        const elementStates = store.content?.elementStates || {};
+        if (Object.keys(elementStates).length > 0) {
+          console.log('🎨 Applying element states:', elementStates);
+          
+          // First, ensure all elements have data-move-id attributes
+          const selectors = [
+            '.hero h1', '.hero h2', '.hero h3', '.hero p', '.hero .title', '.hero .subtitle',
+            '.welcome-title', 'h1', 'h2', 'h3', 'p', '.product-title', '.section-title', '.headline', '.subhead',
+            'button', '.button', '.cta-button', '.hero button', '.hero .button'
+          ];
+          
+          // Assign IDs to elements that match selectors (using same logic as SiteBuilder)
+          selectors.forEach(sel => {
+            iframeDoc.querySelectorAll(sel).forEach((el, idx) => {
+              if (!el.getAttribute('data-move-id')) {
+                const text = (el.textContent || '').trim().slice(0, 60);
+                const tag = el.tagName.toLowerCase();
+                const className = (el.className || '').toString().trim();
+                const id = `${tag}-${className}-${text}`.replace(/\s+/g, '-').replace(/[^a-z0-9-]/gi, '').slice(0, 50) || `${tag}-${idx}`;
+                el.setAttribute('data-move-id', id);
+              }
+            });
+          });
+          
+          // Helper function to apply state to an element
+          const applyStateToElement = (el, state) => {
+            // Apply visibility
+            if (state.display === 'none') {
+              el.style.display = 'none';
+            } else if (state.display === '') {
+              el.style.display = '';
+            }
+            
+            // Apply position (from move mode)
+            if (state.offsetLeft !== undefined && state.offsetLeft !== '0') {
+              el.setAttribute('data-offset-left', state.offsetLeft);
+            }
+            if (state.offsetTop !== undefined && state.offsetTop !== '0') {
+              el.setAttribute('data-offset-top', state.offsetTop);
+            }
+            
+            // Apply transform
+            if (state.transform) {
+              el.style.transform = state.transform;
+            } else if (state.offsetLeft !== undefined && state.offsetTop !== undefined) {
+              // Reconstruct transform from offsets if transform not saved
+              const left = parseFloat(state.offsetLeft || '0');
+              const top = parseFloat(state.offsetTop || '0');
+              if (left !== 0 || top !== 0) {
+                el.style.transform = `translate(${left}px, ${top}px)`;
+                // Ensure position is relative if element was moved
+                if (el.style.position === 'static' || !el.style.position) {
+                  el.style.position = 'relative';
+                }
+              }
+            }
+          };
+
+          // Apply saved states
+          Object.keys(elementStates).forEach(id => {
+            const state = elementStates[id];
+            let el = iframeDoc.querySelector(`[data-move-id="${id}"]`);
+            
+            if (el) {
+              applyStateToElement(el, state);
+              console.log(`✅ Applied state to element ${id} (found by ID):`, state);
+            } else {
+              // Try to find by metadata (tag, className, text) if ID not found
+              let found = false;
+              
+              if (state.selector) {
+                const elements = iframeDoc.querySelectorAll(state.selector);
+                elements.forEach((el) => {
+                  if (found) return; // Only apply to first match
+                  
+                  const text = (el.textContent || '').trim().slice(0, 60);
+                  const tag = el.tagName.toLowerCase();
+                  const className = (el.className || '').toString().trim();
+                  
+                  // Match by tag, className, and text if available
+                  const tagMatch = !state.tag || tag === state.tag;
+                  const classMatch = !state.className || className === state.className || className.includes(state.className);
+                  const textMatch = !state.text || text === state.text || text.includes(state.text) || state.text.includes(text);
+                  
+                  if (tagMatch && (classMatch || textMatch)) {
+                    el.setAttribute('data-move-id', id);
+                    applyStateToElement(el, state);
+                    found = true;
+                    console.log(`✅ Applied state to element ${id} (found by metadata):`, state);
+                  }
+                });
+              }
+              
+              if (!found) {
+                console.warn(`⚠️ Could not find element with ID ${id} or matching metadata:`, state);
+              }
+            }
+          });
+          
+          console.log('✅ Element states applied');
         }
 
         // Update CTA button - try multiple selectors
@@ -1594,6 +1722,20 @@ const PublishedStore = () => {
       }
     };
   }, [products]);
+
+  // Check authentication before rendering
+  const token = localStorage.getItem('token');
+  if (!token) {
+    // Will be redirected by useEffect, but show loading while redirecting
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

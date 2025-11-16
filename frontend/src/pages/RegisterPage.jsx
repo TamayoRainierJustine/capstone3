@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PublicHeader from '../components/PublicHeader';
 import apiClient from '../utils/axios';
@@ -18,6 +18,7 @@ const RegisterPage = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
 
   const handleChange = (e) => {
@@ -48,9 +49,22 @@ const RegisterPage = () => {
         password: formData.password
       });
 
-      // Redirect to verify email
+      // After registration, redirect to login with return URL if provided
       setError('');
-      navigate('/verify-email', { state: { email: formData.email } });
+      const returnUrl = location.state?.returnUrl;
+      if (returnUrl) {
+        // Redirect to login with return URL so user can log in and go back to store
+        navigate('/login', { 
+          state: { 
+            returnUrl: returnUrl,
+            message: 'Registration successful! Please log in to continue.'
+          },
+          replace: true 
+        });
+      } else {
+        // No return URL, go to verify email as before
+        navigate('/verify-email', { state: { email: formData.email } });
+      }
     } catch (error) {
       setError(
         error.response?.data?.message || 
@@ -171,7 +185,13 @@ const RegisterPage = () => {
             </form>
             <div style={{ marginTop: 24, fontSize: 14, color: '#aaa' }}>
               Already have an account?{' '}
-              <Link to="/login" style={{ color: '#7f53ac', fontWeight: 'bold', textDecoration: 'none' }}>Sign in</Link>
+              <Link 
+                to="/login" 
+                state={location.state?.returnUrl ? { returnUrl: location.state.returnUrl } : undefined}
+                style={{ color: '#7f53ac', fontWeight: 'bold', textDecoration: 'none' }}
+              >
+                Sign in
+              </Link>
             </div>
             {error && <div style={{ color: '#ff267a', marginTop: 16 }}>{error}</div>}
           </div>
