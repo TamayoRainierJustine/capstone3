@@ -5,6 +5,7 @@ import sequelize from '../config/db.js';
 import PasswordResetToken from '../models/passwordResetToken.js';
 import { sendEmail } from '../utils/email.js';
 import { Op } from 'sequelize';
+import EmailVerificationToken from '../models/emailVerificationToken.js';
 
 export const register = async (req, res) => {
   const startTime = Date.now();
@@ -29,12 +30,13 @@ export const register = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user (unverified by default)
     const user = await User.create({
       firstName,
       lastName,
       email,
       password: hashedPassword,
+      isVerified: false,
     });
 
     // Remove password from response
@@ -43,17 +45,36 @@ export const register = async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      role: user.role
+      role: user.role,
+      isVerified: user.isVerified,
     };
+
+    // Send verification code via email (expires in 30 minutes)
+    try {
+      await EmailVerificationToken.update({ used: true }, { where: { email, used: false } });
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+      await EmailVerificationToken.create({ email, code, expiresAt });
+
+      const subject = 'Verify your Structura account';
+      const html = `<p>Use this verification code to verify your account:</p>
+        <p style="font-size:20px;font-weight:bold;letter-spacing:4px">${code}</p>
+        <p>This code expires in 30 minutes.</p>`;
+      const text = `Your verification code is: ${code} (expires in 30 minutes)`;
+      await sendEmail({ to: email, subject, html, text });
+    } catch (mailErr) {
+      console.error('Failed to send verification email:', mailErr.message);
+      // Continue; user can request a new code later
+    }
 
     const duration = Date.now() - startTime;
     if (duration > 3000) {
       console.warn(`Slow registration: took ${duration}ms`);
     }
 
-    res.status(201).json({ 
-      message: 'User registered successfully', 
-      user: userWithoutPassword 
+    res.status(201).json({
+      message: 'User registered. Please verify your email with the code we sent.',
+      user: userWithoutPassword
     });
   } catch (err) {
     const duration = Date.now() - startTime;
@@ -139,6 +160,11 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    // Require verified email
+    if (user.isVerified === false) {
+      return res.status(403).json({ message: 'Please verify your email to continue' });
+    }
+
     // Generate token
     const token = jwt.sign(
       { 
@@ -211,6 +237,37 @@ export const login = async (req, res) => {
   }
 };
 
+export const verifyEmailWithCode = async (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) return res.status(400).json({ message: 'Email and code are required' });
+  try {
+    const token = await EmailVerificationToken.findOne({
+      where: {
+        email,
+        code,
+        used: false,
+        expiresAt: { [Op.gt]: new Date() },
+      },
+      order: [['createdAt', 'DESC']],
+    });
+    if (!token) return res.status(400).json({ message: 'Invalid or expired code' });
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) return res.status(400).json({ message: 'Invalid request' });
+
+    user.isVerified = true;
+    user.emailVerifiedAt = new Date();
+    await user.save();
+
+    token.used = true;
+    await token.save();
+
+    return res.json({ message: 'Email verified successfully' });
+  } catch (err) {
+    console.error('verifyEmailWithCode error:', err);
+    return res.status(500).json({ message: 'Failed to verify email' });
+  }
+};
 export const requestPasswordReset = async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ message: 'Email is required' });

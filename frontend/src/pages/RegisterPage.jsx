@@ -48,13 +48,9 @@ const RegisterPage = () => {
         password: formData.password
       });
 
-      // Show success message and redirect to login
+      // Redirect to verify email
       setError('');
-      navigate('/login', { 
-        state: { 
-          message: 'Registration successful! Please log in to continue.' 
-        }
-      });
+      navigate('/verify-email', { state: { email: formData.email } });
     } catch (error) {
       setError(
         error.response?.data?.message || 

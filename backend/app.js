@@ -288,6 +288,16 @@ sequelize.sync(syncOptions)
       console.error('⚠️ Failed to ensure Products schema:', prodSchemaErr.message);
     }
 
+    // Ensure Users table has verification columns
+    try {
+      console.log('🛠️ Ensuring Users verification columns exist...');
+      await sequelize.query('ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "isVerified" BOOLEAN DEFAULT FALSE');
+      await sequelize.query('ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "emailVerifiedAt" TIMESTAMPTZ');
+      console.log('✅ Users verification columns verified');
+    } catch (uErr) {
+      console.warn('⚠️ Could not ensure Users verification columns:', uErr.message);
+    }
+
     // Ensure PasswordResetTokens table exists (for email OTP password reset)
     try {
       console.log('🛠️ Ensuring PasswordResetTokens table exists...');
@@ -308,6 +318,27 @@ sequelize.sync(syncOptions)
       console.log('✅ PasswordResetTokens table verified');
     } catch (prtErr) {
       console.warn('⚠️ Could not ensure PasswordResetTokens table exists:', prtErr.message);
+    }
+
+    // Ensure EmailVerificationTokens table exists
+    try {
+      console.log('🛠️ Ensuring EmailVerificationTokens table exists...');
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS "EmailVerificationTokens" (
+          "id" SERIAL PRIMARY KEY,
+          "email" VARCHAR NOT NULL,
+          "code" VARCHAR NOT NULL,
+          "expiresAt" TIMESTAMPTZ NOT NULL,
+          "used" BOOLEAN DEFAULT FALSE NOT NULL,
+          "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS "evt_email_idx" ON "EmailVerificationTokens" ("email")`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS "evt_expires_idx" ON "EmailVerificationTokens" ("expiresAt")`);
+      console.log('✅ EmailVerificationTokens table verified');
+    } catch (evtErr) {
+      console.warn('⚠️ Could not ensure EmailVerificationTokens table exists:', evtErr.message);
     }
 
     app.listen(PORT, () => {
