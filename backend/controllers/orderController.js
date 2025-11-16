@@ -547,6 +547,42 @@ export const updatePaymentStatus = async (req, res) => {
   }
 };
 
+// Delete an order (only allowed for the store owner and typically after cancellation)
+export const deleteOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    const store = await Store.findOne({ where: { userId } });
+    if (!store) {
+      return res.status(404).json({ message: 'Store not found' });
+    }
+
+    const order = await Order.findOne({
+      where: { id, storeId: store.id }
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Optional safety: only allow deletion if order is cancelled
+    if (order.status !== 'cancelled') {
+      return res.status(400).json({ message: 'Only cancelled orders can be deleted' });
+    }
+
+    await order.destroy();
+    return res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    res.status(500).json({ message: 'Error deleting order', error: error.message });
+  }
+};
+
 // Get sales analytics
 export const getSalesAnalytics = async (req, res) => {
   try {

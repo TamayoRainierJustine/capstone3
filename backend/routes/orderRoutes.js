@@ -5,7 +5,8 @@ import {
   createOrder,
   updateOrderStatus,
   updatePaymentStatus,
-  getSalesAnalytics
+  getSalesAnalytics,
+  deleteOrder
 } from '../controllers/orderController.js';
 import { authenticateToken } from '../middleware/auth.js';
 
@@ -22,6 +23,7 @@ router.get('/analytics', getSalesAnalytics);
 router.get('/:id', getOrderById);
 router.put('/:id/status', updateOrderStatus);
 router.put('/:id/payment', updatePaymentStatus);
+router.delete('/:id', deleteOrder);
 
 export default router;
 

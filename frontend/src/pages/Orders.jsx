@@ -80,6 +80,27 @@ const Orders = () => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
+  const deleteOrder = async (orderId) => {
+    const confirmDelete = window.confirm('Are you sure you want to permanently delete this order? This action cannot be undone.');
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please log in to manage orders.');
+        return;
+      }
+
+      await apiClient.delete(`/orders/${orderId}`);
+      // Refresh list after deletion
+      fetchOrders();
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      const message = error.response?.data?.message || 'Failed to delete order';
+      alert(message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -188,6 +209,14 @@ const Orders = () => {
                       Total: ₱{parseFloat(order.total).toFixed(2)}
                     </p>
                   </div>
+                  {order.status === 'cancelled' && (
+                    <button
+                      onClick={() => deleteOrder(order.id)}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
+                    >
+                      Delete Order
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
