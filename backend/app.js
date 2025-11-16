@@ -238,6 +238,8 @@ sequelize.sync(syncOptions)
       console.log('🛠️ Ensuring Orders schema is up to date...');
       // Add orderNumber column if missing
       await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "orderNumber" VARCHAR');
+      // Add customerId foreign key column if missing (nullable, links to Users)
+      await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "customerId" INTEGER REFERENCES "Users"(id) ON DELETE SET NULL ON UPDATE CASCADE');
       // Core payment / totals columns used by the current Order model
       await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentMethod" VARCHAR(50)');
       await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentStatus" VARCHAR(50) DEFAULT \'pending\'');
