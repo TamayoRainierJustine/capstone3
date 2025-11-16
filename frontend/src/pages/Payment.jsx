@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Header from '../components/Header';
+import apiClient from '../utils/axios';
 
 const Payment = () => {
+  const [store, setStore] = useState(null);
   const [config, setConfig] = useState({
     gcashEnabled: false,
     paypalEnabled: false, // Reused as COD toggle to avoid breaking existing saved configs
@@ -19,25 +21,80 @@ const Payment = () => {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    // Load saved payment configuration
-    // In a real app, this would come from the backend
-    const savedConfig = localStorage.getItem('paymentConfig');
-    if (savedConfig) {
-      setConfig(JSON.parse(savedConfig));
-    }
+    const fetchStore = async () => {
+      try {
+        const response = await apiClient.get('/stores');
+        if (response.data && response.data.length > 0) {
+          const currentStore = response.data[0];
+          setStore(currentStore);
+          
+          // Load payment config from store content if available
+          if (currentStore.content?.payment) {
+            setConfig(prev => ({
+              ...prev,
+              ...currentStore.content.payment
+            }));
+          } else {
+            // Fallback to localStorage for backward compatibility
+            const savedConfig = localStorage.getItem('paymentConfig');
+            if (savedConfig) {
+              setConfig(JSON.parse(savedConfig));
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching store:', error);
+        // Fallback to localStorage
+        const savedConfig = localStorage.getItem('paymentConfig');
+        if (savedConfig) {
+          setConfig(JSON.parse(savedConfig));
+        }
+      }
+    };
+
+    fetchStore();
   }, []);
 
   const handleSave = async () => {
+    if (!store) {
+      setMessage('No store found. Please create a store first.');
+      return;
+    }
+
     setLoading(true);
     setMessage('');
 
     try {
-      // In a real app, save to backend
+      // Get current store content
+      const currentContent = store.content || {};
+      
+      // Update content with payment settings
+      const updatedContent = {
+        ...currentContent,
+        payment: {
+          gcashEnabled: config.gcashEnabled,
+          paypalEnabled: config.paypalEnabled,
+          cardEnabled: config.cardEnabled,
+          gcashQrImage: config.gcashQrImage,
+          bankName: config.bankName,
+          bankAccountName: config.bankAccountName,
+          bankAccountNumber: config.bankAccountNumber
+        }
+      };
+
+      // Save to backend via store content API
+      await apiClient.put(`/stores/${store.id}/content`, {
+        content: updatedContent
+      });
+
+      // Also save to localStorage for backward compatibility
       localStorage.setItem('paymentConfig', JSON.stringify(config));
+      
       setMessage('Payment settings saved successfully!');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
-      setMessage('Failed to save payment settings');
+      console.error('Error saving payment settings:', error);
+      setMessage('Failed to save payment settings. Please try again.');
     } finally {
       setLoading(false);
     }
