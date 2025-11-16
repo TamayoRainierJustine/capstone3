@@ -101,6 +101,8 @@ export default function SiteBuilder() {
 
   // Move Mode - allow dragging/nudging text inside the iframe
   const [moveMode, setMoveMode] = useState(false);
+  // Layers (element list)
+  const [layers, setLayers] = useState([]);
 
   // Enable/disable move mode inside iframe
   useEffect(() => {
@@ -467,6 +469,81 @@ export default function SiteBuilder() {
     };
   }, [moveMode, htmlContent, templateId]);
   
+  // Scan selectable elements in iframe and build layer list
+  const refreshLayers = () => {
+    try {
+      const iframe = iframeRef.current;
+      const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+      if (!doc) return;
+      const selectors = [
+        '.hero h1', '.hero h2', '.hero h3', '.hero p', '.hero .title', '.hero .subtitle',
+        '.welcome-title', 'h1', 'h2', 'h3', 'p', '.product-title', '.section-title', '.headline', '.subhead'
+      ];
+      const found = [];
+      let idSeq = 1;
+      selectors.forEach(sel => {
+        doc.querySelectorAll(sel).forEach(el => {
+          // assign stable id
+          if (!el.getAttribute('data-move-id')) {
+            el.setAttribute('data-move-id', String(idSeq++));
+          }
+          const id = el.getAttribute('data-move-id');
+          const text = (el.textContent || '').trim().slice(0, 60);
+          const hidden = el.style.display === 'none';
+          const locked = el.getAttribute('data-move-locked') === 'true';
+          found.push({ id, text: text || sel, hidden, locked });
+        });
+      });
+      setLayers(found);
+    } catch (err) {
+      console.error('Failed to refresh layers:', err);
+    }
+  };
+
+  // Select/lock/hide helpers operating inside iframe
+  const withIframeEl = (id, fn) => {
+    const iframe = iframeRef.current;
+    const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+    if (!doc) return;
+    const el = doc.querySelector(`[data-move-id="${id}"]`);
+    if (!el) return;
+    fn(el, doc);
+  };
+
+  const selectLayer = (id) => {
+    withIframeEl(id, (el) => {
+      // Clear previous selection
+      const iframe = iframeRef.current;
+      const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+      doc.querySelectorAll('[data-move-selected]').forEach(x => x.removeAttribute('data-move-selected'));
+      el.setAttribute('data-move-selected', 'true');
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
+
+  const toggleLockLayer = (id) => {
+    withIframeEl(id, (el) => {
+      const locked = el.getAttribute('data-move-locked') === 'true';
+      if (locked) {
+        el.setAttribute('data-move-locked', 'false');
+        el.style.pointerEvents = '';
+        el.style.userSelect = '';
+      } else {
+        el.setAttribute('data-move-locked', 'true');
+        el.style.pointerEvents = 'none';
+        el.style.userSelect = 'none';
+      }
+    });
+    refreshLayers();
+  };
+
+  const toggleHideLayer = (id) => {
+    withIframeEl(id, (el) => {
+      el.style.display = el.style.display === 'none' ? '' : 'none';
+    });
+    refreshLayers();
+  };
+
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -518,6 +595,38 @@ export default function SiteBuilder() {
     size: 'cover',
     position: 'center'
   });
+
+  // Reusable text style presets
+  const [textStylePresets, setTextStylePresets] = useState(() => {
+    try {
+      const saved = localStorage.getItem('textStylePresets');
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return { title: [], subtitle: [], button: [] };
+  });
+  useEffect(() => {
+    try { localStorage.setItem('textStylePresets', JSON.stringify(textStylePresets)); } catch (_) {}
+  }, [textStylePresets]);
+  const addPreset = (kind, name, style) => {
+    setTextStylePresets(prev => ({
+      ...prev,
+      [kind]: [...prev[kind], { name: name || `${kind} preset ${prev[kind].length + 1}`, style }]
+    }));
+  };
+  const removePreset = (kind, index) => {
+    setTextStylePresets(prev => {
+      const arr = [...prev[kind]];
+      arr.splice(index, 1);
+      return { ...prev, [kind]: arr };
+    });
+  };
+  const applyPreset = (kind, index) => {
+    const preset = textStylePresets[kind]?.[index];
+    if (!preset) return;
+    if (kind === 'title') setHeroContent(prev => ({ ...prev, titleStyle: { ...prev.titleStyle, ...preset.style } }));
+    if (kind === 'subtitle') setHeroContent(prev => ({ ...prev, subtitleStyle: { ...prev.subtitleStyle, ...preset.style } }));
+    if (kind === 'button') setHeroContent(prev => ({ ...prev, buttonStyle: { ...prev.buttonStyle, ...preset.style } }));
+  };
 
   useEffect(() => {
     if (templateIdFromUrl && templateFileMap[templateIdFromUrl]) {
@@ -1215,6 +1324,13 @@ export default function SiteBuilder() {
   ];
 
 
+  // Responsive preview dimensions
+  const previewStyle = (() => {
+    if (previewSize === 'mobile') return { maxWidth: '420px' };
+    if (previewSize === 'tablet') return { maxWidth: '820px' };
+    return { maxWidth: '100%' };
+  })();
+
   return (
     <div className="site-builder-editor" style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex' }}>
       {/* Sidebar for editing */}
@@ -1276,6 +1392,79 @@ export default function SiteBuilder() {
               Mobile
             </button>
           </div>
+        </div>
+
+        {/* Layers Section */}
+        <div className="layers-section" style={{ 
+          marginBottom: '1rem', 
+          background: '#f9fafb',
+          borderRadius: '0.5rem', 
+          border: '1px solid #e5e7eb',
+          overflow: 'hidden'
+        }}>
+          <div 
+            onClick={() => toggleSection('layers')}
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '1rem',
+              cursor: 'pointer',
+              background: expandedSections.layers ? '#ede9fe' : 'transparent',
+              transition: 'background 0.2s'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.875rem', transition: 'transform 0.2s', transform: expandedSections.layers ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                ▶
+              </span>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>
+                Layers
+              </h3>
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); refreshLayers(); }}
+              style={{ padding: '0.35rem 0.6rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: 'white', cursor: 'pointer', fontSize: '0.75rem' }}
+            >
+              Refresh
+            </button>
+          </div>
+          
+          {expandedSections.layers && (
+            <div style={{ padding: '0.75rem 1rem', background: 'white' }}>
+              {layers.length === 0 ? (
+                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>No text elements detected. Click Refresh after the preview loads.</div>
+              ) : (
+                <div style={{ display: 'grid', gap: '0.5rem' }}>
+                  {layers.map(layer => (
+                    <div key={layer.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', border: '1px solid #e5e7eb', borderRadius: '0.375rem', padding: '0.5rem 0.75rem', background: '#fff' }}>
+                      <button
+                        onClick={() => selectLayer(layer.id)}
+                        style={{ textAlign: 'left', flex: 1, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.875rem', color: '#1f2937' }}
+                        title="Select element"
+                      >
+                        {layer.text || `Element ${layer.id}`}
+                      </button>
+                      <button
+                        onClick={() => toggleLockLayer(layer.id)}
+                        title={layer.locked ? 'Unlock' : 'Lock'}
+                        style={{ border: '1px solid #d1d5db', background: layer.locked ? '#fde68a' : 'white', cursor: 'pointer', fontSize: '0.75rem', borderRadius: '0.375rem', padding: '0.25rem 0.5rem' }}
+                      >
+                        {layer.locked ? 'Unlock' : 'Lock'}
+                      </button>
+                      <button
+                        onClick={() => toggleHideLayer(layer.id)}
+                        title={layer.hidden ? 'Show' : 'Hide'}
+                        style={{ border: '1px solid #d1d5db', background: layer.hidden ? '#fecaca' : 'white', cursor: 'pointer', fontSize: '0.75rem', borderRadius: '0.375rem', padding: '0.25rem 0.5rem' }}
+                      >
+                        {layer.hidden ? 'Show' : 'Hide'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Hero Section Editor */}
@@ -1622,8 +1811,65 @@ export default function SiteBuilder() {
                 />
               </div>
             </div>
+
+            {/* Title Presets */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.5rem', marginTop: '0.75rem' }}>
+              <input id="titlePresetName" type="text" placeholder="Preset name" style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.875rem' }} />
+              <button
+                onClick={() => {
+                  const el = document.getElementById('titlePresetName');
+                  const name = el?.value || '';
+                  addPreset('title', name, heroContent.titleStyle);
+                  if (el) el.value = '';
+                }}
+                style={{ padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.8125rem' }}
+              >
+                Save Preset
+              </button>
+            </div>
+            {textStylePresets.title?.length > 0 && (
+              <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.5rem' }}>
+                {textStylePresets.title.map((p, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', borderTop: '1px dashed #e5e7eb', paddingTop: '0.5rem' }}>
+                    <div style={{ fontSize: '0.8125rem', color: '#374151' }}>{p.name}</div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button onClick={() => applyPreset('title', i)} style={{ padding: '0.25rem 0.5rem', border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', fontSize: '0.75rem', cursor: 'pointer' }}>Apply</button>
+                      <button onClick={() => removePreset('title', i)} style={{ padding: '0.25rem 0.5rem', border: '1px solid #fecaca', background: '#fee2e2', color: '#991b1b', borderRadius: '0.375rem', fontSize: '0.75rem', cursor: 'pointer' }}>Delete</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
+          {/* Subtitle Presets */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.5rem', marginTop: '0.75rem' }}>
+            <input id="subtitlePresetName" type="text" placeholder="Preset name" style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.875rem' }} />
+            <button
+              onClick={() => {
+                const el = document.getElementById('subtitlePresetName');
+                const name = el?.value || '';
+                addPreset('subtitle', name, heroContent.subtitleStyle);
+                if (el) el.value = '';
+              }}
+              style={{ padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.8125rem' }}
+            >
+              Save Preset
+            </button>
+          </div>
+          {textStylePresets.subtitle?.length > 0 && (
+            <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.5rem' }}>
+              {textStylePresets.subtitle.map((p, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', borderTop: '1px dashed #e5e7eb', paddingTop: '0.5rem' }}>
+                  <div style={{ fontSize: '0.8125rem', color: '#374151' }}>{p.name}</div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button onClick={() => applyPreset('subtitle', i)} style={{ padding: '0.25rem 0.5rem', border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', fontSize: '0.75rem', cursor: 'pointer' }}>Apply</button>
+                    <button onClick={() => removePreset('subtitle', i)} style={{ padding: '0.25rem 0.5rem', border: '1px solid #fecaca', background: '#fee2e2', color: '#991b1b', borderRadius: '0.375rem', fontSize: '0.75rem', cursor: 'pointer' }}>Delete</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
               {/* Subtitle Styling */}
               <div style={{ 
                 marginBottom: '1.25rem', 
@@ -1996,6 +2242,35 @@ export default function SiteBuilder() {
                 />
               </div>
             </div>
+
+            {/* Button Presets */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.5rem', marginTop: '0.75rem' }}>
+              <input id="buttonPresetName" type="text" placeholder="Preset name" style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.875rem' }} />
+              <button
+                onClick={() => {
+                  const el = document.getElementById('buttonPresetName');
+                  const name = el?.value || '';
+                  addPreset('button', name, heroContent.buttonStyle);
+                  if (el) el.value = '';
+                }}
+                style={{ padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.8125rem' }}
+              >
+                Save Preset
+              </button>
+            </div>
+            {textStylePresets.button?.length > 0 && (
+              <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.5rem' }}>
+                {textStylePresets.button.map((p, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', borderTop: '1px dashed #e5e7eb', paddingTop: '0.5rem' }}>
+                    <div style={{ fontSize: '0.8125rem', color: '#374151' }}>{p.name}</div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button onClick={() => applyPreset('button', i)} style={{ padding: '0.25rem 0.5rem', border: '1px solid #d1d5db', background: 'white', borderRadius: '0.375rem', fontSize: '0.75rem', cursor: 'pointer' }}>Apply</button>
+                      <button onClick={() => removePreset('button', i)} style={{ padding: '0.25rem 0.5rem', border: '1px solid #fecaca', background: '#fee2e2', color: '#991b1b', borderRadius: '0.375rem', fontSize: '0.75rem', cursor: 'pointer' }}>Delete</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
             </div>
           )}
@@ -2716,11 +2991,14 @@ export default function SiteBuilder() {
       {/* Preview Area */}
       <div className="editor-preview" style={{ flex: 1, background: '#f3f4f6', padding: '2rem' }}>
         <div style={{
+          margin: '0 auto',
           background: 'white',
           borderRadius: '0.5rem',
           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
           overflow: 'hidden',
-          height: 'calc(100vh - 4rem)'
+          height: 'calc(100vh - 4rem)',
+          width: '100%',
+          ...previewStyle
         }}>
           <iframe
             ref={iframeRef}
