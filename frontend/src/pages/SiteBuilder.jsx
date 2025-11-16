@@ -132,8 +132,25 @@ export default function SiteBuilder() {
               if (document.getElementById('__structura-move-style')) return;
               const style = document.createElement('style');
               style.id = '__structura-move-style';
-              style.textContent = '[data-move-selected]{outline:2px dashed #8B5CF6 !important; cursor: move !important;}';
+              style.textContent = '[data-move-selected]{outline:2px dashed #8B5CF6 !important; cursor: move !important;}'
+                + '#__structura-center-v, #__structura-center-h{position:fixed;left:0;top:0;pointer-events:none;z-index:99999;}'
+                + '#__structura-center-v{left:50%;top:0;bottom:0;width:0;border-left:1px dashed rgba(239,68,68,0.9);}'
+                + '#__structura-center-h{top:50%;left:0;right:0;height:0;border-top:1px dashed rgba(239,68,68,0.9);}';
               document.head.appendChild(style);
+            })();
+
+            // Add center guidelines (vertical + horizontal)
+            (function addGuides(){
+              if (!document.getElementById('__structura-center-v')){
+                const v = document.createElement('div');
+                v.id = '__structura-center-v';
+                document.body.appendChild(v);
+              }
+              if (!document.getElementById('__structura-center-h')){
+                const h = document.createElement('div');
+                h.id = '__structura-center-h';
+                document.body.appendChild(h);
+              }
             })();
 
             const selectableSelectors = [
@@ -253,6 +270,11 @@ export default function SiteBuilder() {
                 document.removeEventListener('mouseup', onMouseUp, true);
                 document.removeEventListener('click', onClick, true);
                 document.removeEventListener('keydown', onKeyDown, true);
+                // Remove guides
+                const v = document.getElementById('__structura-center-v');
+                const h = document.getElementById('__structura-center-h');
+                if (v) v.remove();
+                if (h) h.remove();
               }
             };
           })();
@@ -1269,6 +1291,15 @@ export default function SiteBuilder() {
                   <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
                   <option value="Impact, sans-serif">Impact</option>
                   <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+                  <option value="'Inter', sans-serif">Inter</option>
+                  <option value="'Poppins', sans-serif">Poppins</option>
+                  <option value="'Roboto', sans-serif">Roboto</option>
+                  <option value="'Montserrat', sans-serif">Montserrat</option>
+                  <option value="'Raleway', sans-serif">Raleway</option>
+                  <option value="'Lora', serif">Lora</option>
+                  <option value="'Merriweather', serif">Merriweather</option>
+                  <option value="'Playfair Display', serif">Playfair Display</option>
+                  <option value="'Oswald', sans-serif">Oswald</option>
                 </select>
               </div>
               <div>
@@ -1441,6 +1472,15 @@ export default function SiteBuilder() {
                   <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
                   <option value="Impact, sans-serif">Impact</option>
                   <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+                  <option value="'Inter', sans-serif">Inter</option>
+                  <option value="'Poppins', sans-serif">Poppins</option>
+                  <option value="'Roboto', sans-serif">Roboto</option>
+                  <option value="'Montserrat', sans-serif">Montserrat</option>
+                  <option value="'Raleway', sans-serif">Raleway</option>
+                  <option value="'Lora', serif">Lora</option>
+                  <option value="'Merriweather', serif">Merriweather</option>
+                  <option value="'Playfair Display', serif">Playfair Display</option>
+                  <option value="'Oswald', sans-serif">Oswald</option>
                 </select>
               </div>
               <div>
@@ -1610,6 +1650,15 @@ export default function SiteBuilder() {
                   <option value="Verdana, sans-serif">Verdana</option>
                   <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
                   <option value="Impact, sans-serif">Impact</option>
+                  <option value="'Inter', sans-serif">Inter</option>
+                  <option value="'Poppins', sans-serif">Poppins</option>
+                  <option value="'Roboto', sans-serif">Roboto</option>
+                  <option value="'Montserrat', sans-serif">Montserrat</option>
+                  <option value="'Raleway', sans-serif">Raleway</option>
+                  <option value="'Lora', serif">Lora</option>
+                  <option value="'Merriweather', serif">Merriweather</option>
+                  <option value="'Playfair Display', serif">Playfair Display</option>
+                  <option value="'Oswald', sans-serif">Oswald</option>
                 </select>
               </div>
               <div>
