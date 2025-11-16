@@ -790,8 +790,10 @@ const PublishedStore = () => {
               script.textContent = `
                 (function() {
                   function setupOrderButtons() {
-                    const buttons = document.querySelectorAll('.product-button, .product-card button, .product button');
+                    const buttons = document.querySelectorAll('.product-button, .add-to-cart, .product-card button, .product button, button.add-to-cart');
                     buttons.forEach(function(button) {
+                      // Skip CTA buttons (they have separate handlers)
+                      if (button.closest('.hero') && button.classList.contains('cta-button')) return;
                       if (button.hasAttribute('data-handler-attached-v2')) return;
                       button.setAttribute('data-handler-attached-v2', 'true');
                       
@@ -835,15 +837,52 @@ const PublishedStore = () => {
                         }
                       };
                       
+                      // Make button clearly interactive
                       button.style.cursor = 'pointer';
                       button.style.pointerEvents = 'auto';
                       button.disabled = false;
                     });
                   }
                   
-                  setupOrderButtons();
-                  setTimeout(setupOrderButtons, 100);
-                  setTimeout(setupOrderButtons, 500);
+                  // Setup CTA buttons (scroll to products)
+                  function setupCTAButtons() {
+                    const ctaButtons = document.querySelectorAll('.hero .cta-button, .cta-button');
+                    ctaButtons.forEach(function(button) {
+                      if (button.hasAttribute('data-cta-handler-v2')) return;
+                      button.setAttribute('data-cta-handler-v2', 'true');
+                      
+                      button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        try {
+                          const productsSection = document.querySelector('.products, .products-section, .featured-products');
+                          if (productsSection) {
+                            productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          } else {
+                            const firstProduct = document.querySelector('.product-card, .product');
+                            if (firstProduct) {
+                              firstProduct.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                          }
+                        } catch (err) {
+                          console.error('Error scrolling to products:', err);
+                        }
+                      }, true);
+                      
+                      button.style.cursor = 'pointer';
+                      button.style.pointerEvents = 'auto';
+                    });
+                  }
+                  
+                  function setupAllButtons() {
+                    setupOrderButtons();
+                    setupCTAButtons();
+                  }
+                  
+                  setupAllButtons();
+                  setTimeout(setupAllButtons, 100);
+                  setTimeout(setupAllButtons, 500);
                 })();
               `;
               iframeDoc.head.appendChild(script);
@@ -1304,8 +1343,8 @@ const PublishedStore = () => {
         const target = e.target;
         
         // Check if click is on a product button
-        if (target && (target.classList.contains('product-button') || target.closest('.product-button'))) {
-          const button = target.classList.contains('product-button') ? target : target.closest('.product-button');
+        if (target && (target.classList.contains('product-button') || target.classList.contains('add-to-cart') || target.closest('.product-button') || target.closest('.add-to-cart'))) {
+          const button = (target.classList.contains('product-button') || target.classList.contains('add-to-cart')) ? target : (target.closest('.product-button') || target.closest('.add-to-cart'));
           const card = button.closest('.product-card, .product');
           
           if (card) {
@@ -1942,13 +1981,16 @@ const PublishedStore = () => {
               const iframe = iframeRef.current;
               const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
               if (iframeDoc) {
-                // Inject a script that sets up click handlers
+                // Inject a script that sets up click handlers for all buttons
                 const script = iframeDoc.createElement('script');
                 script.textContent = `
                   (function() {
+                    // Setup product buttons (Add to Cart, Order, etc.)
                     function setupOrderButtons() {
-                      const buttons = document.querySelectorAll('.product-button, .product-card button, .product button');
+                      const buttons = document.querySelectorAll('.product-button, .add-to-cart, .product-card button, .product button, button.add-to-cart');
                       buttons.forEach(function(button) {
+                        // Skip CTA buttons (they have separate handlers)
+                        if (button.closest('.hero') && button.classList.contains('cta-button')) return;
                         if (button.hasAttribute('data-handler-attached')) return;
                         button.setAttribute('data-handler-attached', 'true');
                         
@@ -1958,45 +2000,79 @@ const PublishedStore = () => {
                           
                           // Try to call parent function
                           try {
-                            if (window.parent && window.parent.openOrderModal) {
-                              const card = button.closest('.product-card, .product');
-                              if (card) {
-                                const titleEl = card.querySelector('.product-title, h3, h4, .product-name');
-                                const productName = titleEl ? titleEl.textContent.trim() : '';
-                                
-                                // Send product name to parent
+                            const card = button.closest('.product-card, .product');
+                            if (card) {
+                              const titleEl = card.querySelector('.product-title, h3, h4, .product-name');
+                              const productName = titleEl ? titleEl.textContent.trim() : '';
+                              
+                              // Send product name to parent via postMessage
+                              if (window.parent && window.parent !== window) {
                                 window.parent.postMessage({
                                   type: 'OPEN_ORDER_MODAL',
                                   productName: productName
                                 }, '*');
-                                
-                                // Also try direct call
-                                if (window.parent.openOrderModal) {
-                                  // We'll need to get product data from parent
-                                  window.parent.postMessage({
-                                    type: 'GET_PRODUCT_BY_NAME',
-                                    productName: productName
-                                  }, '*');
-                                }
                               }
                             }
                           } catch (err) {
                             console.error('Error in button click:', err);
                           }
                         }, true);
+                        
+                        // Make button clearly interactive
+                        button.style.cursor = 'pointer';
+                        button.style.pointerEvents = 'auto';
                       });
                     }
                     
-                    // Run immediately
-                    setupOrderButtons();
+                    // Setup CTA buttons (Hero section buttons - scroll to products)
+                    function setupCTAButtons() {
+                      const ctaButtons = document.querySelectorAll('.hero .cta-button, .cta-button');
+                      ctaButtons.forEach(function(button) {
+                        if (button.hasAttribute('data-cta-handler-attached')) return;
+                        button.setAttribute('data-cta-handler-attached', 'true');
+                        
+                        button.addEventListener('click', function(e) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          
+                          try {
+                            // Find products section
+                            const productsSection = document.querySelector('.products, .products-section, .featured-products');
+                            if (productsSection) {
+                              productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            } else {
+                              // Fallback: scroll to first product
+                              const firstProduct = document.querySelector('.product-card, .product');
+                              if (firstProduct) {
+                                firstProduct.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }
+                            }
+                          } catch (err) {
+                            console.error('Error scrolling to products:', err);
+                          }
+                        }, true);
+                        
+                        button.style.cursor = 'pointer';
+                        button.style.pointerEvents = 'auto';
+                      });
+                    }
                     
-                    // Also run after a delay to catch dynamically added buttons
-                    setTimeout(setupOrderButtons, 500);
-                    setTimeout(setupOrderButtons, 1000);
-                    setTimeout(setupOrderButtons, 2000);
+                    // Setup all buttons
+                    function setupAllButtons() {
+                      setupOrderButtons();
+                      setupCTAButtons();
+                    }
+                    
+                    // Run immediately
+                    setupAllButtons();
+                    
+                    // Also run after delays to catch dynamically added buttons
+                    setTimeout(setupAllButtons, 500);
+                    setTimeout(setupAllButtons, 1000);
+                    setTimeout(setupAllButtons, 2000);
                     
                     // Watch for new buttons
-                    const observer = new MutationObserver(setupOrderButtons);
+                    const observer = new MutationObserver(setupAllButtons);
                     observer.observe(document.body, { childList: true, subtree: true });
                   })();
                 `;
