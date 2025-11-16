@@ -1924,7 +1924,12 @@ const PublishedStore = () => {
                           onChange={(e) => handleOrderChange('paymentMethod', e.target.value)}
                           className="mr-3"
                         />
-                        <span>GCash</span>
+                    <div>
+                      <div className="font-medium">GCash</div>
+                      <div className="text-xs text-gray-500">
+                        You can pay via GCash. After placing your order, the seller will send you their GCash QR code or payment details.
+                      </div>
+                    </div>
                       </label>
                       <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
                         <input
@@ -1935,7 +1940,12 @@ const PublishedStore = () => {
                           onChange={(e) => handleOrderChange('paymentMethod', e.target.value)}
                           className="mr-3"
                         />
-                        <span>PayPal</span>
+                    <div>
+                      <div className="font-medium">Cash On Delivery (COD)</div>
+                      <div className="text-xs text-gray-500">
+                        Pay in cash when your order is delivered.
+                      </div>
+                    </div>
                       </label>
                       <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
                         <input
