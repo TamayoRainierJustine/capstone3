@@ -34,21 +34,39 @@ const FashionStore = () => {
               <img src="https://images.unsplash.com/photo-1523381210434-271e8be1f52b" alt="Fashion Item" />
             </div>
             <h3>Summer Dress</h3>
-            <p className="price">$89.99</p>
+            <div className="product-footer" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'.5rem'}}>
+              <p className="price">$89.99</p>
+              <div style={{display:'flex',gap:'.5rem'}}>
+                <button className="product-button cart-button add-to-cart" title="Add to Cart" aria-label="Add to Cart" style={{display:'inline-flex',alignItems:'center',gap:'.4rem',padding:'.5rem .75rem',borderRadius:8}}><span aria-hidden="true">🛒</span><span className="sr-only" style={{position:'absolute',left:-9999}}>Add to Cart</span></button>
+                <button className="product-button order-button" style={{padding:'.5rem .75rem',borderRadius:8}}>Order</button>
+              </div>
+            </div>
           </div>
           <div className="product-card">
             <div className="product-image">
               <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f" alt="Fashion Item" />
             </div>
             <h3>Designer Handbag</h3>
-            <p className="price">$199.99</p>
+            <div className="product-footer" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'.5rem'}}>
+              <p className="price">$199.99</p>
+              <div style={{display:'flex',gap:'.5rem'}}>
+                <button className="product-button cart-button add-to-cart" title="Add to Cart" aria-label="Add to Cart" style={{display:'inline-flex',alignItems:'center',gap:'.4rem',padding:'.5rem .75rem',borderRadius:8}}><span aria-hidden="true">🛒</span><span className="sr-only" style={{position:'absolute',left:-9999}}>Add to Cart</span></button>
+                <button className="product-button order-button" style={{padding:'.5rem .75rem',borderRadius:8}}>Order</button>
+              </div>
+            </div>
           </div>
           <div className="product-card">
             <div className="product-image">
               <img src="https://images.unsplash.com/photo-1543163521-1bf539c55dd2" alt="Fashion Item" />
             </div>
             <h3>Casual Jacket</h3>
-            <p className="price">$129.99</p>
+            <div className="product-footer" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'.5rem'}}>
+              <p className="price">$129.99</p>
+              <div style={{display:'flex',gap:'.5rem'}}>
+                <button className="product-button cart-button add-to-cart" title="Add to Cart" aria-label="Add to Cart" style={{display:'inline-flex',alignItems:'center',gap:'.4rem',padding:'.5rem .75rem',borderRadius:8}}><span aria-hidden="true">🛒</span><span className="sr-only" style={{position:'absolute',left:-9999}}>Add to Cart</span></button>
+                <button className="product-button order-button" style={{padding:'.5rem .75rem',borderRadius:8}}>Order</button>
+              </div>
+            </div>
           </div>
         </div>
       </section>

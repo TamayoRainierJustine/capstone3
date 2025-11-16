@@ -47,14 +47,22 @@ export default function ProductsSection({ title, products = [], onEdit }) {
                 onBlur={handleBlur}
                 dangerouslySetInnerHTML={{ __html: product.name }}
               />
-              <div
-                ref={el => productRefs.current[`price-${index}`] = el}
-                contentEditable
-                suppressContentEditableWarning
-                className="product-price"
-                onBlur={handleBlur}
-                dangerouslySetInnerHTML={{ __html: product.price }}
-              />
+              <div className="product-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '.5rem' }}>
+                <div
+                  ref={el => productRefs.current[`price-${index}`] = el}
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="product-price"
+                  onBlur={handleBlur}
+                  dangerouslySetInnerHTML={{ __html: product.price }}
+                />
+                <div style={{ display: 'flex', gap: '.5rem' }}>
+                  <button className="product-button cart-button add-to-cart" title="Add to Cart" aria-label="Add to Cart" style={{ display: 'inline-flex', alignItems: 'center', gap: '.4rem', padding: '.5rem .75rem', borderRadius: 8 }}>
+                    <span aria-hidden="true">🛒</span><span className="sr-only" style={{ position: 'absolute', left: -9999 }}>Add to Cart</span>
+                  </button>
+                  <button className="product-button order-button" style={{ padding: '.5rem .75rem', borderRadius: 8 }}>Order</button>
+                </div>
+              </div>
             </div>
           </div>
         ))}

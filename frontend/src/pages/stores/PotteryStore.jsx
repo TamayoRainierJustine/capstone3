@@ -106,8 +106,13 @@ const PotteryStore = () => {
                                     <p><strong>Dimensions:</strong> {product.dimensions}</p>
                                     <p><strong>Material:</strong> {product.material}</p>
                                 </div>
-                                <div className="price">${product.price}</div>
-                                <button className="add-to-cart">Add to Cart</button>
+                                <div className="product-footer" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'.5rem'}}>
+                                    <div className="price">${product.price}</div>
+                                    <div style={{display:'flex',gap:'.5rem'}}>
+                                        <button className="product-button cart-button add-to-cart" title="Add to Cart" aria-label="Add to Cart" style={{display:'inline-flex',alignItems:'center',gap:'.4rem',padding:'.5rem .75rem',borderRadius:8}}><span aria-hidden="true">🛒</span><span className="sr-only" style={{position:'absolute',left:-9999}}>Add to Cart</span></button>
+                                        <button className="product-button order-button" style={{padding:'.5rem .75rem',borderRadius:8}}>Order</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     ))}
