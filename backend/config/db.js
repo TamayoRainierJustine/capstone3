@@ -46,12 +46,16 @@ const sequelize = new Sequelize(databaseUrl, {
   },
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
   pool: {
-    max: 1, // Single connection for serverless to avoid connection overhead
+    max: process.env.RAILWAY_ENVIRONMENT ? 5 : 1, // More connections for Railway, single for serverless
     min: 0,
-    acquire: 15000, // 15 second timeout - gives more time for connection in serverless
+    acquire: process.env.RAILWAY_ENVIRONMENT ? 30000 : 15000, // 30s for Railway, 15s for serverless
     idle: 10000,
     evict: 1000, // Check for idle connections every second
-    handleDisconnects: true // Automatically reconnect on disconnect
+    handleDisconnects: true, // Automatically reconnect on disconnect
+    validate: (client) => {
+      // Validate connection before use
+      return client && !client._ending;
+    }
   },
   // For serverless: don't keep connections alive too long
   define: {

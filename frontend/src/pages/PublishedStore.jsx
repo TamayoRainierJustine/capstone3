@@ -1591,36 +1591,75 @@ const PublishedStore = () => {
         shipping: parseFloat(orderData.shipping) || 0
       };
 
-      // Add timeout to prevent 503 errors
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+      // Retry logic for 503 errors
+      let retries = 3;
+      let lastError = null;
       
-      try {
-        const response = await apiClient.post('/orders', orderPayload, {
-          signal: controller.signal,
-          timeout: 25000
-        });
-        clearTimeout(timeoutId);
+      while (retries > 0) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+          
+          try {
+            const response = await apiClient.post('/orders', orderPayload, {
+              signal: controller.signal,
+              timeout: 30000,
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            clearTimeout(timeoutId);
 
-        setOrderSuccess(true);
-        setOrderError('');
-        
-        // Close modal after 3 seconds
-        setTimeout(() => {
-          setShowOrderModal(false);
-          setOrderSuccess(false);
-          setSelectedProduct(null);
-        }, 3000);
-      } catch (apiError) {
-        clearTimeout(timeoutId);
-        throw apiError;
+            setOrderSuccess(true);
+            setOrderError('');
+            
+            // Close modal after 3 seconds
+            setTimeout(() => {
+              setShowOrderModal(false);
+              setOrderSuccess(false);
+              setSelectedProduct(null);
+            }, 3000);
+            
+            return; // Success, exit retry loop
+          } catch (apiError) {
+            clearTimeout(timeoutId);
+            lastError = apiError;
+            
+            // Only retry on 503 errors
+            if (apiError.response?.status === 503 && retries > 1) {
+              retries--;
+              // Wait before retrying (exponential backoff)
+              const delay = (4 - retries) * 1000; // 1s, 2s, 3s
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue; // Retry
+            } else {
+              throw apiError; // Don't retry for other errors
+            }
+          }
+        } catch (apiError) {
+          lastError = apiError;
+          if (apiError.response?.status !== 503 || retries === 1) {
+            throw apiError; // Don't retry
+          }
+          retries--;
+          // Wait before retrying
+          const delay = (4 - retries) * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
+      
+      // If we get here, all retries failed
+      throw lastError;
     } catch (err) {
       console.error('Error creating order:', err);
       if (err.name === 'AbortError' || err.code === 'ECONNABORTED') {
         setOrderError('Request timed out. Please check your connection and try again.');
       } else if (err.response?.status === 503) {
-        setOrderError('Service temporarily unavailable. Please try again in a moment.');
+        setOrderError('Service temporarily unavailable. The server may be restarting. Please try again in a few moments.');
+      } else if (err.response?.status === 400) {
+        setOrderError(err.response?.data?.message || 'Invalid order data. Please check all fields.');
+      } else if (err.response?.status === 404) {
+        setOrderError('Store or product not found. Please refresh the page.');
       } else {
         setOrderError(err.response?.data?.message || 'Failed to create order. Please try again.');
       }

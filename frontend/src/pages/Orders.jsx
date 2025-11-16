@@ -49,11 +49,24 @@ const Orders = () => {
     const colors = {
       pending: 'bg-yellow-100 text-yellow-800',
       processing: 'bg-blue-100 text-blue-800',
+      preparing: 'bg-blue-100 text-blue-800', // Alias for processing
       shipped: 'bg-purple-100 text-purple-800',
       completed: 'bg-green-100 text-green-800',
       cancelled: 'bg-red-100 text-red-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getStatusLabel = (status) => {
+    const labels = {
+      pending: 'Pending',
+      processing: 'Preparing',
+      preparing: 'Preparing',
+      shipped: 'To Be Shipped',
+      completed: 'Completed',
+      cancelled: 'Cancelled'
+    };
+    return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   const getPaymentStatusColor = (status) => {
@@ -94,8 +107,8 @@ const Orders = () => {
           >
             <option value="all">All Orders</option>
             <option value="pending">Pending</option>
-            <option value="processing">Processing</option>
-            <option value="shipped">Shipped</option>
+            <option value="processing">Preparing</option>
+            <option value="shipped">To Be Shipped</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
@@ -118,10 +131,21 @@ const Orders = () => {
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                    </span>
-                    <p className={`mt-2 px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusColor(order.paymentStatus)}`}>
+                    <div className="mb-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Order Status</label>
+                      <select
+                        value={order.status}
+                        onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 ${getStatusColor(order.status)} cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 hover:opacity-90 transition-opacity`}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="processing">Preparing</option>
+                        <option value="shipped">To Be Shipped</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                    <p className={`px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusColor(order.paymentStatus)}`}>
                       Payment: {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
                     </p>
                   </div>
@@ -163,40 +187,6 @@ const Orders = () => {
                     <p className="text-lg font-bold text-purple-600">
                       Total: ₱{parseFloat(order.total).toFixed(2)}
                     </p>
-                  </div>
-                  <div className="flex space-x-2">
-                    {order.status === 'pending' && (
-                      <>
-                        <button
-                          onClick={() => updateOrderStatus(order.id, 'processing')}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                        >
-                          Process
-                        </button>
-                        <button
-                          onClick={() => updateOrderStatus(order.id, 'cancelled')}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    )}
-                    {order.status === 'processing' && (
-                      <button
-                        onClick={() => updateOrderStatus(order.id, 'shipped')}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                      >
-                        Mark as Shipped
-                      </button>
-                    )}
-                    {order.status === 'shipped' && (
-                      <button
-                        onClick={() => updateOrderStatus(order.id, 'completed')}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                      >
-                        Mark as Completed
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>
