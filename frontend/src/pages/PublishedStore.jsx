@@ -652,7 +652,15 @@ const PublishedStore = () => {
               // Ensure an Add-to-Cart button exists alongside Order in existing template cards
               try {
                 const footerEl = card.querySelector('.product-footer, .product-actions, .product-info, .product');
-                const orderBtn = card.querySelector('button.product-button, .product button, button.add-to-cart, button:contains("Order")');
+                // Find an existing order button by common classes or text content
+                let orderBtn = card.querySelector('button.product-button, .product button, button.add-to-cart');
+                if (!orderBtn) {
+                  const allBtns = card.querySelectorAll('button');
+                  allBtns.forEach(b => {
+                    const txt = (b.textContent || '').trim().toLowerCase();
+                    if (!orderBtn && txt.includes('order')) orderBtn = b;
+                  });
+                }
                 const hasCartBtn = card.querySelector('.cart-button');
                 if (footerEl && orderBtn && !hasCartBtn) {
                   // Style footer to align items
