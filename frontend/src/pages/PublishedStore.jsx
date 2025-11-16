@@ -35,6 +35,7 @@ const PublishedStore = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [pendingOrderProduct, setPendingOrderProduct] = useState(null);
   
   // Order modal state
   const [showOrderModal, setShowOrderModal] = useState(false);
@@ -152,6 +153,17 @@ const PublishedStore = () => {
   useEffect(() => {
     // Store the callback in window so iframe can access it
     window.openOrderModal = (product) => {
+      // Check if user is authenticated
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        // User not logged in - show login modal first, store product for later
+        setPendingOrderProduct(product);
+        setShowLoginModal(true);
+        return;
+      }
+      
+      // User is logged in - open order modal directly
       setSelectedProduct(product);
       setShowOrderModal(true);
       
@@ -190,17 +202,6 @@ const PublishedStore = () => {
       delete window.openOrderModal;
     };
   }, []);
-
-  // Check authentication and show login modal if not authenticated
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      // Show login modal instead of redirecting
-      setShowLoginModal(true);
-    } else {
-      setShowLoginModal(false);
-    }
-  }, [domain]);
   
   // Handle login submission
   const handleLogin = async (e) => {
@@ -222,15 +223,21 @@ const PublishedStore = () => {
         // Update auth context
         loginContext(response.data.user);
         
-        // Close login modal
-        setShowLoginModal(false);
-        
         // Clear form
         setLoginEmail('');
         setLoginPassword('');
         
-        // Reload the page to fetch store data
-        window.location.reload();
+        // Close login modal
+        setShowLoginModal(false);
+        
+        // If there was a pending order, open the order modal now
+        if (pendingOrderProduct) {
+          // Small delay to ensure state is updated
+          setTimeout(() => {
+            window.openOrderModal(pendingOrderProduct);
+            setPendingOrderProduct(null);
+          }, 100);
+        }
       } else {
         setLoginError('No token received from server');
       }
@@ -248,13 +255,7 @@ const PublishedStore = () => {
 
   useEffect(() => {
     const fetchStore = async () => {
-      // Check authentication before fetching
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
+      // Store is publicly accessible - no authentication required to view
       try {
         // Decode the domain from URL params first (React Router may have encoded it)
         const decodedDomain = decodeURIComponent(domain || '');
@@ -1781,110 +1782,7 @@ const PublishedStore = () => {
     };
   }, [products]);
 
-  // Check authentication before rendering - show login form if not authenticated
-  const token = localStorage.getItem('token');
-  if (!token || showLoginModal) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #FF6B9D 0%, #C44569 25%, #8B5CF6 50%, #4C1D95 75%, #1E1B4B 100%)' }}>
-        <div style={{ display: 'flex', width: '900px', maxWidth: '90%', height: '500px', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)' }}>
-          {/* Left Panel - Login Form */}
-          <div style={{ background: '#181c2f', color: '#fff', width: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 32px' }}>
-            <FaUserCircle size={64} style={{ marginBottom: 32, color: '#7f53ac' }} />
-            <h2 style={{ marginBottom: 24, fontSize: '1.5rem', fontWeight: 'bold' }}>Welcome</h2>
-            <p style={{ marginBottom: 32, fontSize: '0.875rem', color: '#aaa', textAlign: 'center' }}>
-              Please log in to view this store and products
-            </p>
-            <form onSubmit={handleLogin} style={{ width: '100%' }}>
-              <div style={{ marginBottom: 24 }}>
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={loginEmail}
-                  onChange={e => setLoginEmail(e.target.value)}
-                  required
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: 'none', background: '#23264a', color: '#fff', marginBottom: 16, fontSize: 16 }}
-                />
-                <div style={{ position: 'relative', width: '100%' }}>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Password"
-                    value={loginPassword}
-                    onChange={e => setLoginPassword(e.target.value)}
-                    required
-                    style={{ width: '100%', padding: '12px 16px', paddingRight: '45px', borderRadius: '8px', border: 'none', background: '#23264a', color: '#fff', fontSize: 16 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{
-                      position: 'absolute',
-                      right: '12px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#aaa',
-                      cursor: 'pointer',
-                      padding: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                    onMouseEnter={(e) => e.target.style.color = '#fff'}
-                    onMouseLeave={(e) => e.target.style.color = '#aaa'}
-                  >
-                    {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
-                  </button>
-                </div>
-              </div>
-              <button 
-                type="submit" 
-                disabled={loginLoading} 
-                style={{ 
-                  width: '100%', 
-                  padding: '12px', 
-                  borderRadius: '8px', 
-                  background: 'linear-gradient(90deg, #ff267a 0%, #7f53ac 100%)', 
-                  color: '#fff', 
-                  fontWeight: 'bold', 
-                  fontSize: 16, 
-                  border: 'none', 
-                  marginBottom: 16, 
-                  cursor: loginLoading ? 'not-allowed' : 'pointer', 
-                  opacity: loginLoading ? 0.7 : 1 
-                }}
-              >
-                {loginLoading ? 'Signing in...' : 'LOGIN'}
-              </button>
-              {loginError && (
-                <div style={{ color: '#ff267a', marginTop: 16, fontSize: '0.875rem', textAlign: 'center' }}>
-                  {loginError}
-                </div>
-              )}
-            </form>
-            <div style={{ marginTop: 24, fontSize: 14, color: '#aaa', textAlign: 'center' }}>
-              Don't have an account?{' '}
-              <Link 
-                to="/register" 
-                state={{ returnUrl: window.location.pathname }}
-                style={{ color: '#7f53ac', fontWeight: 'bold', textDecoration: 'none' }}
-              >
-                Sign up
-              </Link>
-            </div>
-          </div>
-          {/* Right Panel */}
-          <div style={{ background: 'rgba(24,28,47,0.95)', color: '#fff', width: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-            <div style={{ fontSize: 40, fontWeight: 'bold', marginBottom: 16 }}>Welcome.</div>
-            <div style={{ fontSize: 18, color: '#aaa', textAlign: 'center', maxWidth: 320 }}>
-              Sign in to access this store and browse our products.
-            </div>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, background: 'radial-gradient(circle at 60% 40%, #7f53ac55 0%, transparent 70%)' }} />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Store is publicly accessible - no authentication required to view
 
   if (loading) {
     return (
@@ -1950,15 +1848,28 @@ const PublishedStore = () => {
     setOrderError('');
     setOrderLoading(true);
 
+    // Check authentication before submitting order
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setOrderError('Please log in to place an order');
+      setOrderLoading(false);
+      setShowOrderModal(false);
+      setShowLoginModal(true);
+      setPendingOrderProduct(selectedProduct);
+      return;
+    }
+
     try {
       if (!selectedProduct || !store) {
         setOrderError('Product or store information missing');
+        setOrderLoading(false);
         return;
       }
 
       // Validate required fields
       if (!orderData.customerName || !orderData.customerEmail || !orderData.paymentMethod) {
         setOrderError('Please fill in all required fields');
+        setOrderLoading(false);
         return;
       }
 
@@ -2077,6 +1988,102 @@ const PublishedStore = () => {
 
   return (
     <>
+      {/* Login Modal - shown when user tries to order without being logged in */}
+      {showLoginModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowLoginModal(false)}
+        >
+          <div 
+            className="bg-white rounded-lg max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Login Required</h2>
+              <button
+                onClick={() => {
+                  setShowLoginModal(false);
+                  setPendingOrderProduct(null);
+                }}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <p className="text-gray-600 mb-4">
+              Please log in to place an order for this product.
+            </p>
+            {pendingOrderProduct && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-700">
+                  <strong>Product:</strong> {pendingOrderProduct.name}
+                </p>
+                {pendingOrderProduct.price && (
+                  <p className="text-sm text-gray-700">
+                    <strong>Price:</strong> ₱{parseFloat(pendingOrderProduct.price).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            )}
+            <form onSubmit={handleLogin}>
+              <div className="space-y-3 mb-4">
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={loginEmail}
+                  onChange={e => setLoginEmail(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Password"
+                    value={loginPassword}
+                    onChange={e => setLoginPassword(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                  </button>
+                </div>
+              </div>
+              {loginError && (
+                <div className="text-red-600 text-sm mb-4">
+                  {loginError}
+                </div>
+              )}
+              <button 
+                type="submit" 
+                disabled={loginLoading}
+                className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loginLoading ? 'Signing in...' : 'LOGIN'}
+              </button>
+              <div className="mt-4 text-center text-sm text-gray-600">
+                Don't have an account?{' '}
+                <Link 
+                  to="/register" 
+                  state={{ returnUrl: window.location.pathname }}
+                  className="text-purple-600 font-semibold hover:underline"
+                  onClick={() => {
+                    setShowLoginModal(false);
+                    setPendingOrderProduct(null);
+                  }}
+                >
+                  Sign up
+                </Link>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Order Modal */}
       {showOrderModal && selectedProduct && (
         <div 
