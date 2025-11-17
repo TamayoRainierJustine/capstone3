@@ -3093,8 +3093,8 @@ export default function SiteBuilder() {
               ))
             )}
           </div>
+            </div>
           )}
-        </div>
 
         {/* Save and Exit Buttons */}
         <div style={{ display: 'flex', gap: '0.75rem' }}>
