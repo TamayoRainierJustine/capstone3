@@ -886,6 +886,8 @@ const PublishedStore = () => {
                   if (!iframeDoc.getElementById('structura-published-style')) {
                     const style = iframeDoc.createElement('style');
                     style.id = 'structura-published-style';
+                    // Use yellow color for bladebinge template, black for others
+                    const priceColor = store?.templateId === 'bladebinge' ? '#c9a961' : '#111';
                     style.textContent = `
                       /* Normalize product info layout across templates */
                       .product-info, .product-title, .product-description { width: 100% !important; float: none !important; clear: both !important; }
@@ -901,7 +903,7 @@ const PublishedStore = () => {
                         white-space: normal; 
                         word-break: normal; 
                       }
-                      .product-price, .price { font-weight: 700; color: #111; font-size: 1.05rem; }
+                      .product-price, .price { font-weight: 700; color: ${priceColor} !important; font-size: 1.05rem; }
                       .product-footer { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .5rem; }
                       .product-footer .product-button { cursor: pointer; padding: .5rem .75rem; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; }
                     `;
