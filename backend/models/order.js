@@ -47,6 +47,11 @@ const Order = sequelize.define('Order', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  paymentReference: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'Payment reference number inputted by buyer (e.g., GCash reference number)'
+  },
   subtotal: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false

@@ -98,6 +98,7 @@ export const createOrder = async (req, res) => {
       customerEmail,
       customerPhone,
       paymentMethod,
+      paymentReference,
       shipping
     } = req.body;
 
@@ -291,6 +292,7 @@ export const createOrder = async (req, res) => {
         status: 'pending',
         paymentMethod: paymentMethod || 'gcash',
         paymentStatus: 'pending',
+        paymentReference: paymentReference || null, // Payment reference from buyer
         subtotal,
         shipping: shippingCost,
         total,
@@ -338,6 +340,7 @@ export const createOrder = async (req, res) => {
         status: order.status,
         paymentMethod: order.paymentMethod,
         paymentStatus: order.paymentStatus,
+        paymentReference: order.paymentReference,
         subtotal: order.subtotal,
         shipping: order.shipping,
         total: order.total,
