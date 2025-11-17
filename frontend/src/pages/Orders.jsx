@@ -310,6 +310,45 @@ const Orders = () => {
                       <strong>Phone:</strong> {order.customerPhone}
                     </p>
                   )}
+                  {order.shippingAddress && (
+                    <div className="mt-2">
+                      <p className="text-sm font-medium text-gray-700 mb-1">Shipping Address:</p>
+                      <p className="text-sm text-gray-600">
+                        {(() => {
+                          const addr = order.shippingAddress;
+                          // Use names if available, otherwise convert codes to names
+                          let regionName = addr.regionName;
+                          let provinceName = addr.provinceName;
+                          let municipalityName = addr.municipalityName;
+                          let barangayName = addr.barangayName || addr.barangay;
+                          
+                          // If names not available, try to convert codes
+                          if (!regionName && addr.region) {
+                            const region = regions.find(r => r.reg_code === addr.region);
+                            regionName = region?.name || addr.region;
+                          }
+                          if (!provinceName && addr.province && addr.region) {
+                            const provinces = getProvincesByRegion(addr.region);
+                            const province = provinces.find(p => p.prov_code === addr.province);
+                            provinceName = province?.name || addr.province;
+                          }
+                          if (!municipalityName && addr.municipality && addr.province) {
+                            const municipalities = getCityMunByProvince(addr.province);
+                            const municipality = municipalities.find(m => m.mun_code === addr.municipality);
+                            municipalityName = municipality?.name || addr.municipality;
+                          }
+                          
+                          const addressParts = [];
+                          if (barangayName) addressParts.push(barangayName);
+                          if (municipalityName) addressParts.push(municipalityName);
+                          if (provinceName) addressParts.push(provinceName);
+                          if (regionName) addressParts.push(regionName);
+                          
+                          return addressParts.join(', ') || 'Address not available';
+                        })()}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mb-4">
