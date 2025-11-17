@@ -66,8 +66,13 @@ const RegisterPage = () => {
           replace: true 
         });
       } else {
-        // No return URL, go to verify email as before
-        navigate('/verify-email', { state: { email: formData.email } });
+        // No return URL, redirect to login with success message
+        navigate('/login', { 
+          state: { 
+            message: 'Registration successful! Please log in to continue.'
+          },
+          replace: true 
+        });
       }
     } catch (error) {
       setError(
