@@ -293,6 +293,12 @@ const Orders = () => {
                         Method: {order.paymentMethod.toUpperCase()}
                       </p>
                     )}
+                    {order.paymentReference && (
+                      <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                        <p className="text-xs font-medium text-blue-800 mb-1">Buyer's Payment Reference:</p>
+                        <p className="text-xs text-blue-900 font-mono break-all">{order.paymentReference}</p>
+                      </div>
+                    )}
                     {order.paymentTransactionId && (
                       <p className="text-xs text-gray-500 mt-1 break-all max-w-xs">
                         TXN: {order.paymentTransactionId}
