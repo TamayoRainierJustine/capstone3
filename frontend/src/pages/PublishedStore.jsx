@@ -1939,12 +1939,21 @@ const PublishedStore = () => {
         return;
       }
 
-      // Build shipping address
+      // Build shipping address with names
+      const regionName = regionsList.find(r => r.reg_code === orderData.region)?.name || orderData.region;
+      const provinceName = provincesList.find(p => p.prov_code === orderData.province)?.name || orderData.province;
+      const municipalityName = municipalitiesList.find(m => m.mun_code === orderData.municipality)?.name || orderData.municipality;
+      const barangayName = barangaysList.find(b => b.name === orderData.barangay)?.name || orderData.barangay;
+      
       const shippingAddress = {
         region: orderData.region,
+        regionName: regionName,
         province: orderData.province,
+        provinceName: provinceName,
         municipality: orderData.municipality,
-        barangay: orderData.barangay
+        municipalityName: municipalityName,
+        barangay: orderData.barangay,
+        barangayName: barangayName
       };
 
       // Create order

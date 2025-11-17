@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
 import { FaCopy, FaCheck } from 'react-icons/fa';
+import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
