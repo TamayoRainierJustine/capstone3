@@ -888,6 +888,16 @@ const PublishedStore = () => {
                     style.id = 'structura-published-style';
                     // Use yellow color for bladebinge template, black for others
                     const priceColor = store?.templateId === 'bladebinge' ? '#c9a961' : '#111';
+                    // Use yellow for description in bladebinge (dark background)
+                    // For other dark background templates (struvaris, ructon), use lighter gray
+                    // For light background templates, use medium gray
+                    const darkBackgroundTemplates = ['bladebinge', 'struvaris', 'ructon'];
+                    let descriptionColor = '#666'; // Default for light backgrounds
+                    if (store?.templateId === 'bladebinge') {
+                      descriptionColor = '#c9a961'; // Yellow for bladebinge
+                    } else if (darkBackgroundTemplates.includes(store?.templateId)) {
+                      descriptionColor = '#999'; // Lighter gray for other dark backgrounds
+                    }
                     style.textContent = `
                       /* Normalize product info layout across templates */
                       .product-info, .product-title, .product-description { width: 100% !important; float: none !important; clear: both !important; }
@@ -898,7 +908,7 @@ const PublishedStore = () => {
                         -webkit-box-orient: vertical; 
                         overflow: hidden; 
                         line-height: 1.6; 
-                        color: #444; 
+                        color: ${descriptionColor} !important; 
                         margin: .5rem 0 1rem; 
                         white-space: normal; 
                         word-break: normal; 
