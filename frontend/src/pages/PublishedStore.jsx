@@ -1730,41 +1730,77 @@ const PublishedStore = () => {
             const contactInfo = iframeDoc.createElement('div');
             contactInfo.style.cssText = 'display: flex; flex-direction: column; gap: 2rem; align-items: center;';
             
-            // Address - Convert codes to names
+            // Address - Convert codes to names (handle both codes and names)
             const addressParts = [];
             let regionName = store.region;
             let provinceName = store.province;
             let municipalityName = store.municipality;
             let barangayName = store.barangay;
             
+            // Helper function to check if value is a code (numeric) or name (text)
+            const isCode = (value) => {
+              if (!value) return false;
+              // If it's all digits or matches code pattern (like "041014"), it's a code
+              return /^\d+$/.test(value.toString().trim());
+            };
+            
             // Convert region code to name
-            if (store.region) {
+            if (store.region && isCode(store.region)) {
               const region = regions.find(r => r.reg_code === store.region);
               regionName = region?.name || store.region;
+            } else if (store.region) {
+              regionName = store.region; // Already a name
             }
             
             // Convert province code to name
-            if (store.province && store.region) {
-              const provinces = getProvincesByRegion(store.region);
-              const province = provinces.find(p => p.prov_code === store.province);
-              provinceName = province?.name || store.province;
+            if (store.province) {
+              if (isCode(store.province) && store.region) {
+                const regionCode = isCode(store.region) ? store.region : regions.find(r => r.name === store.region)?.reg_code || store.region;
+                const provinces = getProvincesByRegion(regionCode);
+                const province = provinces.find(p => p.prov_code === store.province);
+                provinceName = province?.name || store.province;
+              } else {
+                provinceName = store.province; // Already a name
+              }
             }
             
             // Convert municipality code to name
-            if (store.municipality && store.province) {
-              const municipalities = getCityMunByProvince(store.province);
-              const municipality = municipalities.find(m => m.mun_code === store.municipality);
-              municipalityName = municipality?.name || store.municipality;
+            if (store.municipality) {
+              if (isCode(store.municipality) && store.province) {
+                const provinceCode = isCode(store.province) ? store.province : (() => {
+                  const regionCode = isCode(store.region) ? store.region : regions.find(r => r.name === store.region)?.reg_code || store.region;
+                  const provinces = getProvincesByRegion(regionCode);
+                  return provinces.find(p => p.name === store.province)?.prov_code || store.province;
+                })();
+                const municipalities = getCityMunByProvince(provinceCode);
+                const municipality = municipalities.find(m => m.mun_code === store.municipality);
+                municipalityName = municipality?.name || store.municipality;
+              } else {
+                municipalityName = store.municipality; // Already a name
+              }
             }
             
             // Convert barangay code to name
-            if (store.barangay && store.municipality) {
-              const barangays = getBarangayByMun(store.municipality);
-              const barangaysArray = barangays?.data || barangays || [];
-              const barangay = Array.isArray(barangaysArray) 
-                ? barangaysArray.find(b => (b.brgy_code || b.code || b.brgyCode) === store.barangay)
-                : null;
-              barangayName = barangay?.name || barangay?.brgy_name || barangay?.brgyName || store.barangay;
+            if (store.barangay) {
+              if (isCode(store.barangay) && store.municipality) {
+                const municipalityCode = isCode(store.municipality) ? store.municipality : (() => {
+                  const provinceCode = isCode(store.province) ? store.province : (() => {
+                    const regionCode = isCode(store.region) ? store.region : regions.find(r => r.name === store.region)?.reg_code || store.region;
+                    const provinces = getProvincesByRegion(regionCode);
+                    return provinces.find(p => p.name === store.province)?.prov_code || store.province;
+                  })();
+                  const municipalities = getCityMunByProvince(provinceCode);
+                  return municipalities.find(m => m.name === store.municipality)?.mun_code || store.municipality;
+                })();
+                const barangays = getBarangayByMun(municipalityCode);
+                const barangaysArray = barangays?.data || barangays || [];
+                const barangay = Array.isArray(barangaysArray) 
+                  ? barangaysArray.find(b => (b.brgy_code || b.code || b.brgyCode) === store.barangay)
+                  : null;
+                barangayName = barangay?.name || barangay?.brgy_name || barangay?.brgyName || store.barangay;
+              } else {
+                barangayName = store.barangay; // Already a name
+              }
             }
             
             if (barangayName) addressParts.push(barangayName);
@@ -1841,40 +1877,76 @@ const PublishedStore = () => {
             });
           }
           
-          // Update address - Convert codes to names
+          // Update address - Convert codes to names (handle both codes and names)
           let regionName = store.region;
           let provinceName = store.province;
           let municipalityName = store.municipality;
           let barangayName = store.barangay;
           
+          // Helper function to check if value is a code (numeric) or name (text)
+          const isCode = (value) => {
+            if (!value) return false;
+            // If it's all digits or matches code pattern (like "041014"), it's a code
+            return /^\d+$/.test(value.toString().trim());
+          };
+          
           // Convert region code to name
-          if (store.region) {
+          if (store.region && isCode(store.region)) {
             const region = regions.find(r => r.reg_code === store.region);
             regionName = region?.name || store.region;
+          } else if (store.region) {
+            regionName = store.region; // Already a name
           }
           
           // Convert province code to name
-          if (store.province && store.region) {
-            const provinces = getProvincesByRegion(store.region);
-            const province = provinces.find(p => p.prov_code === store.province);
-            provinceName = province?.name || store.province;
+          if (store.province) {
+            if (isCode(store.province) && store.region) {
+              const regionCode = isCode(store.region) ? store.region : regions.find(r => r.name === store.region)?.reg_code || store.region;
+              const provinces = getProvincesByRegion(regionCode);
+              const province = provinces.find(p => p.prov_code === store.province);
+              provinceName = province?.name || store.province;
+            } else {
+              provinceName = store.province; // Already a name
+            }
           }
           
           // Convert municipality code to name
-          if (store.municipality && store.province) {
-            const municipalities = getCityMunByProvince(store.province);
-            const municipality = municipalities.find(m => m.mun_code === store.municipality);
-            municipalityName = municipality?.name || store.municipality;
+          if (store.municipality) {
+            if (isCode(store.municipality) && store.province) {
+              const provinceCode = isCode(store.province) ? store.province : (() => {
+                const regionCode = isCode(store.region) ? store.region : regions.find(r => r.name === store.region)?.reg_code || store.region;
+                const provinces = getProvincesByRegion(regionCode);
+                return provinces.find(p => p.name === store.province)?.prov_code || store.province;
+              })();
+              const municipalities = getCityMunByProvince(provinceCode);
+              const municipality = municipalities.find(m => m.mun_code === store.municipality);
+              municipalityName = municipality?.name || store.municipality;
+            } else {
+              municipalityName = store.municipality; // Already a name
+            }
           }
           
           // Convert barangay code to name
-          if (store.barangay && store.municipality) {
-            const barangays = getBarangayByMun(store.municipality);
-            const barangaysArray = barangays?.data || barangays || [];
-            const barangay = Array.isArray(barangaysArray) 
-              ? barangaysArray.find(b => (b.brgy_code || b.code || b.brgyCode) === store.barangay)
-              : null;
-            barangayName = barangay?.name || barangay?.brgy_name || barangay?.brgyName || store.barangay;
+          if (store.barangay) {
+            if (isCode(store.barangay) && store.municipality) {
+              const municipalityCode = isCode(store.municipality) ? store.municipality : (() => {
+                const provinceCode = isCode(store.province) ? store.province : (() => {
+                  const regionCode = isCode(store.region) ? store.region : regions.find(r => r.name === store.region)?.reg_code || store.region;
+                  const provinces = getProvincesByRegion(regionCode);
+                  return provinces.find(p => p.name === store.province)?.prov_code || store.province;
+                })();
+                const municipalities = getCityMunByProvince(provinceCode);
+                return municipalities.find(m => m.name === store.municipality)?.mun_code || store.municipality;
+              })();
+              const barangays = getBarangayByMun(municipalityCode);
+              const barangaysArray = barangays?.data || barangays || [];
+              const barangay = Array.isArray(barangaysArray) 
+                ? barangaysArray.find(b => (b.brgy_code || b.code || b.brgyCode) === store.barangay)
+                : null;
+              barangayName = barangay?.name || barangay?.brgy_name || barangay?.brgyName || store.barangay;
+            } else {
+              barangayName = store.barangay; // Already a name
+            }
           }
           
           const addressParts = [];
