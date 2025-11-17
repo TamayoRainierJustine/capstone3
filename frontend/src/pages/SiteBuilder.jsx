@@ -3093,7 +3093,6 @@ export default function SiteBuilder() {
               ))
             )}
           </div>
-            </div>
           )}
         </div>
 
@@ -3133,20 +3132,19 @@ export default function SiteBuilder() {
             Exit
           </button>
         </div>
-          {status && (
-            <div style={{
-              marginTop: '1rem',
-              padding: '0.75rem',
-              background: status.includes('Error') ? '#fee2e2' : '#d1fae5',
-              color: status.includes('Error') ? '#dc2626' : '#065f46',
-              borderRadius: '0.375rem',
-              fontSize: '0.875rem',
-              textAlign: 'center'
-            }}>
-              {status}
-            </div>
-          )}
-        </div>
+        {status && (
+          <div style={{
+            marginTop: '1rem',
+            padding: '0.75rem',
+            background: status.includes('Error') ? '#fee2e2' : '#d1fae5',
+            color: status.includes('Error') ? '#dc2626' : '#065f46',
+            borderRadius: '0.375rem',
+            fontSize: '0.875rem',
+            textAlign: 'center'
+          }}>
+            {status}
+          </div>
+        )}
       </div>
 
       {/* Preview Area */}
