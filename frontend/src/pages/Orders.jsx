@@ -177,24 +177,45 @@ const Orders = () => {
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold">Order #{order.orderNumber}</h3>
-                    <div className="mt-2 bg-purple-50 border-2 border-purple-300 rounded-lg px-4 py-3 inline-block">
-                      <p className="text-xs font-medium text-purple-700 mb-1">Transaction Reference Number:</p>
-                      <div className="flex items-center gap-2">
-                        <p className="text-base font-bold text-purple-900 font-mono">{order.orderNumber}</p>
-                        <button
-                          onClick={() => copyReferenceNumber(order.orderNumber)}
-                          className="p-1.5 hover:bg-purple-100 rounded transition-colors"
-                          title="Copy reference number"
-                        >
-                          {copiedRef === order.orderNumber ? (
-                            <FaCheck className="text-green-600" size={14} />
-                          ) : (
-                            <FaCopy className="text-purple-600" size={14} />
-                          )}
-                        </button>
+                    {order.paymentReference ? (
+                      <div className="mt-2 bg-purple-50 border-2 border-purple-300 rounded-lg px-4 py-3 inline-block">
+                        <p className="text-xs font-medium text-purple-700 mb-1">Transaction Reference Number:</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-base font-bold text-purple-900 font-mono">{order.paymentReference}</p>
+                          <button
+                            onClick={() => copyReferenceNumber(order.paymentReference)}
+                            className="p-1.5 hover:bg-purple-100 rounded transition-colors"
+                            title="Copy reference number"
+                          >
+                            {copiedRef === order.paymentReference ? (
+                              <FaCheck className="text-green-600" size={14} />
+                            ) : (
+                              <FaCopy className="text-purple-600" size={14} />
+                            )}
+                          </button>
+                        </div>
+                        <p className="text-xs text-purple-600 mt-1">Buyer's payment reference number</p>
                       </div>
-                      <p className="text-xs text-purple-600 mt-1">Use this number to verify customer payments</p>
-                    </div>
+                    ) : (
+                      <div className="mt-2 bg-gray-50 border-2 border-gray-300 rounded-lg px-4 py-3 inline-block">
+                        <p className="text-xs font-medium text-gray-700 mb-1">Order Number:</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-base font-bold text-gray-900 font-mono">{order.orderNumber}</p>
+                          <button
+                            onClick={() => copyReferenceNumber(order.orderNumber)}
+                            className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                            title="Copy order number"
+                          >
+                            {copiedRef === order.orderNumber ? (
+                              <FaCheck className="text-green-600" size={14} />
+                            ) : (
+                              <FaCopy className="text-gray-600" size={14} />
+                            )}
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">No payment reference provided by buyer</p>
+                      </div>
+                    )}
                     <p className="text-sm text-gray-600 mt-2">
                       {new Date(order.createdAt).toLocaleDateString()} at{' '}
                       {new Date(order.createdAt).toLocaleTimeString()}
@@ -292,12 +313,6 @@ const Orders = () => {
                       <p className="text-xs text-gray-600 mt-1">
                         Method: {order.paymentMethod.toUpperCase()}
                       </p>
-                    )}
-                    {order.paymentReference && (
-                      <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
-                        <p className="text-xs font-medium text-blue-800 mb-1">Buyer's Payment Reference:</p>
-                        <p className="text-xs text-blue-900 font-mono break-all">{order.paymentReference}</p>
-                      </div>
                     )}
                     {order.paymentTransactionId && (
                       <p className="text-xs text-gray-500 mt-1 break-all max-w-xs">
