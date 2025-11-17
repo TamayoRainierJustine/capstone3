@@ -1418,7 +1418,10 @@ export default function SiteBuilder() {
       );
 
       setStatus('Content saved successfully!');
-      setTimeout(() => setStatus(''), 3000);
+      // Redirect to dashboard after successful save
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1000);
     } catch (e) {
       setStatus('Error saving: ' + (e.response?.data?.message || e.message));
       setTimeout(() => setStatus(''), 5000);
@@ -3094,12 +3097,12 @@ export default function SiteBuilder() {
           )}
         </div>
 
-        {/* Save Button */}
-        <div>
+        {/* Save and Exit Buttons */}
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button
             onClick={handleSave}
             style={{
-              width: '100%',
+              flex: 1,
               padding: '0.75rem',
               background: 'linear-gradient(45deg, #8B5CF6, #4C1D95)',
               color: 'white',
@@ -3113,6 +3116,23 @@ export default function SiteBuilder() {
           >
             Save Changes
           </button>
+          <button
+            onClick={() => navigate('/dashboard')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: '#6B7280',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.5rem',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            Exit
+          </button>
+        </div>
           {status && (
             <div style={{
               marginTop: '1rem',
