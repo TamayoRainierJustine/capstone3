@@ -340,21 +340,6 @@ const Dashboard = () => {
         />
         <TodoCard
           icon={
-            <div className="bg-indigo-100 p-3 rounded-full">
-              <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-              </svg>
-            </div>
-          }
-          title="Shipping"
-          description="Take your products places."
-          subDescription="Configure your rates and delivery times according to your location and shipping carriers."
-          actionText="Configure Shipping"
-          actionLink="/dashboard/shipping"
-          variant="outline"
-        />
-        <TodoCard
-          icon={
             <div className="bg-green-100 p-3 rounded-full">
               <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
