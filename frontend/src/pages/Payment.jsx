@@ -68,17 +68,12 @@ const Payment = () => {
       // Get current store content
       const currentContent = store.content || {};
       
-      // Update content with payment settings
+      // Update content with payment settings (only GCash)
       const updatedContent = {
         ...currentContent,
         payment: {
           gcashEnabled: config.gcashEnabled,
-          paypalEnabled: config.paypalEnabled,
-          cardEnabled: config.cardEnabled,
-          gcashQrImage: config.gcashQrImage,
-          bankName: config.bankName,
-          bankAccountName: config.bankAccountName,
-          bankAccountNumber: config.bankAccountNumber
+          gcashQrImage: config.gcashQrImage
         }
       };
 
@@ -120,7 +115,7 @@ const Payment = () => {
 
           <div className="space-y-6">
             {/* GCash Configuration */}
-            <div className="border-b pb-6">
+            <div className="pb-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold">GCash</h3>
@@ -188,97 +183,6 @@ const Payment = () => {
               )}
             </div>
 
-            {/* Cash On Delivery (reusing PayPal toggle) */}
-            <div className="border-b pb-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">Cash On Delivery (COD)</h3>
-                  <p className="text-sm text-gray-600">
-                    Allow customers to pay with cash when their orders are delivered.
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={config.paypalEnabled}
-                    onChange={(e) => setConfig({ ...config, paypalEnabled: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                </label>
-              </div>
-              {config.paypalEnabled && (
-                <div className="mt-4">
-                  <p className="text-sm text-gray-600">
-                    No additional setup required. Couriers will collect payment in cash upon delivery.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Bank Transfer Configuration (reusing cardEnabled) */}
-            <div className="pb-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">Bank Transfer / Bank Deposit</h3>
-                  <p className="text-sm text-gray-600">
-                    Allow customers to pay via bank transfer or bank deposit using your bank account details.
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={config.cardEnabled}
-                    onChange={(e) => setConfig({ ...config, cardEnabled: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                </label>
-              </div>
-              {config.cardEnabled && (
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bank Name
-                    </label>
-                    <input
-                      type="text"
-                      value={config.bankName}
-                      onChange={(e) => setConfig({ ...config, bankName: e.target.value })}
-                      placeholder="e.g. BDO, BPI, Metrobank"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Account Name
-                    </label>
-                    <input
-                      type="text"
-                      value={config.bankAccountName}
-                      onChange={(e) => setConfig({ ...config, bankAccountName: e.target.value })}
-                      placeholder="Name on the bank account"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Account Number
-                    </label>
-                    <input
-                      type="text"
-                      value={config.bankAccountNumber}
-                      onChange={(e) => setConfig({ ...config, bankAccountNumber: e.target.value })}
-                      placeholder="Enter your bank account number"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    />
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    These details will be used when coordinating bank transfer payments with your customers.
-                  </p>
-                </div>
-              )}
-            </div>
           </div>
 
           <div className="mt-8 flex justify-end">
