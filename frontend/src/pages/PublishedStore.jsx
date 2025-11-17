@@ -1474,6 +1474,226 @@ const PublishedStore = () => {
           link.style.pointerEvents = 'auto';
         });
 
+        // Handle nav icons (Search, Account, Cart)
+        const navIcons = iframeDoc.querySelectorAll('.nav-icons .nav-icon, .nav-icon');
+        navIcons.forEach(icon => {
+          const ariaLabel = icon.getAttribute('aria-label') || '';
+          const iconText = icon.textContent.trim();
+          
+          // Remove cart icon
+          if (ariaLabel.toLowerCase() === 'cart' || iconText === '🛒') {
+            icon.style.display = 'none';
+            icon.remove();
+            return;
+          }
+          
+          // Handle Account icon - show profile
+          if (ariaLabel.toLowerCase() === 'account' || iconText === '👤') {
+            icon.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              
+              // Show profile modal
+              const customerData = getCustomerData();
+              if (customerData) {
+                // Create and show profile modal
+                const profileModal = iframeDoc.createElement('div');
+                profileModal.id = 'profile-modal';
+                profileModal.style.cssText = `
+                  position: fixed;
+                  top: 0;
+                  left: 0;
+                  width: 100%;
+                  height: 100%;
+                  background: rgba(0, 0, 0, 0.7);
+                  z-index: 10000;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                `;
+                
+                const profileContent = iframeDoc.createElement('div');
+                profileContent.style.cssText = `
+                  background: #1a1a1a;
+                  color: #e0e0e0;
+                  padding: 2rem;
+                  border-radius: 8px;
+                  max-width: 400px;
+                  width: 90%;
+                  position: relative;
+                `;
+                
+                profileContent.innerHTML = `
+                  <button id="close-profile" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: #e0e0e0; font-size: 1.5rem; cursor: pointer;">×</button>
+                  <h2 style="color: #c9a961; margin-bottom: 1.5rem; font-size: 1.5rem;">Profile</h2>
+                  <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div>
+                      <strong style="color: #c9a961;">Name:</strong>
+                      <p style="margin-top: 0.25rem;">${customerData.firstName || ''} ${customerData.lastName || ''}</p>
+                    </div>
+                    <div>
+                      <strong style="color: #c9a961;">Email:</strong>
+                      <p style="margin-top: 0.25rem;">${customerData.email || ''}</p>
+                    </div>
+                    ${customerData.phone ? `
+                    <div>
+                      <strong style="color: #c9a961;">Phone:</strong>
+                      <p style="margin-top: 0.25rem;">${customerData.phone}</p>
+                    </div>
+                    ` : ''}
+                  </div>
+                `;
+                
+                profileModal.appendChild(profileContent);
+                iframeDoc.body.appendChild(profileModal);
+                
+                // Close button handler
+                const closeBtn = profileModal.querySelector('#close-profile');
+                closeBtn.onclick = () => profileModal.remove();
+                profileModal.onclick = (e) => {
+                  if (e.target === profileModal) profileModal.remove();
+                };
+              } else {
+                // Not logged in, show login modal
+                setShowLoginModal(true);
+                setModalMode('login');
+              }
+            };
+            icon.style.cursor = 'pointer';
+            return;
+          }
+          
+          // Handle Search icon
+          if (ariaLabel.toLowerCase() === 'search' || iconText === '🔍') {
+            icon.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              
+              // Create search modal
+              const searchModal = iframeDoc.createElement('div');
+              searchModal.id = 'search-modal';
+              searchModal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                z-index: 10000;
+                display: flex;
+                align-items: flex-start;
+                justify-content: center;
+                padding-top: 5rem;
+              `;
+              
+              const searchContent = iframeDoc.createElement('div');
+              searchContent.style.cssText = `
+                background: #1a1a1a;
+                color: #e0e0e0;
+                padding: 2rem;
+                border-radius: 8px;
+                max-width: 600px;
+                width: 90%;
+                position: relative;
+              `;
+              
+              searchContent.innerHTML = `
+                <button id="close-search" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: #e0e0e0; font-size: 1.5rem; cursor: pointer;">×</button>
+                <h2 style="color: #c9a961; margin-bottom: 1.5rem; font-size: 1.5rem;">Search Products</h2>
+                <input 
+                  type="text" 
+                  id="search-input" 
+                  placeholder="Search products..." 
+                  style="width: 100%; padding: 0.75rem; background: #0a0a0a; border: 1px solid #333; color: #e0e0e0; border-radius: 4px; font-size: 1rem;"
+                  autofocus
+                />
+                <div id="search-results" style="margin-top: 1.5rem; max-height: 400px; overflow-y: auto;"></div>
+              `;
+              
+              searchModal.appendChild(searchContent);
+              iframeDoc.body.appendChild(searchModal);
+              
+              const searchInput = searchContent.querySelector('#search-input');
+              const searchResults = searchContent.querySelector('#search-results');
+              
+              // Get products from parent window or use postMessage
+              const productsData = displayProducts || [];
+              
+              // Search function
+              const performSearch = (query) => {
+                if (!query || query.trim() === '') {
+                  searchResults.innerHTML = '';
+                  return;
+                }
+                
+                const queryLower = query.toLowerCase().trim();
+                const filteredProducts = productsData.filter(p => 
+                  (p.name && p.name.toLowerCase().includes(queryLower)) ||
+                  (p.description && p.description.toLowerCase().includes(queryLower))
+                );
+                
+                if (filteredProducts.length === 0) {
+                  searchResults.innerHTML = '<p style="color: #999; text-align: center; padding: 2rem;">No products found</p>';
+                  return;
+                }
+                
+                searchResults.innerHTML = filteredProducts.map(product => {
+                  const imageUrl = product.image && product.image !== '/imgplc.jpg'
+                    ? (product.image.startsWith('http') ? product.image : (window.parent && window.parent.getImageUrl ? window.parent.getImageUrl(product.image) : product.image))
+                    : '/imgplc.jpg';
+                  const price = parseFloat(product.price) || 0;
+                  const descText = (product.description || '').replace(/<[^>]*>/g, '').substring(0, 100);
+                  
+                  return `
+                    <div class="search-result-item" style="display: flex; gap: 1rem; padding: 1rem; border-bottom: 1px solid #333; cursor: pointer; transition: background 0.2s;" 
+                         onmouseover="this.style.background='#0a0a0a'" 
+                         onmouseout="this.style.background='transparent'">
+                      <img src="${imageUrl}" alt="${product.name || 'Product'}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;" />
+                      <div style="flex: 1;">
+                        <h3 style="color: #c9a961; margin-bottom: 0.5rem; font-size: 1rem;">${(product.name || 'Product').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</h3>
+                        <p style="color: #999; font-size: 0.875rem; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                          ${descText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}...
+                        </p>
+                        <p style="color: #c9a961; font-weight: 700; font-size: 1.125rem;">₱${price.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  `;
+                }).join('');
+                
+                // Add click handlers to search results
+                searchResults.querySelectorAll('.search-result-item').forEach((item, index) => {
+                  item.onclick = () => {
+                    const product = filteredProducts[index];
+                    searchModal.remove();
+                    // Open order modal for selected product via postMessage
+                    if (window.parent && window.parent !== window) {
+                      window.parent.postMessage({
+                        type: 'OPEN_ORDER_MODAL',
+                        product: product
+                      }, '*');
+                    }
+                  };
+                });
+              };
+              
+              // Search on input
+              searchInput.oninput = (e) => performSearch(e.target.value);
+              
+              // Close button handler
+              const closeBtn = searchContent.querySelector('#close-search');
+              closeBtn.onclick = () => searchModal.remove();
+              searchModal.onclick = (e) => {
+                if (e.target === searchModal) searchModal.remove();
+              };
+              
+              // Focus input
+              searchInput.focus();
+            };
+            icon.style.cursor = 'pointer';
+            return;
+          }
+        });
+
         // Update store name in any visible places
         const storeNameElements = iframeDoc.querySelectorAll('[data-store-name]');
         storeNameElements.forEach(el => {
@@ -1510,12 +1730,47 @@ const PublishedStore = () => {
             const contactInfo = iframeDoc.createElement('div');
             contactInfo.style.cssText = 'display: flex; flex-direction: column; gap: 2rem; align-items: center;';
             
-            // Address
+            // Address - Convert codes to names
             const addressParts = [];
-            if (store.barangay) addressParts.push(store.barangay);
-            if (store.municipality) addressParts.push(store.municipality);
-            if (store.province) addressParts.push(store.province);
-            if (store.region) addressParts.push(store.region);
+            let regionName = store.region;
+            let provinceName = store.province;
+            let municipalityName = store.municipality;
+            let barangayName = store.barangay;
+            
+            // Convert region code to name
+            if (store.region) {
+              const region = regions.find(r => r.reg_code === store.region);
+              regionName = region?.name || store.region;
+            }
+            
+            // Convert province code to name
+            if (store.province && store.region) {
+              const provinces = getProvincesByRegion(store.region);
+              const province = provinces.find(p => p.prov_code === store.province);
+              provinceName = province?.name || store.province;
+            }
+            
+            // Convert municipality code to name
+            if (store.municipality && store.province) {
+              const municipalities = getCityMunByProvince(store.province);
+              const municipality = municipalities.find(m => m.mun_code === store.municipality);
+              municipalityName = municipality?.name || store.municipality;
+            }
+            
+            // Convert barangay code to name
+            if (store.barangay && store.municipality) {
+              const barangays = getBarangayByMun(store.municipality);
+              const barangaysArray = barangays?.data || barangays || [];
+              const barangay = Array.isArray(barangaysArray) 
+                ? barangaysArray.find(b => (b.brgy_code || b.code || b.brgyCode) === store.barangay)
+                : null;
+              barangayName = barangay?.name || barangay?.brgy_name || barangay?.brgyName || store.barangay;
+            }
+            
+            if (barangayName) addressParts.push(barangayName);
+            if (municipalityName) addressParts.push(municipalityName);
+            if (provinceName) addressParts.push(provinceName);
+            if (regionName) addressParts.push(regionName);
             
             if (addressParts.length > 0) {
               const addressDiv = iframeDoc.createElement('div');
@@ -1586,11 +1841,47 @@ const PublishedStore = () => {
             });
           }
           
+          // Update address - Convert codes to names
+          let regionName = store.region;
+          let provinceName = store.province;
+          let municipalityName = store.municipality;
+          let barangayName = store.barangay;
+          
+          // Convert region code to name
+          if (store.region) {
+            const region = regions.find(r => r.reg_code === store.region);
+            regionName = region?.name || store.region;
+          }
+          
+          // Convert province code to name
+          if (store.province && store.region) {
+            const provinces = getProvincesByRegion(store.region);
+            const province = provinces.find(p => p.prov_code === store.province);
+            provinceName = province?.name || store.province;
+          }
+          
+          // Convert municipality code to name
+          if (store.municipality && store.province) {
+            const municipalities = getCityMunByProvince(store.province);
+            const municipality = municipalities.find(m => m.mun_code === store.municipality);
+            municipalityName = municipality?.name || store.municipality;
+          }
+          
+          // Convert barangay code to name
+          if (store.barangay && store.municipality) {
+            const barangays = getBarangayByMun(store.municipality);
+            const barangaysArray = barangays?.data || barangays || [];
+            const barangay = Array.isArray(barangaysArray) 
+              ? barangaysArray.find(b => (b.brgy_code || b.code || b.brgyCode) === store.barangay)
+              : null;
+            barangayName = barangay?.name || barangay?.brgy_name || barangay?.brgyName || store.barangay;
+          }
+          
           const addressParts = [];
-          if (store.barangay) addressParts.push(store.barangay);
-          if (store.municipality) addressParts.push(store.municipality);
-          if (store.province) addressParts.push(store.province);
-          if (store.region) addressParts.push(store.region);
+          if (barangayName) addressParts.push(barangayName);
+          if (municipalityName) addressParts.push(municipalityName);
+          if (provinceName) addressParts.push(provinceName);
+          if (regionName) addressParts.push(regionName);
           
           if (addressParts.length > 0) {
             const addressText = addressParts.join(', ');
