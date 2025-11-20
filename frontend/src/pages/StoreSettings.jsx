@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
+import { getImageUrl } from '../utils/imageUrl.js';
 
 const StoreSettings = () => {
   const navigate = useNavigate();
@@ -19,8 +20,11 @@ const StoreSettings = () => {
     municipality: '',
     barangay: '',
     contactEmail: '',
-    phone: ''
+    phone: '',
+    logo: ''
   });
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [storeSettingsStatus, setStoreSettingsStatus] = useState('');
   const [loading, setLoading] = useState(true);
   
@@ -57,8 +61,14 @@ const StoreSettings = () => {
             municipality: firstStore.municipality || '',
             barangay: firstStore.barangay || '',
             contactEmail: firstStore.contactEmail || '',
-            phone: firstStore.phone || ''
+            phone: firstStore.phone || '',
+            logo: firstStore.logo || ''
           });
+          
+          // Set logo preview if logo exists
+          if (firstStore.logo) {
+            setLogoPreview(getImageUrl(firstStore.logo));
+          }
           
           // Load location dropdowns based on existing data
           if (firstStore.region) {
@@ -145,7 +155,8 @@ const StoreSettings = () => {
       const payload = {
         templateId,
         ...storeSettings,
-        domainName: normalizedDomain
+        domainName: normalizedDomain,
+        logo: storeSettings.logo || null
       };
 
       await apiClient.put(`/stores/${storeId}`, payload);
@@ -159,6 +170,54 @@ const StoreSettings = () => {
       setStoreSettingsStatus('Error saving store settings: ' + (e.response?.data?.message || e.message));
       setTimeout(() => setStoreSettingsStatus(''), 5000);
     }
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setStoreSettingsStatus('Error: Please select an image file');
+      setTimeout(() => setStoreSettingsStatus(''), 3000);
+      return;
+    }
+
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    if (file.size > maxSize) {
+      setStoreSettingsStatus('Error: Logo size must be less than 2MB');
+      setTimeout(() => setStoreSettingsStatus(''), 3000);
+      return;
+    }
+
+    try {
+      setIsUploadingLogo(true);
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await apiClient.post('/stores/logo/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      // Save just the relative path (not full URL) for portability
+      const logoPath = response.data.imageUrl;
+      setStoreSettings(prev => ({ ...prev, logo: logoPath }));
+      setLogoPreview(getImageUrl(logoPath));
+      setStoreSettingsStatus('Logo uploaded successfully!');
+      setTimeout(() => setStoreSettingsStatus(''), 3000);
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      setStoreSettingsStatus('Error uploading logo: ' + (error.response?.data?.message || error.message));
+      setTimeout(() => setStoreSettingsStatus(''), 5000);
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setStoreSettings(prev => ({ ...prev, logo: '' }));
+    setLogoPreview(null);
   };
 
   if (loading) {
@@ -228,6 +287,157 @@ const StoreSettings = () => {
           </div>
         ) : (
           <>
+            {/* Branding Panel */}
+            <div style={{ 
+              marginBottom: '2rem', 
+              padding: '1.5rem', 
+              background: '#f9fafb', 
+              borderRadius: '0.5rem',
+              border: '1px solid #e5e7eb'
+            }}>
+              <h2 style={{ 
+                fontSize: '1.25rem', 
+                fontWeight: '600', 
+                marginBottom: '1rem', 
+                color: '#1f2937' 
+              }}>
+                Branding
+              </h2>
+              
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '0.5rem', 
+                  fontSize: '0.875rem', 
+                  fontWeight: '500',
+                  color: '#374151'
+                }}>
+                  Store Logo
+                </label>
+                <p style={{ 
+                  fontSize: '0.75rem', 
+                  color: '#6b7280', 
+                  marginBottom: '0.75rem' 
+                }}>
+                  Upload your store logo. Recommended size: 200x200px. Max file size: 2MB
+                </p>
+                
+                {logoPreview ? (
+                  <div style={{ 
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem'
+                  }}>
+                    <img 
+                      src={logoPreview} 
+                      alt="Store logo" 
+                      style={{ 
+                        width: '120px', 
+                        height: '120px', 
+                        objectFit: 'contain',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.375rem',
+                        padding: '0.5rem',
+                        background: 'white'
+                      }}
+                    />
+                    <div>
+                      <button
+                        onClick={handleRemoveLogo}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          marginBottom: '0.5rem'
+                        }}
+                      >
+                        Remove Logo
+                      </button>
+                      <label style={{
+                        display: 'block',
+                        padding: '0.5rem 1rem',
+                        background: 'linear-gradient(45deg, #8B5CF6, #4C1D95)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        textAlign: 'center'
+                      }}>
+                        {isUploadingLogo ? 'Uploading...' : 'Change Logo'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          disabled={isUploadingLogo}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  <label style={{
+                    display: 'block',
+                    padding: '2rem',
+                    border: '2px dashed #d1d5db',
+                    borderRadius: '0.5rem',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    background: 'white',
+                    transition: 'all 0.2s',
+                    ':hover': {
+                      borderColor: '#8B5CF6',
+                      background: '#f9fafb'
+                    }
+                  }}>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <svg 
+                        style={{ width: '3rem', height: '3rem', color: '#9ca3af', margin: '0 auto' }}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+                      {isUploadingLogo ? 'Uploading logo...' : 'Click to upload logo'}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      disabled={isUploadingLogo}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Store Information */}
+            <div style={{ 
+              marginBottom: '2rem', 
+              paddingBottom: '2rem',
+              borderBottom: '1px solid #e5e7eb'
+            }}>
+              <h2 style={{ 
+                fontSize: '1.25rem', 
+                fontWeight: '600', 
+                marginBottom: '1rem', 
+                color: '#1f2937' 
+              }}>
+                Store Information
+              </h2>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>

@@ -44,6 +44,11 @@ const Product = sequelize.define('Product', {
     allowNull: false,
     defaultValue: 0
   },
+  category: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: null
+  },
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true

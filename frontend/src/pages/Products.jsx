@@ -6,13 +6,38 @@ import Header from '../components/Header';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [categories, setCategories] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
+
+  useEffect(() => {
+    if (selectedCategory === '') {
+      setFilteredProducts(products);
+    } else {
+      setFilteredProducts(products.filter(p => p.category === selectedCategory));
+    }
+  }, [products, selectedCategory]);
+
+  const fetchCategories = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return;
+      }
+      const response = await apiClient.get('/products/categories/list');
+      setCategories(response.data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
   // Refresh products when page becomes visible (user navigates back)
   useEffect(() => {
@@ -134,7 +159,49 @@ const Products = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="flex max-w-7xl mx-auto px-4 py-8 gap-6">
+        {/* Sidebar with Category Filter */}
+        <div className="w-64 flex-shrink-0">
+          <div className="bg-white rounded-lg shadow-md p-4 sticky top-24">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Filter Products</h2>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category
+              </label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+              >
+                <option value="">All Categories</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="pt-4 border-t border-gray-200">
+              <p className="text-xs text-gray-500 mb-2">Product Count</p>
+              <p className="text-lg font-semibold text-purple-600">
+                {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
+              </p>
+              {selectedCategory && (
+                <button
+                  onClick={() => setSelectedCategory('')}
+                  className="mt-2 text-xs text-purple-600 hover:text-purple-800 underline"
+                >
+                  Clear filter
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 min-w-0">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Products</h1>
@@ -163,19 +230,33 @@ const Products = () => {
           </div>
         )}
 
-        {products.length === 0 ? (
+        {filteredProducts.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow">
-            <p className="text-gray-600 mb-4">No products yet</p>
-            <button
-              onClick={() => navigate('/dashboard/addproducts')}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-            >
-              Add Your First Product
-            </button>
+            {products.length === 0 ? (
+              <>
+                <p className="text-gray-600 mb-4">No products yet</p>
+                <button
+                  onClick={() => navigate('/dashboard/addproducts')}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                >
+                  Add Your First Product
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-gray-600 mb-4">No products found in this category</p>
+                <button
+                  onClick={() => setSelectedCategory('')}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                >
+                  Show All Products
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
               <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="relative">
                   {product.image ? (
@@ -201,6 +282,11 @@ const Products = () => {
                 </div>
                 <div className="p-4">
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">{product.name}</h3>
+                  {product.category && (
+                    <span className="inline-block px-2 py-1 mb-2 text-xs font-medium text-purple-700 bg-purple-100 rounded-full">
+                      {product.category}
+                    </span>
+                  )}
                   <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
                   <div className="flex justify-between items-center mb-4">
                     <span className="text-xl font-bold text-purple-600">₱{parseFloat(product.price).toFixed(2)}</span>
@@ -231,6 +317,7 @@ const Products = () => {
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

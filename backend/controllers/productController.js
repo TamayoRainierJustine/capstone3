@@ -34,7 +34,7 @@ export const getProducts = async (req, res) => {
       Product.findAll({
         where: { storeId: store.id },
         attributes: ['id', 'storeId', 'name', 'description', 'price', 'stock', 
-                     'image', 'isActive', 'createdAt', 'updatedAt'],
+                     'image', 'category', 'isActive', 'createdAt', 'updatedAt'],
         order: [['createdAt', 'DESC']],
         limit: 1000 // Limit to prevent large queries
       }),
@@ -124,7 +124,7 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    const { name, description, price, stock, isActive, weight } = req.body;
+    const { name, description, price, stock, isActive, weight, category } = req.body;
     
     // Validate required fields
     if (!name || !description || !price) {
@@ -181,6 +181,7 @@ export const createProduct = async (req, res) => {
         stock: parseInt(stock) || 0,
         weight: weight !== undefined && weight !== null && weight !== '' ? parseFloat(weight) : 0,
         image: imagePath,
+        category: category || null,
         isActive: isActive !== undefined ? isActive : true
       }),
       new Promise((_, reject) => 
@@ -252,7 +253,7 @@ export const updateProduct = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const { name, description, price, stock, isActive, weight } = req.body;
+    const { name, description, price, stock, isActive, weight, category } = req.body;
     let imagePath = product.image;
 
     // Handle file upload if new image provided (with timeout)
@@ -300,6 +301,7 @@ export const updateProduct = async (req, res) => {
         stock: stock !== undefined ? parseInt(stock) : product.stock,
         weight: weight !== undefined && weight !== null && weight !== '' ? parseFloat(weight) : (product.weight || 0),
         image: imagePath,
+        category: category !== undefined ? category : product.category,
         isActive: isActive !== undefined ? isActive : product.isActive
       }),
       new Promise((_, reject) => 
@@ -373,6 +375,40 @@ export const deleteProduct = async (req, res) => {
   }
 };
 
+// Get all categories for a store
+export const getCategories = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    const store = await Store.findOne({ 
+      where: { userId },
+      attributes: ['id']
+    });
+
+    if (!store) {
+      return res.status(404).json({ message: 'Store not found' });
+    }
+
+    // Get distinct categories from products
+    const products = await Product.findAll({
+      where: { storeId: store.id },
+      attributes: ['category'],
+      raw: true
+    });
+
+    // Extract unique, non-null categories
+    const categories = [...new Set(products.map(p => p.category).filter(c => c && c.trim() !== ''))];
+    
+    res.json(categories.sort());
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ message: 'Error fetching categories', error: error.message });
+  }
+};
+
 // Get public products for a store (for published stores)
 export const getPublicProducts = async (req, res) => {
   try {
@@ -391,6 +427,8 @@ export const getPublicProducts = async (req, res) => {
         storeId: store.id,
         isActive: true
       },
+      attributes: ['id', 'storeId', 'name', 'description', 'price', 'stock', 
+                   'image', 'category', 'isActive', 'createdAt', 'updatedAt'],
       order: [['createdAt', 'DESC']]
     });
 

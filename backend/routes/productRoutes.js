@@ -6,7 +6,8 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
-  getPublicProducts
+  getPublicProducts,
+  getCategories
 } from '../controllers/productController.js';
 import { authenticateToken } from '../middleware/auth.js';
 
@@ -51,6 +52,7 @@ router.use(authenticateToken);
 
 // Specific routes first (before dynamic routes)
 router.get('/', getProducts);
+router.get('/categories/list', getCategories);
 
 // POST route for creating products
 router.post('/', upload.single('image'), (req, res, next) => {

@@ -9,6 +9,8 @@ import {
   getPublishedStoreByDomain,
   uploadBackgroundImage,
   uploadBackground,
+  uploadLogoImage,
+  uploadLogo,
   deleteStore
 } from '../controllers/storeController.js';
 import { servePublishedStoreHTML } from '../controllers/publicStoreController.js';
@@ -49,6 +51,15 @@ router.post('/background/upload', (req, res, next) => {
   console.log('   Original URL:', req.originalUrl);
   next();
 }, uploadBackground.single('image'), uploadBackgroundImage);
+
+// Upload logo image (authenticated via router.use above)
+router.post('/logo/upload', (req, res, next) => {
+  console.log('🎨 Logo upload route hit!');
+  console.log('   Method:', req.method);
+  console.log('   Path:', req.path);
+  console.log('   Original URL:', req.originalUrl);
+  next();
+}, uploadLogo.single('image'), uploadLogoImage);
 
 // Save store content
 router.put('/:id/content', saveStoreContent);

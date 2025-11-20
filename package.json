@@ -1,8 +1,8 @@
 {
-  "name": "structura",
+  "name": "capstone3",
   "version": "1.0.0",
   "type": "module",
-  "description": "Structura - E-commerce Store Builder",
+  "description": "capstone3 - E-commerce Store Builder",
   "scripts": {
     "start": "cd backend && npm start",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",

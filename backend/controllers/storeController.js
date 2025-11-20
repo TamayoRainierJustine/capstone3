@@ -22,10 +22,25 @@ export const uploadBackground = multer({
   }
 });
 
+// Configure multer for logo uploads
+export const uploadLogo = multer({
+  storage: storage,
+  limits: {
+    fileSize: 2 * 1024 * 1024 // 2MB limit for logos
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
+
 // Create a new store for a user
 export const createStore = async (req, res) => {
   try {
-    let { templateId, storeName, description, domainName, region, province, municipality, barangay, contactEmail, phone } = req.body;
+    let { templateId, storeName, description, domainName, region, province, municipality, barangay, contactEmail, phone, logo } = req.body;
     
     // Normalize domain name: lowercase, remove spaces, remove special characters except hyphens
     if (domainName) {
@@ -67,7 +82,8 @@ export const createStore = async (req, res) => {
       municipality,
       barangay,
       contactEmail,
-      phone
+      phone,
+      logo: logo || null
     });
     
     console.log('Store created successfully:', store.id);
@@ -114,7 +130,7 @@ export const getUserStores = async (req, res) => {
         where: { userId },
         attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
                      'region', 'province', 'municipality', 'barangay', 'contactEmail', 
-                     'phone', 'status', 'content', 'createdAt', 'updatedAt'],
+                     'phone', 'logo', 'status', 'content', 'createdAt', 'updatedAt'],
         limit: 100 // Limit to prevent large queries
       }),
       new Promise((_, reject) => 
@@ -165,7 +181,7 @@ export const getUserStores = async (req, res) => {
 export const updateStore = async (req, res) => {
   const startTime = Date.now();
   const { id } = req.params;
-  let { templateId, storeName, description, domainName, region, province, municipality, barangay, contactEmail, phone } = req.body;
+  let { templateId, storeName, description, domainName, region, province, municipality, barangay, contactEmail, phone, logo } = req.body;
   
   // Normalize domain name if provided
   if (domainName) {
@@ -247,7 +263,8 @@ export const updateStore = async (req, res) => {
         municipality: municipality || store.municipality,
         barangay: barangay || store.barangay,
         contactEmail: contactEmail || store.contactEmail,
-        phone: phone || store.phone
+        phone: phone || store.phone,
+        logo: logo !== undefined ? logo : store.logo
       }),
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Update timeout')), 8000)
@@ -391,6 +408,48 @@ export const uploadBackgroundImage = async (req, res) => {
     }
     res.status(500).json({
       message: 'Error uploading background image',
+      error: error.message
+    });
+  }
+};
+
+// Upload logo to Supabase Storage
+export const uploadLogoImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file provided' });
+    }
+
+    // Upload to Supabase Storage - use 'products' bucket or create 'logos' bucket
+    // For now, using 'products' bucket since it's public
+    const fileExtension = path.extname(req.file.originalname);
+    const fileName = `logo-${Date.now()}-${Math.round(Math.random() * 1E9)}${fileExtension}`;
+    
+    const { path: storagePath, url: publicUrl } = await uploadToSupabase(
+      req.file.buffer,
+      'products', // Store logos in products bucket (public access)
+      fileName,
+      req.file.mimetype
+    );
+
+    // Return the storage path (frontend will construct full URL using getImageUrl)
+    res.status(200).json({ 
+      message: 'Logo uploaded successfully',
+      imageUrl: storagePath, // Return path like "products/logo-123.jpg"
+      publicUrl: publicUrl // Also return full URL for convenience
+    });
+  } catch (error) {
+    console.error('Error uploading logo to Supabase:', error);
+    // If it's a timeout or connection error, provide helpful message
+    if (error.message && (error.message.includes('timeout') || error.message.includes('acquire'))) {
+      return res.status(503).json({
+        message: 'Upload timeout - please try again. The connection is being established.',
+        error: error.message,
+        retry: true
+      });
+    }
+    res.status(500).json({
+      message: 'Error uploading logo',
       error: error.message
     });
   }
@@ -542,7 +601,7 @@ export const getPublishedStoreByDomain = async (req, res) => {
       }],
       attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
                    'region', 'province', 'municipality', 'barangay', 'contactEmail', 'phone', 
-                   'status', 'content', 'createdAt', 'updatedAt']
+                   'logo', 'status', 'content', 'createdAt', 'updatedAt']
     });
     
     // If not found, try case-insensitive search as fallback

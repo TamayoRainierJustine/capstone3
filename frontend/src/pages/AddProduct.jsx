@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
@@ -12,12 +12,29 @@ const AddProduct = () => {
     price: '',
     image: null,
     stock: '',
-    weight: ''
+    weight: '',
+    category: ''
   });
 
   const [imagePreview, setImagePreview] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [newCategory, setNewCategory] = useState('');
+  const [showNewCategory, setShowNewCategory] = useState(false);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await apiClient.get('/products/categories/list');
+      setCategories(response.data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -78,6 +95,9 @@ const AddProduct = () => {
       productData.append('price', formData.price);
       productData.append('stock', formData.stock || 0);
       productData.append('weight', formData.weight || 0);
+      if (formData.category) {
+        productData.append('category', formData.category);
+      }
       if (formData.image) {
         productData.append('image', formData.image);
       }
@@ -184,6 +204,116 @@ const AddProduct = () => {
                 step="0.01"
                 placeholder="e.g. 0.5"
               />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="category">Category</label>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <select
+                id="category"
+                name="category"
+                value={formData.category}
+                onChange={(e) => {
+                  if (e.target.value === 'new') {
+                    setShowNewCategory(true);
+                    setFormData(prev => ({ ...prev, category: '' }));
+                  } else {
+                    setShowNewCategory(false);
+                    setFormData(prev => ({ ...prev, category: e.target.value }));
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem'
+                }}
+              >
+                <option value="">Select a category (optional)</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+                <option value="new">+ Add New Category</option>
+              </select>
+              {showNewCategory && (
+                <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+                  <input
+                    type="text"
+                    placeholder="Enter new category"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (newCategory.trim()) {
+                          setFormData(prev => ({ ...prev, category: newCategory.trim() }));
+                          setCategories(prev => {
+                            const updated = [...prev, newCategory.trim()];
+                            return [...new Set(updated)].sort();
+                          });
+                          setNewCategory('');
+                          setShowNewCategory(false);
+                        }
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '0.5rem',
+                      fontSize: '1rem'
+                    }}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newCategory.trim()) {
+                        setFormData(prev => ({ ...prev, category: newCategory.trim() }));
+                        setCategories(prev => {
+                          const updated = [...prev, newCategory.trim()];
+                          return [...new Set(updated)].sort();
+                        });
+                        setNewCategory('');
+                        setShowNewCategory(false);
+                      }
+                    }}
+                    style={{
+                      padding: '0.75rem 1rem',
+                      background: '#8B5CF6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewCategory(false);
+                      setNewCategory('');
+                    }}
+                    style={{
+                      padding: '0.75rem 1rem',
+                      background: '#f3f4f6',
+                      color: '#374151',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
