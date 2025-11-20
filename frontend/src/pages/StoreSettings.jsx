@@ -193,9 +193,9 @@ const StoreSettings = () => {
       return;
     }
 
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    const maxSize = 4 * 1024 * 1024; // 4MB
     if (file.size > maxSize) {
-      setStoreSettingsStatus('Error: Logo size must be less than 2MB');
+      setStoreSettingsStatus('Error: Logo size must be less than 4MB');
       setTimeout(() => setStoreSettingsStatus(''), 3000);
       return;
     }
@@ -330,7 +330,7 @@ const StoreSettings = () => {
                   color: '#6b7280', 
                   marginBottom: '0.75rem' 
                 }}>
-                  Upload your store logo. Recommended size: 200x200px. Max file size: 2MB
+                  Upload your store logo. Recommended size: 200x200px. Max file size: 4MB
                 </p>
                 
                 {logoPreview ? (

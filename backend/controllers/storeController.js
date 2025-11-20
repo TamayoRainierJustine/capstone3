@@ -27,7 +27,7 @@ export const uploadBackground = multer({
 export const uploadLogo = multer({
   storage: storage,
   limits: {
-    fileSize: 2 * 1024 * 1024 // 2MB limit for logos
+    fileSize: 4 * 1024 * 1024 // 4MB limit for logos
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
