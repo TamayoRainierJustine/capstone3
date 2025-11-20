@@ -159,13 +159,22 @@ const StoreSettings = () => {
         logo: storeSettings.logo || null
       };
 
-      await apiClient.put(`/stores/${storeId}`, payload);
+      const response = await apiClient.put(`/stores/${storeId}`, payload);
+
+      // Update local state with response data
+      if (response.data) {
+        setStoreSettings(prev => ({
+          ...prev,
+          ...response.data,
+          logo: response.data.logo || prev.logo
+        }));
+      }
 
       setStoreSettingsStatus('Store settings saved successfully!');
+      // Don't auto-redirect, let user stay on settings page
       setTimeout(() => {
         setStoreSettingsStatus('');
-        navigate('/dashboard');
-      }, 2000);
+      }, 3000);
     } catch (e) {
       setStoreSettingsStatus('Error saving store settings: ' + (e.response?.data?.message || e.message));
       setTimeout(() => setStoreSettingsStatus(''), 5000);

@@ -388,7 +388,14 @@ export const updateStore = async (req, res) => {
       console.warn(`Slow store update: took ${duration}ms`);
     }
 
-    res.status(200).json(store);
+    // Reload store to get updated data (without logo field to avoid errors)
+    const updatedStore = await Store.findByPk(id, {
+      attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
+                   'region', 'province', 'municipality', 'barangay', 'contactEmail', 
+                   'phone', 'status', 'content', 'createdAt', 'updatedAt']
+    });
+    
+    res.status(200).json(updatedStore);
   } catch (error) {
     const duration = Date.now() - startTime;
     console.error(`Error updating store (${duration}ms):`, error.message);
@@ -673,20 +680,36 @@ export const publishStore = async (req, res) => {
       return res.status(400).json({ message: 'Status must be "published" or "draft"' });
     }
 
-    const store = await Store.findByPk(id);
+    // Find store without logo field to avoid errors if column doesn't exist
+    const store = await Store.findByPk(id, {
+      attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
+                   'region', 'province', 'municipality', 'barangay', 'contactEmail', 
+                   'phone', 'status', 'content', 'createdAt', 'updatedAt']
+    });
+    
     if (!store) {
+      console.error('❌ Store not found with ID:', id);
       return res.status(404).json({ message: 'Store not found' });
     }
 
     // Check if the store belongs to the authenticated user
     if (store.userId !== req.user.id) {
+      console.error('❌ User not authorized to update store:', { userId: req.user.id, storeUserId: store.userId });
       return res.status(403).json({ message: 'Not authorized to update this store' });
     }
 
     await store.update({ status });
+    
+    // Reload store to get updated data
+    const updatedStore = await Store.findByPk(id, {
+      attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
+                   'region', 'province', 'municipality', 'barangay', 'contactEmail', 
+                   'phone', 'status', 'content', 'createdAt', 'updatedAt']
+    });
+    
     res.status(200).json({ 
       message: `Store ${status === 'published' ? 'published' : 'unpublished'} successfully`,
-      store 
+      store: updatedStore 
     });
   } catch (error) {
     console.error('Error publishing store:', error);
