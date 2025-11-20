@@ -302,6 +302,9 @@ process.on('SIGINT', () => shutdown('SIGINT'));
   try {
     console.log('🛠️ Ensuring Products schema is up to date...');
     await sequelize.query('ALTER TABLE "Products" ADD COLUMN IF NOT EXISTS "weight" DECIMAL(10,2) DEFAULT 0');
+    await sequelize.query('ALTER TABLE "Products" ADD COLUMN IF NOT EXISTS "category" VARCHAR(255)');
+    await sequelize.query('CREATE INDEX IF NOT EXISTS "idx_products_category" ON "Products"("category")');
+    await sequelize.query('CREATE INDEX IF NOT EXISTS "idx_products_store_category" ON "Products"("storeId", "category")');
     console.log('✅ Products schema verified');
   } catch (prodSchemaErr) {
     console.warn('⚠️ Skipping Products schema ensure:', prodSchemaErr.message);

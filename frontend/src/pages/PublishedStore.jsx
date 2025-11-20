@@ -546,8 +546,9 @@ const PublishedStore = () => {
   useEffect(() => {
     if (!store || !htmlContent || !iframeRef.current) return;
     
-    // Use filtered products or all products if no filter
-    const displayProducts = filteredProducts.length > 0 ? filteredProducts : (products.length > 0 ? products : (store.content?.products || []));
+    // Use category filter when selected, otherwise fall back to full list
+    const baseProducts = products.length > 0 ? products : (store.content?.products || []);
+    const displayProducts = selectedCategory ? filteredProducts : baseProducts;
 
     const updateIframe = () => {
       const iframe = iframeRef.current;
@@ -2189,7 +2190,7 @@ const PublishedStore = () => {
         iframe.removeEventListener('load', handleLoad);
       }
     };
-  }, [store, htmlContent, products]);
+  }, [store, htmlContent, products, filteredProducts, selectedCategory]);
 
   // Listen for messages from iframe to open order modal
   useEffect(() => {
