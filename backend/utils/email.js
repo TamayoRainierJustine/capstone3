@@ -50,6 +50,10 @@ export async function sendEmail({ to, subject, html, text }) {
 
   // Try SendGrid first (HTTPS-based, works well with Railway)
   const sendGridKey = (process.env.SENDGRID_API_KEY || '').trim();
+  console.log('[mail] Checking email providers...');
+  console.log('[mail] SENDGRID_API_KEY present:', !!sendGridKey, sendGridKey ? `${sendGridKey.substring(0, 5)}...` : 'not set');
+  console.log('[mail] RESEND_API_KEY present:', !!(process.env.RESEND_API_KEY || '').trim());
+  
   if (sendGridKey) {
     try {
       const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
