@@ -729,9 +729,9 @@ export const getPublishedStoreByDomain = async (req, res) => {
         model: User,
         attributes: ['email', 'firstName', 'lastName']
       }],
-      attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
+        attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
                    'region', 'province', 'municipality', 'barangay', 'contactEmail', 'phone', 
-                   'logo', 'status', 'content', 'createdAt', 'updatedAt']
+                   'status', 'content', 'createdAt', 'updatedAt']
     });
     
     // If not found, try case-insensitive search as fallback
