@@ -1458,7 +1458,7 @@ const PublishedStore = () => {
 
         // Update branding/logo area (nav + footer)
         const logoDisplayName = store.storeName || 'Store';
-        const injectLogoContent = (element, { clickable = false, maxHeight = 48 } = {}) => {
+        const injectLogoContent = (element, { clickable = false, maxHeight = 80 } = {}) => {
           if (!element) return;
           if (storeLogoUrl) {
             const logoImg = iframeDoc.createElement('img');
@@ -1487,7 +1487,7 @@ const PublishedStore = () => {
         };
         
         const logo = iframeDoc.querySelector('.logo, .navbar .logo');
-        injectLogoContent(logo, { clickable: true, maxHeight: 48 });
+        injectLogoContent(logo, { clickable: true, maxHeight: 80 });
         
         const footerLogo = iframeDoc.querySelector('.footer-logo, footer .footer-logo');
         injectLogoContent(footerLogo, { clickable: false, maxHeight: 40 });
