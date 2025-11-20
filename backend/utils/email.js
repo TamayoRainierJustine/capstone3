@@ -28,10 +28,14 @@ export function createTransport() {
       rejectUnauthorized: true,
       minVersion: 'TLSv1.2',
     },
-    // Be explicit about timeouts to avoid hanging on serverless
-    socketTimeout: 20000,
-    connectionTimeout: 15000,
-    greetingTimeout: 10000
+    // Increased timeouts for Railway/cloud environments
+    socketTimeout: 30000, // 30 seconds
+    connectionTimeout: 25000, // 25 seconds
+    greetingTimeout: 15000, // 15 seconds
+    // Additional options for better reliability
+    pool: false,
+    maxConnections: 1,
+    maxMessages: 1
   });
 
   if (process.env.NODE_ENV !== 'production') {
@@ -79,23 +83,29 @@ export async function sendEmail({ to, subject, html, text }) {
 
   const transporter = createTransport();
   try {
-    // Quick capability check (non-blocking when SMTP is healthy)
-    try {
-      await transporter.verify();
-      if (process.env.NODE_ENV !== 'production') {
+    // Skip verify() in production to avoid timeout issues - just try sending directly
+    // Verify can be slow on some networks (Railway, etc.)
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        await transporter.verify();
         console.log('[mail] SMTP verified successfully');
+      } catch (verifyErr) {
+        console.warn('[mail] SMTP verify failed (continuing to send):', verifyErr?.message || verifyErr);
       }
-    } catch (verifyErr) {
-      console.warn('[mail] SMTP verify failed (continuing to send):', verifyErr?.message || verifyErr);
     }
 
+    console.log(`[mail] Attempting to send email to ${to} via SMTP (${process.env.SMTP_HOST}:${process.env.SMTP_PORT || '587'})`);
     const info = await transporter.sendMail({ from, to, subject, html, text });
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[mail] Message sent:', info?.messageId, 'response:', info?.response);
-    }
+    console.log('[mail] ✅ Email sent successfully:', info?.messageId || 'no messageId', 'response:', info?.response || 'no response');
     return info;
   } catch (err) {
-    console.error('[mail] sendMail error:', err?.message || err);
+    console.error('[mail] ❌ sendMail error:', err?.message || err);
+    console.error('[mail] Error details:', {
+      code: err?.code,
+      command: err?.command,
+      response: err?.response,
+      responseCode: err?.responseCode
+    });
     // Re-throw so callers can surface a helpful error
     throw err;
   }
