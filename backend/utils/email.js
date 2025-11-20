@@ -48,7 +48,41 @@ export function createTransport() {
 export async function sendEmail({ to, subject, html, text }) {
   const from = (process.env.EMAIL_FROM || 'no-reply@structura.app').trim();
 
-  // Prefer HTTPS provider if configured
+  // Try SendGrid first (HTTPS-based, works well with Railway)
+  const sendGridKey = (process.env.SENDGRID_API_KEY || '').trim();
+  if (sendGridKey) {
+    try {
+      const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${sendGridKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          personalizations: [{
+            to: Array.isArray(to) ? to.map(email => ({ email })) : [{ email: to }]
+          }],
+          from: { email: from },
+          subject,
+          content: [
+            { type: 'text/plain', value: text || '' },
+            { type: 'text/html', value: html || '' }
+          ]
+        })
+      });
+      if (!response.ok) {
+        const bodyText = await response.text().catch(() => '');
+        throw new Error(`SendGrid API error: ${response.status} ${response.statusText} ${bodyText}`);
+      }
+      console.log('[mail] ✅ Email sent via SendGrid');
+      return { messageId: `sendgrid-${Date.now()}`, provider: 'sendgrid' };
+    } catch (err) {
+      console.error('[mail] SendGrid send error:', err?.message || err);
+      // Fall through to next provider
+    }
+  }
+
+  // Try Resend (HTTPS-based)
   const resendKey = (process.env.RESEND_API_KEY || '').trim();
   if (resendKey) {
     try {
@@ -71,16 +105,15 @@ export async function sendEmail({ to, subject, html, text }) {
         throw new Error(`Resend API error: ${response.status} ${response.statusText} ${bodyText}`);
       }
       const data = await response.json();
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[mail] Resend sent:', data?.id);
-      }
+      console.log('[mail] ✅ Email sent via Resend:', data?.id);
       return { messageId: data?.id, provider: 'resend' };
     } catch (err) {
       console.error('[mail] Resend send error:', err?.message || err);
-      // If HTTPS provider fails, fall through to SMTP as a backup
+      // Fall through to SMTP as last resort
     }
   }
 
+  // Fallback to SMTP (may be blocked on Railway/cloud platforms)
   const transporter = createTransport();
   try {
     // Skip verify() in production to avoid timeout issues - just try sending directly
@@ -96,16 +129,24 @@ export async function sendEmail({ to, subject, html, text }) {
 
     console.log(`[mail] Attempting to send email to ${to} via SMTP (${process.env.SMTP_HOST}:${process.env.SMTP_PORT || '587'})`);
     const info = await transporter.sendMail({ from, to, subject, html, text });
-    console.log('[mail] ✅ Email sent successfully:', info?.messageId || 'no messageId', 'response:', info?.response || 'no response');
+    console.log('[mail] ✅ Email sent successfully via SMTP:', info?.messageId || 'no messageId', 'response:', info?.response || 'no response');
     return info;
   } catch (err) {
-    console.error('[mail] ❌ sendMail error:', err?.message || err);
+    console.error('[mail] ❌ SMTP sendMail error:', err?.message || err);
     console.error('[mail] Error details:', {
       code: err?.code,
       command: err?.command,
       response: err?.response,
       responseCode: err?.responseCode
     });
+    
+    // If SMTP fails and no API keys were configured, provide helpful error
+    if (!sendGridKey && !resendKey) {
+      const errorMsg = 'Email sending failed. SMTP connection timed out. Railway may block SMTP ports. Please configure SENDGRID_API_KEY or RESEND_API_KEY for reliable email delivery.';
+      console.error('[mail] 💡 Suggestion:', errorMsg);
+      throw new Error(errorMsg);
+    }
+    
     // Re-throw so callers can surface a helpful error
     throw err;
   }
