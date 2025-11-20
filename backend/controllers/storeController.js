@@ -301,11 +301,12 @@ export const updateStore = async (req, res) => {
       return res.status(401).json({ message: 'User not authenticated' });
     }
 
-    // Get store with timeout
+    // Get store with timeout - exclude logo to avoid errors if column doesn't exist
     const store = await Promise.race([
       Store.findByPk(id, {
         attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
-                     'region', 'province', 'municipality', 'barangay', 'contactEmail', 'phone']
+                     'region', 'province', 'municipality', 'barangay', 'contactEmail', 
+                     'phone', 'status', 'content', 'createdAt', 'updatedAt']
       }),
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Database query timeout')), 8000)
@@ -345,20 +346,38 @@ export const updateStore = async (req, res) => {
     }
 
     // Update store with timeout
+    // Build update data without logo first
+    const updateData = {
+      templateId: templateId || store.templateId,
+      storeName: storeName || store.storeName,
+      description: description || store.description,
+      domainName: domainName || store.domainName,
+      region: region || store.region,
+      province: province || store.province,
+      municipality: municipality || store.municipality,
+      barangay: barangay || store.barangay,
+      contactEmail: contactEmail || store.contactEmail,
+      phone: phone || store.phone
+    };
+    
+    // Try to update logo separately if provided (in case column doesn't exist)
     await Promise.race([
-      store.update({
-        templateId: templateId || store.templateId,
-        storeName: storeName || store.storeName,
-        description: description || store.description,
-        domainName: domainName || store.domainName,
-        region: region || store.region,
-        province: province || store.province,
-        municipality: municipality || store.municipality,
-        barangay: barangay || store.barangay,
-        contactEmail: contactEmail || store.contactEmail,
-        phone: phone || store.phone,
-        logo: logo !== undefined ? logo : store.logo
-      }),
+      store.update(updateData),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Update timeout')), 8000)
+      )
+    ]);
+    
+    // If logo was provided, try to update it separately
+    if (logo !== undefined) {
+      try {
+        await store.update({ logo: logo });
+        console.log('Store logo updated successfully');
+      } catch (logoError) {
+        // If logo column doesn't exist, just log and continue
+        console.warn('Could not update logo (column may not exist):', logoError.message);
+      }
+    }
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Update timeout')), 8000)
       )
@@ -408,7 +427,13 @@ export const deleteStore = async (req, res) => {
   }
 
   try {
-    const store = await Store.findByPk(id);
+    // Find store without logo field to avoid errors if column doesn't exist
+    const store = await Store.findByPk(id, {
+      attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
+                   'region', 'province', 'municipality', 'barangay', 'contactEmail', 
+                   'phone', 'status', 'createdAt', 'updatedAt']
+    });
+    
     if (!store) {
       return res.status(404).json({ message: 'Store not found' });
     }
@@ -422,14 +447,26 @@ export const deleteStore = async (req, res) => {
     res.status(200).json({ message: 'Store deleted successfully' });
   } catch (error) {
     console.error('Error deleting store:', error);
-    res.status(500).json({ message: error.message || 'Error deleting store' });
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      parent: error.parent?.message
+    });
+    res.status(500).json({ 
+      message: error.message || 'Error deleting store',
+      details: error.parent?.message || 'Unknown error occurred'
+    });
   }
 };
 
 export const getStoreById = async (req, res) => {
   try {
+    // Find store without logo field to avoid errors if column doesn't exist
     const store = await Store.findOne({
       where: { id: req.params.id },
+      attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
+                   'region', 'province', 'municipality', 'barangay', 'contactEmail', 
+                   'phone', 'status', 'content', 'createdAt', 'updatedAt'],
       include: [{
         model: User,
         attributes: ['email', 'firstName', 'lastName']
