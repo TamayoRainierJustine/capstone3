@@ -300,6 +300,28 @@ process.on('SIGINT', () => shutdown('SIGINT'));
   }
 
   try {
+    console.log('🛠️ Ensuring Users verification schema is up to date...');
+    await sequelize.query('ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "isVerified" BOOLEAN DEFAULT false');
+    await sequelize.query('ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "emailVerifiedAt" TIMESTAMP WITH TIME ZONE');
+    await sequelize.query(`
+      CREATE TABLE IF NOT EXISTS "EmailVerificationTokens" (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        code VARCHAR(20) NOT NULL,
+        "expiresAt" TIMESTAMP WITH TIME ZONE NOT NULL,
+        used BOOLEAN DEFAULT false,
+        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await sequelize.query('CREATE INDEX IF NOT EXISTS "idx_email_verification_email" ON "EmailVerificationTokens"(email)');
+    await sequelize.query('CREATE INDEX IF NOT EXISTS "idx_email_verification_expires" ON "EmailVerificationTokens"("expiresAt")');
+    console.log('✅ Users verification schema verified');
+  } catch (userSchemaErr) {
+    console.warn('⚠️ Skipping Users verification schema ensure:', userSchemaErr.message);
+  }
+
+  try {
     console.log('🛠️ Ensuring Products schema is up to date...');
     await sequelize.query('ALTER TABLE "Products" ADD COLUMN IF NOT EXISTS "weight" DECIMAL(10,2) DEFAULT 0');
     await sequelize.query('ALTER TABLE "Products" ADD COLUMN IF NOT EXISTS "category" VARCHAR(255)');

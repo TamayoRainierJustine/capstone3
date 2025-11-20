@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import PublicHeader from '../components/PublicHeader';
 import apiClient from '../utils/axios';
 import { FaUserCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { PASSWORD_REQUIREMENTS_TEXT, passwordMeetsRequirements } from '../utils/passwordRules';
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
@@ -19,7 +19,6 @@ const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,6 +38,11 @@ const RegisterPage = () => {
       return;
     }
 
+    if (!passwordMeetsRequirements(formData.password)) {
+      setError(PASSWORD_REQUIREMENTS_TEXT);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -49,31 +53,15 @@ const RegisterPage = () => {
         password: formData.password
       });
 
-      // After registration, if returnUrl is a published store, redirect back there
-      // Otherwise, redirect to login or verify email
       setError('');
-      const returnUrl = location.state?.returnUrl;
-      if (returnUrl && returnUrl.startsWith('/published/')) {
-        // Redirect back to published store - user will need to log in there
-        navigate(returnUrl, { replace: true });
-      } else if (returnUrl) {
-        // Redirect to login with return URL
-        navigate('/login', { 
-          state: { 
-            returnUrl: returnUrl,
-            message: 'Registration successful! Please log in to continue.'
-          },
-          replace: true 
-        });
-      } else {
-        // No return URL, redirect to login with success message
-        navigate('/login', { 
-          state: { 
-            message: 'Registration successful! Please log in to continue.'
-          },
-          replace: true 
-        });
-      }
+      navigate('/verify-email', { 
+        replace: true,
+        state: { 
+          email: formData.email,
+          message: 'We sent a verification link and code to your email. Please verify to continue.',
+          returnUrl: location.state?.returnUrl
+        }
+      });
     } catch (error) {
       setError(
         error.response?.data?.message || 
@@ -121,7 +109,7 @@ const RegisterPage = () => {
                   required
                   style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: 'none', background: '#23264a', color: '#fff', marginBottom: 12, fontSize: 16 }}
                 />
-                <div style={{ position: 'relative', width: '100%', marginBottom: 12 }}>
+                <div style={{ position: 'relative', width: '100%', marginBottom: 6 }}>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
@@ -153,6 +141,9 @@ const RegisterPage = () => {
                   >
                     {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
                   </button>
+                </div>
+                <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 12 }}>
+                  {PASSWORD_REQUIREMENTS_TEXT}
                 </div>
                 <div style={{ position: 'relative', width: '100%' }}>
                   <input

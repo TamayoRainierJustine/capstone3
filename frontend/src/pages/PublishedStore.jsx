@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import { getImageUrl } from '../utils/imageUrl';
+import { PASSWORD_REQUIREMENTS_TEXT, passwordMeetsRequirements } from '../utils/passwordRules';
 import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
 import { useAuth } from '../context/AuthContext';
 import { FaUserCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
@@ -325,6 +326,11 @@ const PublishedStore = () => {
     // Validate passwords match
     if (registerForm.password !== registerForm.confirmPassword) {
       setRegisterError('Passwords do not match');
+      return;
+    }
+
+    if (!passwordMeetsRequirements(registerForm.password)) {
+      setRegisterError(PASSWORD_REQUIREMENTS_TEXT);
       return;
     }
 
@@ -2739,6 +2745,9 @@ const PublishedStore = () => {
                     >
                       {showRegisterPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
                     </button>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {PASSWORD_REQUIREMENTS_TEXT}
                   </div>
                   <div className="relative">
                     <input

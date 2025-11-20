@@ -13,6 +13,14 @@ const User = sequelize.define('User', {
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
   password: { type: DataTypes.STRING, allowNull: false },
   role: { type: DataTypes.STRING, defaultValue: 'user' },
+  isVerified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  emailVerifiedAt: {
+    type: DataTypes.DATE,
+    allowNull: true
+  }
 }, {
   tableName: 'Users',
   timestamps: true

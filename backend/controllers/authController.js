@@ -1,11 +1,31 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { Op } from 'sequelize';
 import User from '../models/user.js';
 import Customer from '../models/customer.js';
 import sequelize from '../config/db.js';
 import PasswordResetToken from '../models/passwordResetToken.js';
-import { Op } from 'sequelize';
 import EmailVerificationToken from '../models/emailVerificationToken.js';
+import { sendEmail } from '../utils/email.js';
+
+const PASSWORD_REQUIREMENTS_TEXT = 'Password must be at least 8 characters and include uppercase, lowercase, and a number.';
+
+const validatePasswordStrength = (password) => {
+  const errors = [];
+  if (!password || password.length < 8) {
+    errors.push('Password must be at least 8 characters long.');
+  }
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must include at least one uppercase letter.');
+  }
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must include at least one lowercase letter.');
+  }
+  if (!/[0-9]/.test(password)) {
+    errors.push('Password must include at least one number.');
+  }
+  return errors;
+};
 
 export const register = async (req, res) => {
   const startTime = Date.now();
@@ -15,6 +35,15 @@ export const register = async (req, res) => {
     // Validate input
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    const passwordErrors = validatePasswordStrength(password);
+    if (passwordErrors.length > 0) {
+      return res.status(400).json({
+        message: PASSWORD_REQUIREMENTS_TEXT,
+        errors: passwordErrors,
+        error: 'WEAK_PASSWORD'
+      });
     }
 
     // Check if user exists
@@ -49,7 +78,27 @@ export const register = async (req, res) => {
       isVerified: user.isVerified,
     };
 
-    // OTP/Email verification disabled: do not generate or send codes
+    let verificationEmailSent = false;
+    try {
+      await EmailVerificationToken.update({ used: true }, { where: { email, used: false } });
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+      await EmailVerificationToken.create({ email, code, expiresAt });
+
+      const backendBase = (process.env.BACKEND_URL || '').trim() || `${req.protocol}://${req.get('host')}`;
+      const verifyLink = `${backendBase.replace(/\/+$/, '')}/api/auth/verify?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
+      const subject = 'Verify your Structura account';
+      const html = `<p>Welcome to Structura, ${firstName}!</p>
+        <p>Click the button below to verify your email:</p>
+        <p><a href="${verifyLink}" style="background:#6d28d9;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600">Verify my email</a></p>
+        <p>Or use this code if prompted: <strong style="letter-spacing:4px;font-size:20px">${code}</strong></p>
+        <p>This link/code expires in 30 minutes.</p>`;
+      const text = `Verify your Structura account: ${verifyLink} or use code ${code} (expires in 30 minutes).`;
+      await sendEmail({ to: email, subject, html, text });
+      verificationEmailSent = true;
+    } catch (emailErr) {
+      console.error('Failed to send verification email:', emailErr.message);
+    }
 
     const duration = Date.now() - startTime;
     // Suppress slow-registration log in production
@@ -60,8 +109,11 @@ export const register = async (req, res) => {
     }
 
     res.status(201).json({
-      message: 'User registered successfully.',
-      user: userWithoutPassword
+      message: verificationEmailSent
+        ? 'Registration successful! Please verify via the email we just sent.'
+        : 'Registration successful! Please request a new verification link from the login page.',
+      user: userWithoutPassword,
+      requiresVerification: true
     });
   } catch (err) {
     const duration = Date.now() - startTime;
@@ -145,7 +197,7 @@ export const login = async (req, res) => {
     // Query will establish connection if needed (lazy connection)
     const user = await User.findOne({ 
       where: { email },
-      attributes: ['id', 'firstName', 'lastName', 'email', 'password', 'role'],
+      attributes: ['id', 'firstName', 'lastName', 'email', 'password', 'role', 'isVerified'],
       raw: false // Keep as Sequelize instance for password access
     });
 
@@ -160,7 +212,13 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Email verification disabled: allow login without isVerified check
+    if (!user.isVerified) {
+      return res.status(403).json({
+        message: 'Please verify your email before logging in.',
+        error: 'EMAIL_NOT_VERIFIED',
+        requiresVerification: true
+      });
+    }
 
     // Generate token
     const token = jwt.sign(
@@ -385,6 +443,15 @@ export const resetPasswordWithCode = async (req, res) => {
   if (!email || !code || !newPassword) {
     return res.status(400).json({ message: 'Email, code and newPassword are required' });
   }
+
+  const passwordErrors = validatePasswordStrength(newPassword);
+  if (passwordErrors.length > 0) {
+    return res.status(400).json({
+      message: PASSWORD_REQUIREMENTS_TEXT,
+      errors: passwordErrors,
+      error: 'WEAK_PASSWORD'
+    });
+  }
   try {
     const token = await PasswordResetToken.findOne({
       where: {
@@ -425,6 +492,15 @@ export const registerCustomer = async (req, res) => {
     // Validate input
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    const passwordErrors = validatePasswordStrength(password);
+    if (passwordErrors.length > 0) {
+      return res.status(400).json({
+        message: PASSWORD_REQUIREMENTS_TEXT,
+        errors: passwordErrors,
+        error: 'WEAK_PASSWORD'
+      });
     }
 
     // Check if customer exists

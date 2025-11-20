@@ -16,6 +16,10 @@ const VerifyEmail = () => {
     if (location.state?.email) setEmail(location.state.email);
   }, [location.state]);
 
+  useEffect(() => {
+    if (location.state?.message) setMessage(location.state.message);
+  }, [location.state]);
+
   const handleVerify = async (e) => {
     e.preventDefault();
     setMessage('');

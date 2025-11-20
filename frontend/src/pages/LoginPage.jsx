@@ -13,6 +13,7 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
@@ -46,6 +47,7 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setVerificationEmail('');
     setIsLoading(true);
 
     try {
@@ -127,16 +129,20 @@ const LoginPage = () => {
       }
     } catch (error) {
       const msg = error.response?.data?.message;
-      if (error.response?.status === 403) {
-        setError(msg || 'Please verify your email to continue.');
+      setError(msg || 'An error occurred during login. Please try again.');
+      if (error.response?.data?.error === 'EMAIL_NOT_VERIFIED') {
+        setVerificationEmail(email);
       } else {
-        setError(
-          msg || 'An error occurred during login. Please try again.'
-        );
+        setVerificationEmail('');
       }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const goToVerification = () => {
+    if (!verificationEmail) return;
+    navigate('/verify-email', { state: { email: verificationEmail } });
   };
 
   return (
@@ -210,7 +216,29 @@ const LoginPage = () => {
                 Sign up
               </Link>
             </div>
-            {error && <div style={{ color: '#ff267a', marginTop: 16 }}>{error}</div>}
+            {error && (
+              <div style={{ color: '#ff267a', marginTop: 16 }}>
+                {error}
+                {verificationEmail && (
+                  <div style={{ marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={goToVerification}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#7f53ac',
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        padding: 0
+                      }}
+                    >
+                      Verify email
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             {success && <div style={{ color: '#4ade80', marginTop: 16 }}>{success}</div>}
           </div>
           {/* Right Panel */}
