@@ -23,6 +23,10 @@ const PublishedStore = () => {
   const { login: loginContext, user } = useAuth();
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [showCategoriesModal, setShowCategoriesModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
@@ -416,11 +420,30 @@ const PublishedStore = () => {
           const productsResponse = await apiClient.get(
             `/products/public/${response.data.id}`
           );
-          setProducts(productsResponse.data || []);
+          const fetchedProducts = productsResponse.data || [];
+          setProducts(fetchedProducts);
+          setFilteredProducts(fetchedProducts);
         } catch (productsError) {
           console.error('Error fetching products:', productsError);
           // If products API fails, use products from store.content as fallback
-          setProducts(response.data.content?.products || []);
+          const fallbackProducts = response.data.content?.products || [];
+          setProducts(fallbackProducts);
+          setFilteredProducts(fallbackProducts);
+        }
+
+        // Fetch categories for this store
+        try {
+          const categoriesResponse = await apiClient.get(
+            `/products/public/${response.data.id}/categories`
+          );
+          setCategories(categoriesResponse.data || []);
+        } catch (categoriesError) {
+          console.error('Error fetching categories:', categoriesError);
+          // Extract categories from products if API fails
+          const productCategories = products
+            .map(p => p.category)
+            .filter(c => c && c.trim() !== '');
+          setCategories([...new Set(productCategories)]);
         }
         
         // Load the template file
@@ -461,6 +484,48 @@ const PublishedStore = () => {
     }
   }, [domain]);
 
+  // Filter products by category
+  useEffect(() => {
+    if (selectedCategory === '') {
+      setFilteredProducts(products);
+    } else {
+      setFilteredProducts(products.filter(p => p.category === selectedCategory));
+    }
+  }, [products, selectedCategory]);
+
+  // Handle category selection
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category);
+    setShowCategoriesModal(false);
+    // Scroll to products section after a short delay
+    setTimeout(() => {
+      const productsSection = iframeRef.current?.contentDocument?.querySelector('.products, .products-section, #products');
+      if (productsSection) {
+        productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
+
+  // Clear category filter
+  const clearCategoryFilter = () => {
+    setSelectedCategory('');
+    setShowCategoriesModal(false);
+  };
+
+  // Listen for postMessage from iframe to show categories modal
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data && event.data.type === 'SHOW_CATEGORIES') {
+        setShowCategoriesModal(true);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
+
   // Update callback ref whenever products or state setters change
   useEffect(() => {
     orderButtonCallbackRef.current = (product) => {
@@ -480,8 +545,8 @@ const PublishedStore = () => {
   useEffect(() => {
     if (!store || !htmlContent || !iframeRef.current) return;
     
-    // Use products from API if available, otherwise fallback to store.content.products
-    const displayProducts = products.length > 0 ? products : (store.content?.products || []);
+    // Use filtered products or all products if no filter
+    const displayProducts = filteredProducts.length > 0 ? filteredProducts : (products.length > 0 ? products : (store.content?.products || []));
 
     const updateIframe = () => {
       const iframe = iframeRef.current;
@@ -1407,12 +1472,31 @@ const PublishedStore = () => {
         }
 
         // Add navigation link functionality and remove About/Gallery links
+        // Add click handlers to navigation links
         const navLinks = iframeDoc.querySelectorAll('.nav-links a, .navbar a');
         navLinks.forEach(link => {
           const linkText = link.textContent.trim().toLowerCase();
           
           // Skip if it's the logo (already handled above)
           if (link.classList.contains('logo')) return;
+
+          // Handle Categories link click
+          if (linkText === 'categories' || linkText.includes('categor')) {
+            link.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // Trigger categories modal in parent window
+              try {
+                if (window.parent && window.parent.postMessage) {
+                  window.parent.postMessage({ type: 'SHOW_CATEGORIES' }, '*');
+                }
+              } catch (err) {
+                console.error('Cannot post message to parent:', err);
+              }
+              return false;
+            };
+            return;
+          }
           
           // Remove About and Gallery links
           if (linkText === 'about' || linkText === 'gallery') {
@@ -3084,6 +3168,78 @@ const PublishedStore = () => {
                 </form>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Categories Modal */}
+      {showCategoriesModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowCategoriesModal(false)}
+        >
+          <div 
+            className="bg-white rounded-lg max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Product Categories</h2>
+              <button
+                onClick={() => setShowCategoriesModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            {categories.length > 0 ? (
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    clearCategoryFilter();
+                    setShowCategoriesModal(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
+                    selectedCategory === '' 
+                      ? 'border-purple-600 bg-purple-50 text-purple-700' 
+                      : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                  }`}
+                >
+                  <span className="font-semibold">All Products</span>
+                  <span className="text-sm text-gray-500 ml-2">({products.length} items)</span>
+                </button>
+                {categories.map((category) => {
+                  const categoryCount = products.filter(p => p.category === category).length;
+                  return (
+                    <button
+                      key={category}
+                      onClick={() => handleCategoryClick(category)}
+                      className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
+                        selectedCategory === category
+                          ? 'border-purple-600 bg-purple-50 text-purple-700'
+                          : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                      }`}
+                    >
+                      <span className="font-semibold">{category}</span>
+                      <span className="text-sm text-gray-500 ml-2">({categoryCount} items)</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-600 text-center py-4">
+                No categories available yet.
+              </p>
+            )}
+            {selectedCategory && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <button
+                  onClick={clearCategoryFilter}
+                  className="w-full px-4 py-2 text-purple-600 hover:bg-purple-50 rounded-lg font-medium"
+                >
+                  Clear Filter
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

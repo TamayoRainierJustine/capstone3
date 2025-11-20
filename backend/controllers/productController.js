@@ -439,3 +439,36 @@ export const getPublicProducts = async (req, res) => {
   }
 };
 
+// Get public categories for a published store (no auth required)
+export const getPublicCategories = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+
+    const store = await Store.findOne({
+      where: { id: storeId, status: 'published' }
+    });
+
+    if (!store) {
+      return res.status(404).json({ message: 'Store not found or not published' });
+    }
+
+    // Get distinct categories from products
+    const products = await Product.findAll({
+      where: {
+        storeId: store.id,
+        isActive: true
+      },
+      attributes: ['category'],
+      raw: true
+    });
+
+    // Extract unique, non-null categories
+    const categories = [...new Set(products.map(p => p.category).filter(c => c && c.trim() !== ''))];
+    
+    res.json(categories.sort());
+  } catch (error) {
+    console.error('Error fetching public categories:', error);
+    res.status(500).json({ message: 'Error fetching categories', error: error.message });
+  }
+};
+

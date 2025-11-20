@@ -7,6 +7,7 @@ import {
   updateProduct,
   deleteProduct,
   getPublicProducts,
+  getPublicCategories,
   getCategories
 } from '../controllers/productController.js';
 import { authenticateToken } from '../middleware/auth.js';
@@ -44,8 +45,9 @@ const upload = multer({
   }
 });
 
-// Public route - no authentication required (must be before auth middleware)
+// Public routes - no authentication required (must be before auth middleware)
 router.get('/public/:storeId', getPublicProducts);
+router.get('/public/:storeId/categories', getPublicCategories);
 
 // All routes below require authentication
 router.use(authenticateToken);
