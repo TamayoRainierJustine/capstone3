@@ -1458,7 +1458,7 @@ const PublishedStore = () => {
 
         // Update branding/logo area (nav + footer)
         const logoDisplayName = store.storeName || 'Store';
-        const injectLogoContent = (element, { clickable = false, maxHeight = 110 } = {}) => {
+        const injectLogoContent = (element, { clickable = false, maxHeight = 110, center = false } = {}) => {
           if (!element) return;
           if (storeLogoUrl) {
             const logoImg = iframeDoc.createElement('img');
@@ -1470,6 +1470,11 @@ const PublishedStore = () => {
             logoImg.style.width = 'auto';
             logoImg.style.maxWidth = '200px';
             element.innerHTML = '';
+            if (center) {
+              element.style.display = 'flex';
+              element.style.justifyContent = 'center';
+              element.style.alignItems = 'center';
+            }
             element.appendChild(logoImg);
           } else {
             element.textContent = logoDisplayName;
@@ -1489,8 +1494,8 @@ const PublishedStore = () => {
         const logo = iframeDoc.querySelector('.logo, .navbar .logo');
         injectLogoContent(logo, { clickable: true, maxHeight: 110 });
         
-        const footerLogo = iframeDoc.querySelector('.footer-logo, footer .footer-logo');
-        injectLogoContent(footerLogo, { clickable: false, maxHeight: 40 });
+        const footerLogo = iframeDoc.querySelector('.footer-logo, footer .footer-logo, footer .logo');
+        injectLogoContent(footerLogo, { clickable: false, maxHeight: 60, center: true });
         
         if (!storeLogoUrl) {
           // Replace any remaining "Truvara" text in navbar and footer areas only when using text logo
