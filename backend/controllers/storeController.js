@@ -72,7 +72,7 @@ export const createStore = async (req, res) => {
     console.log('   Domain name (normalized):', domainName);
     console.log('   Logo:', logo || 'not provided');
     
-    // Build store data object
+    // Build store data object WITHOUT logo to avoid column errors if logo column doesn't exist
     const storeData = {
       userId,
       templateId,
@@ -87,12 +87,25 @@ export const createStore = async (req, res) => {
       phone
     };
     
-    // Only include logo if it's provided (to avoid issues if column doesn't exist)
-    if (logo && logo.trim() !== '') {
-      storeData.logo = logo;
-    }
+    // Create store WITHOUT logo field by explicitly specifying fields
+    // This ensures logo is not included in the INSERT statement if column doesn't exist
+    const store = await Store.create(storeData, {
+      fields: ['userId', 'templateId', 'storeName', 'description', 'domainName', 
+               'region', 'province', 'municipality', 'barangay', 'contactEmail', 'phone']
+    });
     
-    const store = await Store.create(storeData);
+    // If logo was provided, try to update the store with logo separately
+    // This way if logo column doesn't exist, the store creation still succeeds
+    if (logo && logo.trim() !== '') {
+      try {
+        await store.update({ logo: logo });
+        console.log('Store logo updated successfully');
+      } catch (logoError) {
+        // If logo column doesn't exist, just log and continue
+        // Store creation succeeded, that's what matters
+        console.warn('Could not update logo (column may not exist):', logoError.message);
+      }
+    }
     
     console.log('Store created successfully:', store.id);
     res.status(201).json(store);
