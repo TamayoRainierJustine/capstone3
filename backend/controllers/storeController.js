@@ -217,12 +217,13 @@ export const getUserStores = async (req, res) => {
     }
     
     // Optimize query - remove User include if not needed, add timeout
+    // Exclude logo field to avoid error if column doesn't exist
     const stores = await Promise.race([
       Store.findAll({ 
         where: { userId },
         attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
                      'region', 'province', 'municipality', 'barangay', 'contactEmail', 
-                     'phone', 'logo', 'status', 'content', 'createdAt', 'updatedAt'],
+                     'phone', 'status', 'content', 'createdAt', 'updatedAt'],
         limit: 100 // Limit to prevent large queries
       }),
       new Promise((_, reject) => 
