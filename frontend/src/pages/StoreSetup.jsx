@@ -299,7 +299,6 @@ const StoreSetup = () => {
                 required
                 placeholder="Enter your domain name (e.g., my-store)"
                 style={{ width: '70%' }}
-                pattern="[a-z0-9\\-]+"
                 title="Domain name can only contain lowercase letters, numbers, and hyphens"
               />
               <span className="domain-suffix" style={{ color: '#6b7280' }}> (your unique identifier)</span>

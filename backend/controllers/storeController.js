@@ -98,6 +98,10 @@ export const createStore = async (req, res) => {
     res.status(201).json(store);
   } catch (error) {
     console.error('Error creating store:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error parent:', error.parent?.message);
+    console.error('Error stack:', error.stack);
     
     // Check for duplicate domain name
     if (error.name === 'SequelizeUniqueConstraintError' || error.parent?.code === 'ER_DUP_ENTRY') {
@@ -115,8 +119,8 @@ export const createStore = async (req, res) => {
       }
     }
     
-    // Check if error is about missing column (logo)
-    if (error.message && (error.message.includes('logo') || error.message.includes('column'))) {
+    // Check if error is about missing column (logo) or database schema issues
+    if (error.message && (error.message.includes('logo') || error.message.includes('column') || error.message.includes('does not exist'))) {
       console.warn('Logo column may not exist in database. Retrying without logo field.');
       // Try again without logo
       const storeDataWithoutLogo = {
@@ -138,12 +142,19 @@ export const createStore = async (req, res) => {
         return res.status(201).json(store);
       } catch (retryError) {
         console.error('Error creating store (retry without logo):', retryError);
+        console.error('Retry error message:', retryError.message);
+        // Continue to return error below
       }
     }
     
-    res.status(400).json({ 
-      message: error.message || 'Validation error',
-      details: error.parent?.message || error.message || 'Unknown error occurred'
+    // Return proper error response with more details
+    const errorMessage = error.message || 'Error creating store';
+    const errorDetails = error.parent?.message || error.message || 'Unknown error occurred';
+    
+    res.status(500).json({ 
+      message: errorMessage,
+      details: errorDetails,
+      errorType: error.name || 'UNKNOWN_ERROR'
     });
   }
 };
