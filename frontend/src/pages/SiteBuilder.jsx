@@ -1425,10 +1425,8 @@ export default function SiteBuilder() {
       );
 
       setStatus('Content saved successfully!');
-      // Redirect to dashboard after successful save
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000);
+      // Don't auto-redirect - let user stay on site builder to continue editing
+      setTimeout(() => setStatus(''), 3000);
     } catch (e) {
       setStatus('Error saving: ' + (e.response?.data?.message || e.message));
       setTimeout(() => setStatus(''), 5000);
