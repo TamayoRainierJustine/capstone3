@@ -371,7 +371,14 @@ export const updateStore = async (req, res) => {
     // If logo was provided, try to update it separately
     if (logo !== undefined) {
       try {
-        await store.update({ logo: logo });
+        // Use raw query to update logo without triggering model reload
+        await sequelize.query(
+          `UPDATE "Stores" SET "logo" = $1 WHERE "id" = $2`,
+          {
+            bind: [logo, id],
+            type: sequelize.QueryTypes.UPDATE
+          }
+        );
         console.log('Store logo updated successfully');
       } catch (logoError) {
         // If logo column doesn't exist, just log and continue
@@ -698,14 +705,39 @@ export const publishStore = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this store' });
     }
 
-    await store.update({ status });
-    
-    // Reload store to get updated data
-    const updatedStore = await Store.findByPk(id, {
-      attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
-                   'region', 'province', 'municipality', 'barangay', 'contactEmail', 
-                   'phone', 'status', 'content', 'createdAt', 'updatedAt']
+    // Update without auto-reload to avoid selecting logo column
+    await store.update({ status }, { 
+      fields: ['status'],
+      returning: false, // Don't return updated data (prevents SELECT)
+      hooks: false // Skip hooks that might trigger queries
     });
+    
+    // Manually reload store with explicit attributes (without logo)
+    // Use raw query to have full control over selected columns
+    const [updatedStoreData] = await sequelize.query(
+      `SELECT "id", "userId", "templateId", "storeName", "description", "domainName", 
+       "region", "province", "municipality", "barangay", "contactEmail", 
+       "phone", "status", "content", "createdAt", "updatedAt" 
+       FROM "Stores" WHERE "id" = $1`,
+      {
+        bind: [id],
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
+    
+    if (!updatedStoreData) {
+      return res.status(404).json({ message: 'Store not found after update' });
+    }
+    
+    // Parse content if it's a string
+    let updatedStore = { ...updatedStoreData };
+    if (updatedStore.content && typeof updatedStore.content === 'string') {
+      try {
+        updatedStore.content = JSON.parse(updatedStore.content);
+      } catch (e) {
+        console.error('Error parsing store content:', e);
+      }
+    }
     
     res.status(200).json({ 
       message: `Store ${status === 'published' ? 'published' : 'unpublished'} successfully`,
