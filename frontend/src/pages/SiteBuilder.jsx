@@ -674,6 +674,12 @@ export default function SiteBuilder() {
         if (response.data && response.data.length > 0) {
           const storeData = response.data[0];
           setStoreId(storeData.id);
+          
+          // If template is provided in URL, use it instead of store's template
+          if (templateIdFromUrl && templateFileMap[templateIdFromUrl]) {
+            setTemplateId(templateIdFromUrl);
+            setTemplateFile(templateFileMap[templateIdFromUrl]);
+          }
           setStoreSettings({
             storeName: storeData.storeName || '',
             description: storeData.description || '',
@@ -687,7 +693,8 @@ export default function SiteBuilder() {
           });
 
           // Update template ID if it exists in store data
-          if (storeData.templateId && templateFileMap[storeData.templateId]) {
+          // But only if no template was explicitly provided in the URL
+          if (!templateIdFromUrl && storeData.templateId && templateFileMap[storeData.templateId]) {
             setTemplateId(storeData.templateId);
             setTemplateFile(templateFileMap[storeData.templateId]);
           }
