@@ -1,6 +1,7 @@
 import Store from '../models/store.js';
 import User from '../models/user.js';
 import { Op } from 'sequelize';
+import sequelize from '../config/db.js';
 import multer from 'multer';
 import path from 'path';
 import { uploadToSupabase } from '../utils/supabaseStorage.js';
@@ -87,11 +88,44 @@ export const createStore = async (req, res) => {
       phone
     };
     
-    // Create store WITHOUT logo field by explicitly specifying fields
-    // This ensures logo is not included in the INSERT statement if column doesn't exist
-    const store = await Store.create(storeData, {
-      fields: ['userId', 'templateId', 'storeName', 'description', 'domainName', 
-               'region', 'province', 'municipality', 'barangay', 'contactEmail', 'phone']
+    // Create store WITHOUT logo field using raw query to avoid RETURNING clause issues
+    // Sequelize's RETURNING clause includes all model fields even if not inserted
+    const [storeResult] = await sequelize.query(
+      `INSERT INTO "Stores" ("userId", "templateId", "storeName", "description", "domainName", 
+       "region", "province", "municipality", "barangay", "contactEmail", "phone", 
+       "status", "createdAt", "updatedAt") 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
+       RETURNING "id", "userId", "templateId", "storeName", "description", "domainName", 
+       "region", "province", "municipality", "barangay", "contactEmail", "phone", 
+       "status", "content", "createdAt", "updatedAt"`,
+      {
+        bind: [
+          userId,
+          templateId,
+          storeName,
+          description,
+          domainName,
+          region,
+          province,
+          municipality,
+          barangay,
+          contactEmail,
+          phone,
+          'draft',
+          new Date(),
+          new Date()
+        ],
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
+    
+    const storeId = storeResult.id;
+    
+    // Fetch the created store without logo field
+    const store = await Store.findByPk(storeId, {
+      attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
+                   'region', 'province', 'municipality', 'barangay', 'contactEmail', 
+                   'phone', 'status', 'content', 'createdAt', 'updatedAt']
     });
     
     // If logo was provided, try to update the store with logo separately
