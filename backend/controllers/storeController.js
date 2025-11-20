@@ -70,8 +70,10 @@ export const createStore = async (req, res) => {
 
     console.log('Creating store for user:', userId);
     console.log('   Domain name (normalized):', domainName);
+    console.log('   Logo:', logo || 'not provided');
     
-    const store = await Store.create({
+    // Build store data object
+    const storeData = {
       userId,
       templateId,
       storeName,
@@ -82,9 +84,15 @@ export const createStore = async (req, res) => {
       municipality,
       barangay,
       contactEmail,
-      phone,
-      logo: logo || null
-    });
+      phone
+    };
+    
+    // Only include logo if it's provided (to avoid issues if column doesn't exist)
+    if (logo && logo.trim() !== '') {
+      storeData.logo = logo;
+    }
+    
+    const store = await Store.create(storeData);
     
     console.log('Store created successfully:', store.id);
     res.status(201).json(store);
@@ -104,6 +112,32 @@ export const createStore = async (req, res) => {
           message: 'You already have a store with this name. Please choose a different name or update your existing store.',
           details: error.parent?.message || 'Duplicate store name'
         });
+      }
+    }
+    
+    // Check if error is about missing column (logo)
+    if (error.message && (error.message.includes('logo') || error.message.includes('column'))) {
+      console.warn('Logo column may not exist in database. Retrying without logo field.');
+      // Try again without logo
+      const storeDataWithoutLogo = {
+        userId,
+        templateId,
+        storeName,
+        description,
+        domainName,
+        region,
+        province,
+        municipality,
+        barangay,
+        contactEmail,
+        phone
+      };
+      try {
+        const store = await Store.create(storeDataWithoutLogo);
+        console.log('Store created successfully (without logo):', store.id);
+        return res.status(201).json(store);
+      } catch (retryError) {
+        console.error('Error creating store (retry without logo):', retryError);
       }
     }
     

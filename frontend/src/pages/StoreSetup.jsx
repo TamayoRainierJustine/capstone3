@@ -157,8 +157,17 @@ const StoreSetup = () => {
       if (existingStore && storeId) {
         const payload = {
           templateId: templateId || existingStore.templateId,
-          ...formData
+          ...formData,
+          // Only include logo if it exists
+          logo: formData.logo || undefined
         };
+        
+        // Remove undefined/null values
+        Object.keys(payload).forEach(key => {
+          if (payload[key] === undefined || payload[key] === null) {
+            delete payload[key];
+          }
+        });
         
         const response = await apiClient.put(`/stores/${storeId}`, payload);
         
@@ -176,6 +185,17 @@ const StoreSetup = () => {
           templateId,
           ...formData
         };
+        
+        // Remove undefined/null values and don't include logo if not set
+        Object.keys(payload).forEach(key => {
+          if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
+            // Keep empty strings for some fields, but remove undefined/null
+            if (payload[key] === undefined || payload[key] === null) {
+              delete payload[key];
+            }
+          }
+        });
+        
         console.log('Sending payload:', payload);
         const response = await apiClient.post('/stores', payload);
         console.log('Response:', response.data);
@@ -279,7 +299,7 @@ const StoreSetup = () => {
                 required
                 placeholder="Enter your domain name (e.g., my-store)"
                 style={{ width: '70%' }}
-                pattern="[a-z0-9-]+"
+                pattern="[a-z0-9\\-]+"
                 title="Domain name can only contain lowercase letters, numbers, and hyphens"
               />
               <span className="domain-suffix" style={{ color: '#6b7280' }}> (your unique identifier)</span>
