@@ -416,19 +416,20 @@ const PublishedStore = () => {
         console.log('📦 Background settings:', response.data.content?.background);
         
         // Fetch products from the Products API for this store
+        let fetchedProducts = [];
         try {
           const productsResponse = await apiClient.get(
             `/products/public/${response.data.id}`
           );
-          const fetchedProducts = productsResponse.data || [];
+          fetchedProducts = productsResponse.data || [];
           setProducts(fetchedProducts);
           setFilteredProducts(fetchedProducts);
         } catch (productsError) {
           console.error('Error fetching products:', productsError);
           // If products API fails, use products from store.content as fallback
-          const fallbackProducts = response.data.content?.products || [];
-          setProducts(fallbackProducts);
-          setFilteredProducts(fallbackProducts);
+          fetchedProducts = response.data.content?.products || [];
+          setProducts(fetchedProducts);
+          setFilteredProducts(fetchedProducts);
         }
 
         // Fetch categories for this store
@@ -439,11 +440,11 @@ const PublishedStore = () => {
           setCategories(categoriesResponse.data || []);
         } catch (categoriesError) {
           console.error('Error fetching categories:', categoriesError);
-          // Extract categories from products if API fails
-          const productCategories = products
+          // Extract categories from fetched products if API fails
+          const productCategories = fetchedProducts
             .map(p => p.category)
             .filter(c => c && c.trim() !== '');
-          setCategories([...new Set(productCategories)]);
+          setCategories([...new Set(productCategories)].sort());
         }
         
         // Load the template file
