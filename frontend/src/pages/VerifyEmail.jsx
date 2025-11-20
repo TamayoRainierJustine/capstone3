@@ -63,6 +63,7 @@ const VerifyEmail = () => {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email"
               required
+              autoComplete="email"
               style={{ width: '100%', padding: '12px 16px', borderRadius: 8, border: 'none', background: '#23264a', color: '#fff', marginBottom: 12 }}
             />
             <input
@@ -74,6 +75,7 @@ const VerifyEmail = () => {
               placeholder="6-digit code"
               inputMode="numeric"
               required
+              autoComplete="one-time-code"
               style={{ width: '100%', padding: '12px 16px', borderRadius: 8, border: 'none', background: '#23264a', color: '#fff', marginBottom: 16, letterSpacing: '4px' }}
             />
             <button type="submit" disabled={loading} style={{ width: '100%', padding: 12, borderRadius: 8, background: 'linear-gradient(90deg, #ff267a 0%, #7f53ac 100%)', color: '#fff', fontWeight: 'bold', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>

@@ -2648,19 +2648,25 @@ const PublishedStore = () => {
                 <div className="space-y-3 mb-4">
                   <input
                     type="email"
+                    name="loginEmail"
+                    id="store-login-email"
                     placeholder="Email"
                     value={loginEmail}
                     onChange={e => setLoginEmail(e.target.value)}
                     required
+                    autoComplete="email"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
+                      name="loginPassword"
+                      id="store-login-password"
                       placeholder="Password"
                       value={loginPassword}
                       onChange={e => setLoginPassword(e.target.value)}
                       required
+                      autoComplete="current-password"
                       className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                     <button
@@ -2713,6 +2719,7 @@ const PublishedStore = () => {
                     value={registerForm.firstName}
                     onChange={e => setRegisterForm(prev => ({ ...prev, firstName: e.target.value }))}
                     required
+                    autoComplete="given-name"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                   <input
@@ -2723,6 +2730,7 @@ const PublishedStore = () => {
                     value={registerForm.lastName}
                     onChange={e => setRegisterForm(prev => ({ ...prev, lastName: e.target.value }))}
                     required
+                    autoComplete="family-name"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                   <input
@@ -2733,6 +2741,7 @@ const PublishedStore = () => {
                     value={registerForm.email}
                     onChange={e => setRegisterForm(prev => ({ ...prev, email: e.target.value }))}
                     required
+                    autoComplete="email"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                   <div className="relative">
@@ -2744,6 +2753,7 @@ const PublishedStore = () => {
                       value={registerForm.password}
                       onChange={e => setRegisterForm(prev => ({ ...prev, password: e.target.value }))}
                       required
+                      autoComplete="new-password"
                       className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                     <button
@@ -2766,6 +2776,7 @@ const PublishedStore = () => {
                       value={registerForm.confirmPassword}
                       onChange={e => setRegisterForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
                       required
+                      autoComplete="new-password"
                       className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                     <button
@@ -2848,16 +2859,17 @@ const PublishedStore = () => {
             )}
             <form onSubmit={handleLogin}>
               <div className="space-y-3 mb-4">
-                <input
-                  type="email"
-                  name="loginEmail"
-                  id="modal-login-email"
-                  placeholder="Email"
-                  value={loginEmail}
-                  onChange={e => setLoginEmail(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
+                  <input
+                    type="email"
+                    name="loginEmail"
+                    id="modal-login-email"
+                    placeholder="Email"
+                    value={loginEmail}
+                    onChange={e => setLoginEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -2867,6 +2879,7 @@ const PublishedStore = () => {
                     value={loginPassword}
                     onChange={e => setLoginPassword(e.target.value)}
                     required
+                    autoComplete="current-password"
                     className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                   <button

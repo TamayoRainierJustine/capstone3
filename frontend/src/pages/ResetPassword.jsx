@@ -54,6 +54,7 @@ const ResetPassword = () => {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email"
               required
+              autoComplete="email"
               style={{ width: '100%', padding: '12px 16px', borderRadius: 8, border: 'none', background: '#23264a', color: '#fff', marginBottom: 12 }}
             />
             <input
@@ -65,6 +66,7 @@ const ResetPassword = () => {
               placeholder="6-digit code"
               required
               inputMode="numeric"
+              autoComplete="one-time-code"
               style={{ width: '100%', padding: '12px 16px', borderRadius: 8, border: 'none', background: '#23264a', color: '#fff', marginBottom: 12, letterSpacing: '4px' }}
             />
             <input
@@ -75,6 +77,7 @@ const ResetPassword = () => {
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="New password"
               required
+              autoComplete="new-password"
               style={{ width: '100%', padding: '12px 16px', borderRadius: 8, border: 'none', background: '#23264a', color: '#fff', marginBottom: 8 }}
             />
             <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 16 }}>

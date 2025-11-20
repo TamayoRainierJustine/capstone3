@@ -89,6 +89,7 @@ const RegisterPage = () => {
                   value={formData.firstName}
                   onChange={handleChange}
                   required
+                  autoComplete="given-name"
                   style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: 'none', background: '#23264a', color: '#fff', marginBottom: 12, fontSize: 16 }}
                 />
                 <input
@@ -98,6 +99,7 @@ const RegisterPage = () => {
                   value={formData.lastName}
                   onChange={handleChange}
                   required
+                  autoComplete="family-name"
                   style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: 'none', background: '#23264a', color: '#fff', marginBottom: 12, fontSize: 16 }}
                 />
                 <input
@@ -107,6 +109,7 @@ const RegisterPage = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
+                  autoComplete="email"
                   style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: 'none', background: '#23264a', color: '#fff', marginBottom: 12, fontSize: 16 }}
                 />
                 <div style={{ position: 'relative', width: '100%', marginBottom: 6 }}>
@@ -117,6 +120,7 @@ const RegisterPage = () => {
                     value={formData.password}
                     onChange={handleChange}
                     required
+                    autoComplete="new-password"
                     style={{ width: '100%', padding: '12px 16px', paddingRight: '45px', borderRadius: '8px', border: 'none', background: '#23264a', color: '#fff', fontSize: 16 }}
                   />
                   <button
@@ -153,6 +157,7 @@ const RegisterPage = () => {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
+                    autoComplete="new-password"
                     style={{ width: '100%', padding: '12px 16px', paddingRight: '45px', borderRadius: '8px', border: 'none', background: '#23264a', color: '#fff', fontSize: 16 }}
                   />
                   <button

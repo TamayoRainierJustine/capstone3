@@ -163,6 +163,7 @@ const LoginPage = () => {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
+                  autoComplete="username"
                   style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: 'none', background: '#23264a', color: '#fff', marginBottom: 16, fontSize: 16 }}
                 />
                 <div style={{ position: 'relative', width: '100%' }}>
@@ -174,6 +175,7 @@ const LoginPage = () => {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     required
+                    autoComplete="current-password"
                     style={{ width: '100%', padding: '12px 16px', paddingRight: '45px', borderRadius: '8px', border: 'none', background: '#23264a', color: '#fff', fontSize: 16 }}
                   />
                   <button
