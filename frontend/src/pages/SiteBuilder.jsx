@@ -855,6 +855,7 @@ export default function SiteBuilder() {
                 })) : []);
               }
             }
+          }
         } else {
           // No stores found - allow user to still use site builder with template from URL
           console.log('⚠️ No stores found, but continuing with template from URL');
