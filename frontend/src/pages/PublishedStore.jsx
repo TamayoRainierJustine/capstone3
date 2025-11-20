@@ -929,6 +929,53 @@ const PublishedStore = () => {
 
         // Update products - use products from API (Products table) or fallback to content
         if (displayProducts && Array.isArray(displayProducts) && displayProducts.length > 0) {
+          const darkBackgroundTemplates = ['bladebinge', 'struvaris', 'ructon'];
+          const priceColor = store?.templateId === 'bladebinge' ? '#c9a961' : '#111';
+          let descriptionColor = '#666';
+          if (store?.templateId === 'bladebinge') {
+            descriptionColor = '#c9a961';
+          } else if (darkBackgroundTemplates.includes(store?.templateId)) {
+            descriptionColor = '#999';
+          }
+
+          const ensureProductCardStyles = () => {
+            try {
+              if (!iframeDoc.getElementById('structura-published-style')) {
+                const style = iframeDoc.createElement('style');
+                style.id = 'structura-published-style';
+                style.textContent = `
+                  /* Normalize product info layout across templates */
+                  .product-card, .product { background: transparent !important; border: none !important; }
+                  .product-info, .product-title, .product-description { width: 100% !important; float: none !important; clear: both !important; }
+                  .product-info {
+                    background: #fff !important;
+                    border-radius: 14px !important;
+                    padding: 1.25rem !important;
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.08) !important;
+                  }
+                  .product-title { margin: 0 0 .5rem 0; }
+                  .product-description { 
+                    display: -webkit-box; 
+                    -webkit-line-clamp: 4; 
+                    -webkit-box-orient: vertical; 
+                    overflow: hidden; 
+                    line-height: 1.6; 
+                    color: ${descriptionColor} !important; 
+                    margin: .5rem 0 1rem; 
+                    white-space: normal; 
+                    word-break: normal; 
+                  }
+                  .product-price, .price { font-weight: 700; color: ${priceColor} !important; font-size: 1.05rem; }
+                  .product-footer { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .5rem; }
+                  .product-footer .product-button { cursor: pointer; padding: .5rem .75rem; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; }
+                `;
+                (iframeDoc.head || iframeDoc.body).appendChild(style);
+              }
+            } catch (_) {}
+          };
+
+          ensureProductCardStyles();
+
           // Find products section/container
           const productsSection = iframeDoc.querySelector('.products, .products-section, #products, section.products');
           const productGrid = iframeDoc.querySelector('.product-grid, .products-grid, .products .product-grid');
@@ -942,87 +989,52 @@ const PublishedStore = () => {
             displayProducts.forEach((product, index) => {
               let card;
               
+              const resolvedImageUrl = product.image && product.image !== '/imgplc.jpg'
+                ? (product.image.startsWith('http') ? product.image : getImageUrl(product.image) || product.image)
+                : '/imgplc.jpg';
+              const price = parseFloat(product.price) || 0;
+              let descPreview = product.description || '';
+              descPreview = descPreview.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
+              const escapeHtml = (value = '') => value
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+              const safeTitle = escapeHtml(product.name || 'Product');
+              const safeDescPreview = escapeHtml(descPreview);
+              
+              const cardTemplate = `
+                <div class="product-image">
+                  <img src="${resolvedImageUrl}" alt="${safeTitle}" />
+                </div>
+                <div class="product-info">
+                  <h3 class="product-title">${safeTitle}</h3>
+                  <p class="product-description">${safeDescPreview}</p>
+                  <div class="product-footer" style="display:flex; align-items:center; justify-content:space-between; gap:.5rem;">
+                    <span class="product-price">₱${price.toFixed(2)}</span>
+                    <div style="display:flex; gap:.5rem;">
+                      <button class="product-button order-button" style="padding:.5rem .75rem; border-radius:8px;">Order</button>
+                    </div>
+                  </div>
+                </div>
+              `;
+              
               if (existingCards[index]) {
                 // Update existing card
                 card = existingCards[index];
+                if (!card.classList.contains('product-card')) {
+                  card.classList.add('product-card');
+                }
+                const hasStandardLayout = card.querySelector('.product-info') && card.querySelector('.product-image');
+                if (!hasStandardLayout) {
+                  card.innerHTML = cardTemplate;
+                }
               } else {
                 // Create new product card
                 card = iframeDoc.createElement('div');
                 card.className = 'product-card';
-                
-                // Ensure base styles are present for neat layout (once)
-                try {
-                  if (!iframeDoc.getElementById('structura-published-style')) {
-                    const style = iframeDoc.createElement('style');
-                    style.id = 'structura-published-style';
-                    // Use yellow color for bladebinge template, black for others
-                    const priceColor = store?.templateId === 'bladebinge' ? '#c9a961' : '#111';
-                    // Use yellow for description in bladebinge (dark background)
-                    // For other dark background templates (struvaris, ructon), use lighter gray
-                    // For light background templates, use medium gray
-                    const darkBackgroundTemplates = ['bladebinge', 'struvaris', 'ructon'];
-                    let descriptionColor = '#666'; // Default for light backgrounds
-                    if (store?.templateId === 'bladebinge') {
-                      descriptionColor = '#c9a961'; // Yellow for bladebinge
-                    } else if (darkBackgroundTemplates.includes(store?.templateId)) {
-                      descriptionColor = '#999'; // Lighter gray for other dark backgrounds
-                    }
-                    style.textContent = `
-                      /* Normalize product info layout across templates */
-                      .product-card, .product { background: transparent !important; border: none !important; }
-                      .product-info, .product-title, .product-description { width: 100% !important; float: none !important; clear: both !important; }
-                      .product-info {
-                        background: #fff !important;
-                        border-radius: 14px !important;
-                        padding: 1.25rem !important;
-                        box-shadow: 0 8px 24px rgba(0,0,0,0.08) !important;
-                      }
-                      .product-title { margin: 0 0 .5rem 0; }
-                      .product-description { 
-                        display: -webkit-box; 
-                        -webkit-line-clamp: 4; 
-                        -webkit-box-orient: vertical; 
-                        overflow: hidden; 
-                        line-height: 1.6; 
-                        color: ${descriptionColor} !important; 
-                        margin: .5rem 0 1rem; 
-                        white-space: normal; 
-                        word-break: normal; 
-                      }
-                      .product-price, .price { font-weight: 700; color: ${priceColor} !important; font-size: 1.05rem; }
-                      .product-footer { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .5rem; }
-                      .product-footer .product-button { cursor: pointer; padding: .5rem .75rem; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; }
-                    `;
-                    (iframeDoc.head || iframeDoc.body).appendChild(style);
-                  }
-                } catch(_) {}
-                
-                // Create card structure based on template
-                const imageUrl = product.image && product.image !== '/imgplc.jpg'
-                  ? (product.image.startsWith('http') ? product.image : getImageUrl(product.image) || product.image)
-                  : '/imgplc.jpg';
-                
-                const price = parseFloat(product.price) || 0;
-                let descText = product.description || '';
-                if (descText.includes('<p>')) {
-                  descText = descText.replace(/^<p>|<\/p>$/g, '').trim();
-                }
-                
-                card.innerHTML = `
-                  <div class="product-image">
-                    <img src="${imageUrl}" alt="${product.name || 'Product'}" />
-                  </div>
-                  <div class="product-info">
-                    <h3 class="product-title">${product.name || 'Product'}</h3>
-                    <p class="product-description">${descText}</p>
-                    <div class="product-footer" style="display:flex; align-items:center; justify-content:space-between; gap:.5rem;">
-                      <span class="product-price">₱${price.toFixed(2)}</span>
-                      <div style="display:flex; gap:.5rem;">
-                        <button class="product-button order-button" style="padding:.5rem .75rem; border-radius:8px;">Order</button>
-                      </div>
-                    </div>
-                  </div>
-                `;
+                card.innerHTML = cardTemplate;
                 
                 // Append new card to container
                 productContainer.appendChild(card);
