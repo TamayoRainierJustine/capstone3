@@ -362,7 +362,11 @@ export const updateStore = async (req, res) => {
     
     // Try to update logo separately if provided (in case column doesn't exist)
     await Promise.race([
-      store.update(updateData),
+      store.update(updateData, { 
+        fields: Object.keys(updateData),
+        returning: false,
+        hooks: false
+      }),
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Update timeout')), 8000)
       )
@@ -385,10 +389,6 @@ export const updateStore = async (req, res) => {
         console.warn('Could not update logo (column may not exist):', logoError.message);
       }
     }
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Update timeout')), 8000)
-      )
-    ]);
 
     const duration = Date.now() - startTime;
     if (duration > 5000) {
