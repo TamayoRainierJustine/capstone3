@@ -57,6 +57,8 @@ const VerifyEmail = () => {
           <form onSubmit={handleVerify}>
             <input
               type="email"
+              name="email"
+              id="verify-email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email"
@@ -65,6 +67,8 @@ const VerifyEmail = () => {
             />
             <input
               type="text"
+              name="code"
+              id="verify-code"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="6-digit code"

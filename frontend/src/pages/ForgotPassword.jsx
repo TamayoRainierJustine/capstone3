@@ -36,6 +36,8 @@ const ForgotPassword = () => {
           <form onSubmit={handleSubmit}>
             <input
               type="email"
+              name="email"
+              id="forgot-email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email"

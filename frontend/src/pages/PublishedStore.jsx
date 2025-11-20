@@ -2707,6 +2707,8 @@ const PublishedStore = () => {
                 <div className="space-y-3 mb-4">
                   <input
                     type="text"
+                    name="firstName"
+                    id="modal-register-firstname"
                     placeholder="First Name"
                     value={registerForm.firstName}
                     onChange={e => setRegisterForm(prev => ({ ...prev, firstName: e.target.value }))}
@@ -2715,6 +2717,8 @@ const PublishedStore = () => {
                   />
                   <input
                     type="text"
+                    name="lastName"
+                    id="modal-register-lastname"
                     placeholder="Last Name"
                     value={registerForm.lastName}
                     onChange={e => setRegisterForm(prev => ({ ...prev, lastName: e.target.value }))}
@@ -2723,6 +2727,8 @@ const PublishedStore = () => {
                   />
                   <input
                     type="email"
+                    name="email"
+                    id="modal-register-email"
                     placeholder="Email"
                     value={registerForm.email}
                     onChange={e => setRegisterForm(prev => ({ ...prev, email: e.target.value }))}
@@ -2732,6 +2738,8 @@ const PublishedStore = () => {
                   <div className="relative">
                     <input
                       type={showRegisterPassword ? 'text' : 'password'}
+                      name="password"
+                      id="modal-register-password"
                       placeholder="Password"
                       value={registerForm.password}
                       onChange={e => setRegisterForm(prev => ({ ...prev, password: e.target.value }))}
@@ -2752,6 +2760,8 @@ const PublishedStore = () => {
                   <div className="relative">
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
+                      name="confirmPassword"
+                      id="modal-register-confirm-password"
                       placeholder="Confirm Password"
                       value={registerForm.confirmPassword}
                       onChange={e => setRegisterForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
@@ -2840,6 +2850,8 @@ const PublishedStore = () => {
               <div className="space-y-3 mb-4">
                 <input
                   type="email"
+                  name="loginEmail"
+                  id="modal-login-email"
                   placeholder="Email"
                   value={loginEmail}
                   onChange={e => setLoginEmail(e.target.value)}
@@ -2849,6 +2861,8 @@ const PublishedStore = () => {
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    name="loginPassword"
+                    id="modal-login-password"
                     placeholder="Password"
                     value={loginPassword}
                     onChange={e => setLoginPassword(e.target.value)}

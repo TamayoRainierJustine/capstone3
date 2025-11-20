@@ -157,6 +157,8 @@ const LoginPage = () => {
               <div style={{ marginBottom: 24 }}>
                 <input
                   type="email"
+                  name="email"
+                  id="login-email"
                   placeholder="Username"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
@@ -166,6 +168,8 @@ const LoginPage = () => {
                 <div style={{ position: 'relative', width: '100%' }}>
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    id="login-password"
                     placeholder="Password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}

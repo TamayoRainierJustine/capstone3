@@ -27,6 +27,30 @@ const validatePasswordStrength = (password) => {
   return errors;
 };
 
+const sendVerificationEmail = async ({ email, firstName = 'there', req }) => {
+  try {
+    await EmailVerificationToken.update({ used: true }, { where: { email, used: false } });
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    await EmailVerificationToken.create({ email, code, expiresAt });
+
+    const backendBase = (process.env.BACKEND_URL || '').trim() || `${req.protocol}://${req.get('host')}`;
+    const verifyLink = `${backendBase.replace(/\/+$/, '')}/api/auth/verify?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
+    const subject = 'Verify your Structura account';
+    const html = `<p>Welcome to Structura, ${firstName}!</p>
+      <p>Click the button below to verify your email:</p>
+      <p><a href="${verifyLink}" style="background:#6d28d9;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600">Verify my email</a></p>
+      <p>Or use this code if prompted: <strong style="letter-spacing:4px;font-size:20px">${code}</strong></p>
+      <p>This link/code expires in 30 minutes.</p>`;
+    const text = `Verify your Structura account: ${verifyLink} or use code ${code} (expires in 30 minutes).`;
+    await sendEmail({ to: email, subject, html, text });
+    return true;
+  } catch (err) {
+    console.error('Failed to send verification email:', err.message);
+    return false;
+  }
+};
+
 export const register = async (req, res) => {
   const startTime = Date.now();
   const { firstName, lastName, email, password } = req.body;
@@ -49,11 +73,26 @@ export const register = async (req, res) => {
     // Check if user exists
     const existingUser = await User.findOne({ 
       where: { email },
-      attributes: ['id', 'email']
+      attributes: ['id', 'email', 'firstName', 'isVerified']
     });
 
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+      if (existingUser.isVerified) {
+        return res.status(400).json({ message: 'User already exists' });
+      }
+
+      const resendSuccess = await sendVerificationEmail({
+        email,
+        firstName: existingUser.firstName || 'there',
+        req
+      });
+
+      return res.status(resendSuccess ? 200 : 202).json({
+        message: resendSuccess
+          ? 'Account already exists but is not verified. We sent a new verification email.'
+          : 'Account already exists but is not verified. Please request a new verification link from the login page.',
+        requiresVerification: true
+      });
     }
 
     // Hash password
@@ -78,27 +117,11 @@ export const register = async (req, res) => {
       isVerified: user.isVerified,
     };
 
-    let verificationEmailSent = false;
-    try {
-      await EmailVerificationToken.update({ used: true }, { where: { email, used: false } });
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-      await EmailVerificationToken.create({ email, code, expiresAt });
-
-      const backendBase = (process.env.BACKEND_URL || '').trim() || `${req.protocol}://${req.get('host')}`;
-      const verifyLink = `${backendBase.replace(/\/+$/, '')}/api/auth/verify?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
-      const subject = 'Verify your Structura account';
-      const html = `<p>Welcome to Structura, ${firstName}!</p>
-        <p>Click the button below to verify your email:</p>
-        <p><a href="${verifyLink}" style="background:#6d28d9;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600">Verify my email</a></p>
-        <p>Or use this code if prompted: <strong style="letter-spacing:4px;font-size:20px">${code}</strong></p>
-        <p>This link/code expires in 30 minutes.</p>`;
-      const text = `Verify your Structura account: ${verifyLink} or use code ${code} (expires in 30 minutes).`;
-      await sendEmail({ to: email, subject, html, text });
-      verificationEmailSent = true;
-    } catch (emailErr) {
-      console.error('Failed to send verification email:', emailErr.message);
-    }
+    const verificationEmailSent = await sendVerificationEmail({
+      email,
+      firstName,
+      req
+    });
 
     const duration = Date.now() - startTime;
     // Suppress slow-registration log in production
