@@ -125,7 +125,7 @@ export const createStore = async (req, res) => {
     const store = await Store.findByPk(storeId, {
       attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
                    'region', 'province', 'municipality', 'barangay', 'contactEmail', 
-                   'phone', 'status', 'content', 'createdAt', 'updatedAt']
+                   'phone', 'logo', 'status', 'content', 'createdAt', 'updatedAt']
     });
     
     // If logo was provided, try to update the store with logo separately
@@ -223,7 +223,7 @@ export const getUserStores = async (req, res) => {
         where: { userId },
         attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
                      'region', 'province', 'municipality', 'barangay', 'contactEmail', 
-                     'phone', 'status', 'content', 'createdAt', 'updatedAt'],
+                     'phone', 'logo', 'status', 'content', 'createdAt', 'updatedAt'],
         limit: 100 // Limit to prevent large queries
       }),
       new Promise((_, reject) => 
@@ -306,7 +306,7 @@ export const updateStore = async (req, res) => {
       Store.findByPk(id, {
         attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
                      'region', 'province', 'municipality', 'barangay', 'contactEmail', 
-                     'phone', 'status', 'content', 'createdAt', 'updatedAt']
+                     'phone', 'logo', 'status', 'content', 'createdAt', 'updatedAt']
       }),
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Database query timeout')), 8000)
@@ -399,7 +399,7 @@ export const updateStore = async (req, res) => {
     const updatedStore = await Store.findByPk(id, {
       attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
                    'region', 'province', 'municipality', 'barangay', 'contactEmail', 
-                   'phone', 'status', 'content', 'createdAt', 'updatedAt']
+                   'phone', 'logo', 'status', 'content', 'createdAt', 'updatedAt']
     });
     
     res.status(200).json(updatedStore);
@@ -445,7 +445,7 @@ export const deleteStore = async (req, res) => {
     const store = await Store.findByPk(id, {
       attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
                    'region', 'province', 'municipality', 'barangay', 'contactEmail', 
-                   'phone', 'status', 'createdAt', 'updatedAt']
+                   'phone', 'logo', 'status', 'createdAt', 'updatedAt']
     });
     
     if (!store) {
@@ -480,7 +480,7 @@ export const getStoreById = async (req, res) => {
       where: { id: req.params.id },
       attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
                    'region', 'province', 'municipality', 'barangay', 'contactEmail', 
-                   'phone', 'status', 'content', 'createdAt', 'updatedAt'],
+                   'phone', 'logo', 'status', 'content', 'createdAt', 'updatedAt'],
       include: [{
         model: User,
         attributes: ['email', 'firstName', 'lastName']
@@ -691,7 +691,7 @@ export const publishStore = async (req, res) => {
     const store = await Store.findByPk(id, {
       attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
                    'region', 'province', 'municipality', 'barangay', 'contactEmail', 
-                   'phone', 'status', 'content', 'createdAt', 'updatedAt']
+                   'phone', 'logo', 'status', 'content', 'createdAt', 'updatedAt']
     });
     
     if (!store) {
@@ -717,7 +717,7 @@ export const publishStore = async (req, res) => {
     const [updatedStoreData] = await sequelize.query(
       `SELECT "id", "userId", "templateId", "storeName", "description", "domainName", 
        "region", "province", "municipality", "barangay", "contactEmail", 
-       "phone", "status", "content", "createdAt", "updatedAt" 
+       "phone", "logo", "status", "content", "createdAt", "updatedAt" 
        FROM "Stores" WHERE "id" = $1`,
       {
         bind: [id],
@@ -786,7 +786,7 @@ export const getPublishedStoreByDomain = async (req, res) => {
       }],
         attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
                    'region', 'province', 'municipality', 'barangay', 'contactEmail', 'phone', 
-                   'status', 'content', 'createdAt', 'updatedAt']
+                   'logo', 'status', 'content', 'createdAt', 'updatedAt']
     });
     
     // If not found, try case-insensitive search as fallback
@@ -805,7 +805,7 @@ export const getPublishedStoreByDomain = async (req, res) => {
         }],
         attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
                      'region', 'province', 'municipality', 'barangay', 'contactEmail', 'phone', 
-                     'status', 'content', 'createdAt', 'updatedAt']
+                     'logo', 'status', 'content', 'createdAt', 'updatedAt']
       });
     }
 

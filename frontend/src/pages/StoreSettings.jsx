@@ -163,11 +163,13 @@ const StoreSettings = () => {
 
       // Update local state with response data
       if (response.data) {
+        const updatedLogo = response.data.logo ?? storeSettings.logo;
         setStoreSettings(prev => ({
           ...prev,
           ...response.data,
-          logo: response.data.logo || prev.logo
+          logo: updatedLogo || ''
         }));
+        setLogoPreview(updatedLogo ? getImageUrl(updatedLogo) : null);
       }
 
       setStoreSettingsStatus('Store settings saved successfully!');
