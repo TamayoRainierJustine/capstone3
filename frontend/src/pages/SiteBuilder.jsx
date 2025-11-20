@@ -849,16 +849,33 @@ export default function SiteBuilder() {
                 })) : []);
               }
             }
+          } else {
+            // No stores found - allow user to still use site builder with template from URL
+            console.log('⚠️ No stores found, but continuing with template from URL');
+            // Set status to inform user they need to create a store to save
+            setStatus('Note: Create a store first to save your changes.');
+            setTimeout(() => setStatus(''), 5000);
+          }
+        } catch (error) {
+          console.error('❌ Error fetching store data:', error);
+          console.error('   Error response:', error.response?.data);
+          console.error('   Error status:', error.response?.status);
+          console.error('   Error message:', error.message);
+          if (error.response?.data) {
+            console.error('   Error details:', JSON.stringify(error.response.data, null, 2));
+          }
+          // Don't redirect on error - allow user to continue with site builder
+          // Only redirect on authentication errors
+          if (error.response?.status === 401 || error.response?.status === 403) {
+            // Authentication error - redirect to login
+            navigate('/login', { 
+              state: { returnUrl: location.pathname + location.search } 
+            });
+            return;
           }
         }
       } catch (error) {
-        console.error('❌ Error fetching store data:', error);
-        console.error('   Error response:', error.response?.data);
-        console.error('   Error status:', error.response?.status);
-        console.error('   Error message:', error.message);
-        if (error.response?.data) {
-          console.error('   Error details:', JSON.stringify(error.response.data, null, 2));
-        }
+        console.error('❌ Outer error in fetchStoreData:', error);
       }
     };
 
