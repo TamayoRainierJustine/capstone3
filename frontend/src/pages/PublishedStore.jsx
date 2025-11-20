@@ -969,7 +969,14 @@ const PublishedStore = () => {
                     }
                     style.textContent = `
                       /* Normalize product info layout across templates */
+                      .product-card, .product { background: transparent !important; border: none !important; }
                       .product-info, .product-title, .product-description { width: 100% !important; float: none !important; clear: both !important; }
+                      .product-info {
+                        background: #fff !important;
+                        border-radius: 14px !important;
+                        padding: 1.25rem !important;
+                        box-shadow: 0 8px 24px rgba(0,0,0,0.08) !important;
+                      }
                       .product-title { margin: 0 0 .5rem 0; }
                       .product-description { 
                         display: -webkit-box; 
