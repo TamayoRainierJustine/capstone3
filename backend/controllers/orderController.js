@@ -600,9 +600,10 @@ export const getSalesAnalytics = async (req, res) => {
     }
 
     const { startDate, endDate } = req.query;
+    // Only filter by paymentStatus: 'completed' - sales are counted when payment is received
+    // Order status can be pending, processing, shipped, or completed - what matters is payment is completed
     const whereClause = {
       storeId: store.id,
-      status: 'completed',
       paymentStatus: 'completed'
     };
 
