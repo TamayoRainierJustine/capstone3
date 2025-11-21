@@ -511,6 +511,27 @@ const PublishedStore = () => {
     return () => clearTimeout(timer);
   }, [cartMessage]);
 
+  // Automatically set weight band from product weight when order modal opens
+  useEffect(() => {
+    if (!showOrderModal) return;
+    
+    try {
+      const productWeight = getProductWeight();
+      if (productWeight > 0) {
+        // Auto-determine weight band from product weight
+        const autoWeightBand = getWeightBandFromWeight(productWeight);
+        if (autoWeightBand && orderData.weightBand !== autoWeightBand) {
+          setOrderData(prev => ({
+            ...prev,
+            weightBand: autoWeightBand
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Error setting weight band:', err);
+    }
+  }, [showOrderModal, checkoutItems, selectedProduct, orderData.quantity]);
+
   // Automatically calculate shipping fee when address or product weight changes
   useEffect(() => {
     try {
@@ -545,7 +566,7 @@ const PublishedStore = () => {
     } catch (err) {
       console.error('Error calculating shipping rate:', err);
     }
-  }, [orderData.region, orderData.province, checkoutItems, selectedProduct, orderData.quantity]);
+  }, [orderData.region, orderData.province, orderData.weightBand, checkoutItems, selectedProduct, orderData.quantity]);
   
   // Create a global function that the iframe can call
   useEffect(() => {
