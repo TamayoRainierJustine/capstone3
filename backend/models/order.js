@@ -36,7 +36,7 @@ const Order = sequelize.define('Order', {
     defaultValue: 'pending'
   },
   paymentMethod: {
-    type: DataTypes.ENUM('gcash', 'paypal', 'card'),
+    type: DataTypes.ENUM('gcash', 'paypal', 'card', 'cod'),
     allowNull: false
   },
   paymentStatus: {

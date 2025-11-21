@@ -2902,11 +2902,16 @@ const PublishedStore = () => {
         return;
       }
 
-      // Validate payment reference for GCash
+      // Validate payment reference for GCash (not required for COD)
       if (orderData.paymentMethod === 'gcash' && !orderData.paymentReference) {
         setOrderError('Please enter the payment reference number from your GCash payment');
         setOrderLoading(false);
         return;
+      }
+      
+      // For COD, clear payment reference (not needed)
+      if (orderData.paymentMethod === 'cod') {
+        setOrderData(prev => ({ ...prev, paymentReference: '' }));
       }
 
       if (!orderData.region || !orderData.province || !orderData.municipality || !orderData.barangay) {
@@ -3842,6 +3847,23 @@ const PublishedStore = () => {
                         </div>
                       </label>
                       
+                      <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="cod"
+                          checked={orderData.paymentMethod === 'cod'}
+                          onChange={(e) => handleOrderChange('paymentMethod', e.target.value)}
+                          className="mr-3"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">Cash on Delivery (COD)</div>
+                          <div className="text-xs text-gray-500">
+                            Pay with cash when you receive your order.
+                          </div>
+                        </div>
+                      </label>
+                      
                       {/* GCash QR Code */}
                       {orderData.paymentMethod === 'gcash' && (
                         <div className="mt-4 p-4 bg-gray-50 rounded-lg border-2 border-green-500">
@@ -3917,7 +3939,7 @@ const PublishedStore = () => {
                               </p>
                             </div>
                           </div>
-                          {/* Payment Reference Code Input */}
+                          {/* Payment Reference Code Input - Only for GCash */}
                           <div className="mt-4">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Payment Reference Number *
@@ -3933,6 +3955,22 @@ const PublishedStore = () => {
                             <p className="text-xs text-gray-500 mt-1">
                               Enter the reference number shown in your GCash app after payment
                             </p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* COD Information */}
+                      {orderData.paymentMethod === 'cod' && (
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <h4 className="font-semibold text-blue-800 mb-2">💵 Cash on Delivery (COD)</h4>
+                          <p className="text-sm text-gray-700 mb-2">
+                            You will pay with cash when you receive your order.
+                          </p>
+                          <div className="text-xs text-gray-600 space-y-1">
+                            <p>• Make sure you have exact change ready: <strong>₱{calculateTotal().toFixed(2)}</strong></p>
+                            <p>• Payment will be collected upon delivery</p>
+                            <p>• Please prepare the total amount including shipping fee</p>
+                            <p>• Our delivery personnel will contact you before delivery</p>
                           </div>
                         </div>
                       )}
