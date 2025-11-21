@@ -143,6 +143,15 @@ const PublishedStore = () => {
 
   const addProductToCart = (product, quantity = 1) => {
     if (!product) return;
+    
+    // Process image URL using getImageUrl helper
+    let imageUrl = product.image || product.imageUrl || product.imageSrc || null;
+    if (imageUrl && imageUrl !== '/imgplc.jpg') {
+      if (!imageUrl.startsWith('http')) {
+        imageUrl = getImageUrl(imageUrl) || imageUrl;
+      }
+    }
+    
     setCartItems(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
@@ -159,7 +168,7 @@ const PublishedStore = () => {
           storeId: store?.id,
           name: product.name,
           price: parseFloat(product.price || 0),
-          image: product.image || product.imageUrl || product.imageSrc || null,
+          image: imageUrl,
           quantity: quantity || 1,
           stock: product.stock,
           category: product.category || ''
@@ -460,8 +469,16 @@ const PublishedStore = () => {
       addProductToCart(product);
     };
     
+    // Expose getImageUrl function to window for iframe access
+    window.getImageUrl = (imagePath) => {
+      if (!imagePath || imagePath === '/imgplc.jpg') return '/imgplc.jpg';
+      if (imagePath.startsWith('http')) return imagePath;
+      return getImageUrl(imagePath) || imagePath;
+    };
+    
     return () => {
       delete window.openOrderModal;
+      delete window.getImageUrl;
     };
   }, []);
 
@@ -2167,9 +2184,17 @@ const PublishedStore = () => {
                 }
                 
                 searchResults.innerHTML = filteredProducts.map(product => {
-                  const imageUrl = product.image && product.image !== '/imgplc.jpg'
-                    ? (product.image.startsWith('http') ? product.image : (window.parent && window.parent.getImageUrl ? window.parent.getImageUrl(product.image) : product.image))
-                    : '/imgplc.jpg';
+                  let imageUrl = '/imgplc.jpg';
+                  if (product.image && product.image !== '/imgplc.jpg') {
+                    if (product.image.startsWith('http')) {
+                      imageUrl = product.image;
+                    } else {
+                      // Try to get processed URL from parent window's getImageUrl function
+                      imageUrl = (window.parent && window.parent.getImageUrl) 
+                        ? window.parent.getImageUrl(product.image)
+                        : product.image;
+                    }
+                  }
                   const price = parseFloat(product.price) || 0;
                   const descText = (product.description || '').replace(/<[^>]*>/g, '').substring(0, 100);
                   
@@ -3454,8 +3479,15 @@ const PublishedStore = () => {
                   {cartItems.map(item => (
                     <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 border border-gray-200 rounded-lg p-4 bg-gray-50">
                       <div className="flex items-center gap-4 flex-1">
-                        {item.image ? (
-                          <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-lg" />
+                        {item.image && item.image !== '/imgplc.jpg' ? (
+                          <img 
+                            src={item.image.startsWith('http') ? item.image : (getImageUrl(item.image) || item.image)} 
+                            alt={item.name} 
+                            className="w-20 h-20 object-cover rounded-lg"
+                            onError={(e) => {
+                              e.target.src = '/imgplc.jpg';
+                            }}
+                          />
                         ) : (
                           <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 text-sm">
                             No Image
