@@ -30,7 +30,13 @@ const Products = () => {
 
       const response = await apiClient.get('/stores');
       if (response.data && response.data.length > 0) {
-        setStore(response.data[0]);
+        const storeData = response.data[0];
+        setStore(storeData);
+        
+        // Parse payment config from store content
+        if (storeData.content?.payment) {
+          // Store GCash number is available in storeData.content.payment.gcashNumber
+        }
       }
     } catch (error) {
       console.error('Error fetching store:', error);
@@ -375,12 +381,26 @@ const Products = () => {
                 </div>
                 
                 <div className="flex justify-center mb-4 p-4 bg-white border-2 border-gray-200 rounded-lg">
-                  <QRCodeSVG
-                    value={`${window.location.origin}/published/${encodeURIComponent(store.domainName)}?product=${selectedProduct.id}&addToCart=true`}
-                    size={256}
-                    level="H"
-                    includeMargin={true}
-                  />
+                  {(() => {
+                    const gcashNumber = store.content?.payment?.gcashNumber || '';
+                    const productUrl = `${window.location.origin}/published/${encodeURIComponent(store.domainName)}?product=${selectedProduct.id}&addToCart=true`;
+                    const productPrice = parseFloat(selectedProduct.price).toFixed(2);
+                    
+                    // Generate QR code value: Product URL (for store link) + GCash payment info
+                    // Format: URL with GCash info as query params
+                    const qrValue = gcashNumber 
+                      ? `${productUrl}&gcash=${encodeURIComponent(gcashNumber)}&amount=${productPrice}`
+                      : productUrl;
+                    
+                    return (
+                      <QRCodeSVG
+                        value={qrValue}
+                        size={256}
+                        level="H"
+                        includeMargin={true}
+                      />
+                    );
+                  })()}
                 </div>
                 
                 <div className="bg-gray-50 p-4 rounded-lg mb-4">
@@ -390,6 +410,19 @@ const Products = () => {
                     <li>Automatically add to cart</li>
                     <li>Checkout using GCash</li>
                   </ul>
+                  {store.content?.payment?.gcashNumber ? (
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                      <p className="text-xs font-medium text-blue-800 mb-1">GCash Payment Info:</p>
+                      <p className="text-xs text-blue-700">Number: {store.content.payment.gcashNumber}</p>
+                      <p className="text-xs text-blue-700">Amount: ₱{parseFloat(selectedProduct.price).toFixed(2)}</p>
+                    </div>
+                  ) : (
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                      <p className="text-xs text-yellow-800">
+                        ⚠️ GCash number not set. Please set it in Payment Settings.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex flex-col gap-2">

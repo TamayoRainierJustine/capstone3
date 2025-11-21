@@ -6,6 +6,7 @@ import { PASSWORD_REQUIREMENTS_TEXT, passwordMeetsRequirements } from '../utils/
 import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
 import { useAuth } from '../context/AuthContext';
 import { FaUserCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { QRCodeSVG } from 'qrcode.react';
 
 // Template mapping
 const templateFileMap = {
@@ -4033,99 +4034,129 @@ const PublishedStore = () => {
                       </label>
                       
                       {/* GCash QR Code */}
-                      {orderData.paymentMethod === 'gcash' && (
-                        <div className="mt-4 p-4 bg-gray-50 rounded-lg border-2 border-green-500">
-                          <div className="text-center mb-3">
-                            <h4 className="font-semibold text-gray-800 mb-1">GCash Payment QR Code</h4>
-                            <p className="text-sm text-gray-600">Scan this QR code with your GCash app</p>
-                          </div>
-                          <div className="flex justify-center mb-3">
-                            <div className="bg-white p-4 rounded-lg shadow-sm">
-                              {/* Display uploaded static GCash QR code */}
-                              {/* Note: Dynamic QR codes with amount require official GCash merchant account */}
-                              {store?.content?.payment?.gcashQrImage || store?.content?.gcashQrImage ? (
-                                <img
-                                  src={store.content.payment?.gcashQrImage || store.content.gcashQrImage}
-                                  alt="GCash QR Code"
-                                  className="mx-auto"
-                                  style={{ 
-                                    width: '280px', 
-                                    height: '280px', 
-                                    minWidth: '280px',
-                                    minHeight: '280px',
-                                    maxWidth: '280px',
-                                    maxHeight: '280px',
-                                    objectFit: 'contain',
-                                    imageRendering: 'crisp-edges',
-                                    imageRendering: '-webkit-optimize-contrast',
-                                    imageRendering: 'pixelated'
-                                  }}
-                                  onError={(e) => {
-                                    console.error('Error loading QR code image');
-                                    e.target.style.display = 'none';
-                                  }}
-                                />
-                              ) : (
-                                <div className="w-48 h-48 flex items-center justify-center text-gray-500 text-sm text-center p-4">
-                                  <p>Please upload your GCash QR code in Payment Settings</p>
-                                </div>
+                      {orderData.paymentMethod === 'gcash' && (() => {
+                        const gcashNumber = store?.content?.payment?.gcashNumber || store?.phone || '';
+                        const totalAmount = calculateTotal().toFixed(2);
+                        const hasGcashNumber = gcashNumber && gcashNumber.trim() !== '';
+                        
+                        // Generate QR code value in GCash QRPH format: {phone}|{amount}|{description}
+                        // Note: Dynamic QR codes with amount work for personal accounts but require manual verification
+                        // Format: {gcash_number}|{amount}|{description}
+                        const qrValue = hasGcashNumber 
+                          ? `${gcashNumber.replace(/[^\d]/g, '')}|${totalAmount}|${store?.storeName || 'Order'}`
+                          : '';
+                        
+                        return (
+                          <div className="mt-4 p-4 bg-gray-50 rounded-lg border-2 border-green-500">
+                            <div className="text-center mb-3">
+                              <h4 className="font-semibold text-gray-800 mb-1">GCash Payment QR Code</h4>
+                              <p className="text-sm text-gray-600">Scan this QR code with your GCash app</p>
+                            </div>
+                            <div className="flex justify-center mb-3">
+                              <div className="bg-white p-4 rounded-lg shadow-sm">
+                                {hasGcashNumber ? (
+                                  <QRCodeSVG
+                                    value={qrValue}
+                                    size={280}
+                                    level="H"
+                                    includeMargin={true}
+                                  />
+                                ) : (
+                                  <>
+                                    {/* Fallback to uploaded QR image if no GCash number */}
+                                    {store?.content?.payment?.gcashQrImage || store?.content?.gcashQrImage ? (
+                                      <img
+                                        src={store.content.payment?.gcashQrImage || store.content.gcashQrImage}
+                                        alt="GCash QR Code"
+                                        className="mx-auto"
+                                        style={{ 
+                                          width: '280px', 
+                                          height: '280px', 
+                                          minWidth: '280px',
+                                          minHeight: '280px',
+                                          maxWidth: '280px',
+                                          maxHeight: '280px',
+                                          objectFit: 'contain'
+                                        }}
+                                        onError={(e) => {
+                                          console.error('Error loading QR code image');
+                                          e.target.style.display = 'none';
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="w-48 h-48 flex items-center justify-center text-gray-500 text-sm text-center p-4">
+                                        <p>Please set your GCash number in Payment Settings</p>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-center text-sm text-gray-700 mb-4">
+                              <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 mb-3">
+                                <p className="text-xl font-bold text-green-600 mb-2">
+                                  <strong>Amount to Pay: ₱{totalAmount}</strong>
+                                </p>
+                                {hasGcashNumber && (
+                                  <p className="text-sm text-gray-800 font-semibold mb-1">
+                                    ✅ QR code includes amount - verify before paying
+                                  </p>
+                                )}
+                                <p className="text-xs text-gray-600">
+                                  {hasGcashNumber 
+                                    ? `I-verify ang amount na ₱${totalAmount} sa GCash app`
+                                    : `I-enter ang amount na ₱${totalAmount} sa GCash app pagkatapos mag-scan`
+                                  }
+                                </p>
+                              </div>
+                              {hasGcashNumber && (
+                                <p className="mt-1 text-sm"><strong>GCash Number:</strong> {gcashNumber}</p>
                               )}
+                              <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <p className="text-xs text-gray-700 text-left">
+                                  <strong className="text-blue-800">📱 Paano magbayad:</strong>
+                                  <br />
+                                  <br />
+                                  1. <strong>I-scan ang QR code</strong> gamit ang GCash app
+                                  <br />
+                                  2. {hasGcashNumber 
+                                    ? `I-verify ang amount na ₱${totalAmount} (nakalagay na sa QR code)`
+                                    : `Ilagay ang amount: ₱${totalAmount} (manual entry)`
+                                  }
+                                  <br />
+                                  3. I-verify ang recipient details (pangalan at mobile number)
+                                  <br />
+                                  4. I-tap ang <strong>"Pay"</strong> upang kumpleto ang pagbabayad
+                                  <br />
+                                  5. <strong>Kopyahin ang Reference Number</strong> mula sa GCash app at i-paste sa form sa ibaba
+                                  <br />
+                                <br />
+                                {hasGcashNumber && (
+                                  <span className="text-blue-700 font-semibold">💡 Tip: Maaari mo ring i-send sa GCash number {gcashNumber} at ilagay ang amount na ₱{totalAmount}</span>
+                                )}
+                              </p>
+                              </div>
+                            </div>
+                            {/* Payment Reference Code Input - Only for GCash */}
+                            <div className="mt-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Payment Reference Number *
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={orderData.paymentReference}
+                                onChange={(e) => handleOrderChange('paymentReference', e.target.value)}
+                                placeholder="Enter the reference number from your GCash payment"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Enter the reference number shown in your GCash app after payment
+                              </p>
                             </div>
                           </div>
-                          <div className="text-center text-sm text-gray-700 mb-4">
-                            <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 mb-3">
-                              <p className="text-xl font-bold text-green-600 mb-2">
-                                <strong>Amount to Pay: ₱{calculateTotal().toFixed(2)}</strong>
-                              </p>
-                              <p className="text-sm text-gray-800 font-semibold mb-1">
-                                ⚠️ PAKILAGAY ANG AMOUNT NA ITO MANUALLY
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                I-enter ang amount na <strong>₱{calculateTotal().toFixed(2)}</strong> sa GCash app pagkatapos mag-scan
-                              </p>
-                            </div>
-                            {store?.phone && (
-                              <p className="mt-1 text-sm"><strong>GCash Number:</strong> {store.phone}</p>
-                            )}
-                            <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                              <p className="text-xs text-gray-700 text-left">
-                                <strong className="text-blue-800">📱 Paano magbayad:</strong>
-                                <br />
-                                <br />
-                                1. <strong>I-scan ang QR code</strong> gamit ang GCash app
-                                <br />
-                                2. <strong>Ilagay ang amount: ₱{calculateTotal().toFixed(2)}</strong> (manual entry)
-                                <br />
-                                3. I-verify ang recipient details (pangalan at mobile number)
-                                <br />
-                                4. I-tap ang <strong>"Pay"</strong> upang kumpleto ang pagbabayad
-                                <br />
-                                5. <strong>Kopyahin ang Reference Number</strong> mula sa GCash app at i-paste sa form sa ibaba
-                                <br />
-                                <br />
-                                <span className="text-blue-700 font-semibold">💡 Tip: Maaari mo ring i-send sa GCash number {store?.phone || 'ng merchant'} at ilagay ang amount na ₱{calculateTotal().toFixed(2)}</span>
-                              </p>
-                            </div>
-                          </div>
-                          {/* Payment Reference Code Input - Only for GCash */}
-                          <div className="mt-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Payment Reference Number *
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={orderData.paymentReference}
-                              onChange={(e) => handleOrderChange('paymentReference', e.target.value)}
-                              placeholder="Enter the reference number from your GCash payment"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              Enter the reference number shown in your GCash app after payment
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                       
                       {/* COD Information */}
                       {orderData.paymentMethod === 'cod' && (

@@ -11,7 +11,8 @@ const Payment = () => {
     paypalEnabled: false, // Legacy field (kept for backward compatibility)
     cardEnabled: false,   // Reused as Bank Transfer toggle to avoid breaking existing saved configs
     gcashMerchantId: '',  // Legacy field (not used anymore, kept for backward compatibility)
-    gcashQrImage: '',     // GCash QR code image (base64)
+    gcashNumber: '',      // GCash mobile number for generating QR codes
+    gcashQrImage: '',     // GCash QR code image (base64) - optional, legacy support
     paypalClientId: '',   // Legacy field (not used anymore)
     stripePublishableKey: '', // Legacy field (not used anymore)
     bankName: '',
@@ -81,7 +82,8 @@ const Payment = () => {
         ...currentContent,
         payment: {
           gcashEnabled: config.gcashEnabled,
-          gcashQrImage: config.gcashQrImage,
+          gcashNumber: config.gcashNumber,
+          gcashQrImage: config.gcashQrImage, // Keep for backward compatibility
           codEnabled: config.codEnabled
         }
       };
@@ -146,8 +148,33 @@ const Payment = () => {
                 <div className="mt-4 space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      GCash QR Code Image
+                      GCash Mobile Number *
                     </label>
+                    <input
+                      type="text"
+                      value={config.gcashNumber}
+                      onChange={(e) => {
+                        // Remove non-digit characters except +
+                        const cleaned = e.target.value.replace(/[^\d+]/g, '');
+                        setConfig({ ...config, gcashNumber: cleaned });
+                      }}
+                      placeholder="09XX XXX XXXX or +63 XXX XXX XXXX"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      maxLength={15}
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Enter your GCash mobile number (e.g., 09123456789). QR codes will be generated automatically based on this number.
+                      <br />
+                      <strong>Note:</strong> This will be used to generate dynamic QR codes for products. Customers will scan the QR code and manually enter the amount.
+                    </p>
+                  </div>
+                  <div className="border-t pt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      GCash QR Code Image (Optional - Legacy)
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      If you prefer to upload a static QR code image instead, you can upload it here. However, using GCash number above is recommended.
+                    </p>
                     <input
                       type="file"
                       accept="image/*"
