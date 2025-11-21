@@ -442,6 +442,11 @@ const PublishedStore = () => {
         error.response?.data?.message || 
         'An error occurred during registration. Please try again.'
       );
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
   const handleCustomerVerification = async (e) => {
     e.preventDefault();
     if (!verificationEmail) {
@@ -487,11 +492,6 @@ const PublishedStore = () => {
       );
     } finally {
       setResendVerificationLoading(false);
-    }
-  };
-
-    } finally {
-      setRegisterLoading(false);
     }
   };
 
