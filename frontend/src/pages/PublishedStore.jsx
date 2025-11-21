@@ -1690,45 +1690,69 @@ const PublishedStore = () => {
               display: flex;
               gap: 1rem;
               align-items: center;
+              margin-left: 1.5rem;
             }
             .nav-icon {
-              text-decoration: none !important;
-              font-size: 1.1rem;
+              border: none;
+              background: transparent;
+              padding: 0.35rem;
+              border-radius: 999px;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
               cursor: pointer;
-              transition: opacity 0.2s ease;
+              transition: background 0.2s ease, transform 0.2s ease;
+            }
+            .nav-icon svg {
+              width: 22px;
+              height: 22px;
+              fill: #7f53ac;
             }
             .nav-icon:hover {
-              opacity: 0.8;
+              background: rgba(127, 83, 172, 0.12);
+              transform: translateY(-1px);
             }
           `;
           iframeDoc.head.appendChild(navIconStyle);
         }
-
-        // Ensure nav icons exist for templates that lack them
-        if (!iframeDoc.querySelector('.nav-icons .nav-icon, .nav-icon')) {
-          const navWrapper = iframeDoc.querySelector('.nav-content, .navbar, nav');
-          if (navWrapper) {
-            const navIconsWrapper = iframeDoc.createElement('div');
+        
+        const navWrapper = iframeDoc.querySelector('.nav-content, .navbar, nav');
+        if (navWrapper) {
+          let navIconsWrapper = navWrapper.querySelector('.nav-icons');
+          if (!navIconsWrapper) {
+            navIconsWrapper = iframeDoc.createElement('div');
             navIconsWrapper.className = 'nav-icons';
-            navIconsWrapper.innerHTML = `
-              <a href="#" class="nav-icon" aria-label="Search">🔍</a>
-              <a href="#" class="nav-icon" aria-label="Account">👤</a>
-              <a href="#" class="nav-icon" aria-label="Cart">🛒</a>
-            `;
             navWrapper.appendChild(navIconsWrapper);
           }
+          navIconsWrapper.innerHTML = `
+            <button type="button" class="nav-icon" data-icon="search" aria-label="Search">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M10 2a8 8 0 105.3 14.3l4.7 4.7 1.4-1.4-4.7-4.7A8 8 0 0010 2zm0 2a6 6 0 110 12 6 6 0 010-12z"/>
+              </svg>
+            </button>
+            <button type="button" class="nav-icon" data-icon="account" aria-label="Account">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.4-8 5.3V21h16v-1.7c0-2.9-3.6-5.3-8-5.3z"/>
+              </svg>
+            </button>
+            <button type="button" class="nav-icon" data-icon="cart" aria-label="Cart">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 20a2 2 0 104 0 2 2 0 00-4 0zm9 0a2 2 0 104 0 2 2 0 00-4 0zM6.2 5l-.3-2H2v2h2l2.4 9.4c.2.9 1 1.6 2 1.6H19v-2H8.9l-.2-1H19c.9 0 1.7-.6 1.9-1.5L22.7 6H6.2z"/>
+              </svg>
+            </button>
+          `;
         }
 
         // Handle nav icons (Search, Account, Cart)
-        const navIcons = iframeDoc.querySelectorAll('.nav-icons .nav-icon, .nav-icon');
+        const navIcons = iframeDoc.querySelectorAll('.nav-icons .nav-icon, .nav-icons button[data-icon]');
         navIcons.forEach(icon => {
           if (!icon || icon.getAttribute('data-nav-icon-handler') === 'true') return;
           icon.setAttribute('data-nav-icon-handler', 'true');
           const ariaLabel = (icon.getAttribute('aria-label') || icon.getAttribute('title') || '').toLowerCase();
           const iconText = icon.textContent.trim();
+          const iconType = icon.getAttribute('data-icon') || ariaLabel || iconText;
           
-          // Handle cart icon
-          if (ariaLabel.includes('cart') || iconText === '🛒') {
+          if (iconType.includes('cart') || iconType === 'cart') {
             icon.onclick = (e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -1740,7 +1764,7 @@ const PublishedStore = () => {
           }
           
           // Handle Account icon - show profile
-          if (ariaLabel.includes('account') || iconText === '👤') {
+          if (iconType.includes('account') || iconType === 'account') {
             icon.onclick = (e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -1816,7 +1840,7 @@ const PublishedStore = () => {
           }
           
           // Handle Search icon
-          if (ariaLabel.includes('search') || iconText === '🔍') {
+          if (iconType.includes('search') || iconType === 'search') {
             icon.onclick = (e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -3473,61 +3497,48 @@ const PublishedStore = () => {
                 ? { left: categoriesDropdownPosition.left, transform: 'translateX(-50%)' }
                 : { right: 24 })
             }}
-            className="pointer-events-auto w-72 bg-white rounded-2xl border border-purple-200 shadow-2xl p-4"
+            className="pointer-events-auto w-60 bg-white rounded-xl border border-gray-200 shadow-lg p-3"
           >
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-gray-800">Product Categories</h2>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-semibold text-gray-700" htmlFor="categories-select">
+                Categories
+              </label>
               <button
                 onClick={() => setShowCategoriesModal(false)}
-                className="text-gray-500 hover:text-gray-700 text-xl leading-none"
+                className="text-gray-400 hover:text-gray-600 text-lg leading-none"
                 aria-label="Close categories"
               >
                 ×
               </button>
             </div>
             {categories.length > 0 ? (
-              <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
-                <button
-                  onClick={() => {
-                    clearCategoryFilter();
-                    setShowCategoriesModal(false);
+              <>
+                <select
+                  id="categories-select"
+                  value={selectedCategory || '__all'}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '__all') {
+                      clearCategoryFilter();
+                    } else {
+                      handleCategoryClick(value);
+                    }
                   }}
-                  className={`w-full text-left px-4 py-2 rounded-xl border transition-colors ${
-                    selectedCategory === ''
-                      ? 'border-purple-500 bg-purple-50 text-purple-700'
-                      : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                  }`}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">All Products</span>
-                    <span className="text-xs text-gray-500">({products.length})</span>
-                  </div>
-                </button>
-                {categories.map((category) => {
-                  const categoryCount = products.filter(p => p.category === category).length;
-                  return (
-                    <button
-                      key={category}
-                      onClick={() => {
-                        handleCategoryClick(category);
-                        setShowCategoriesModal(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 rounded-xl border transition-colors ${
-                        selectedCategory === category
-                          ? 'border-purple-500 bg-purple-50 text-purple-700'
-                          : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold capitalize">{category}</span>
-                        <span className="text-xs text-gray-500">({categoryCount})</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+                  <option value="__all">All Categories ({products.length})</option>
+                  {categories.map((category) => {
+                    const categoryCount = products.filter(p => p.category === category).length;
+                    return (
+                      <option key={category} value={category}>
+                        {category} ({categoryCount})
+                      </option>
+                    );
+                  })}
+                </select>
+              </>
             ) : (
-              <p className="text-gray-600 text-center py-4">
+              <p className="text-gray-600 text-sm text-center py-2">
                 No categories available yet.
               </p>
             )}
