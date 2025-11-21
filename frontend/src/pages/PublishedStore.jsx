@@ -33,6 +33,7 @@ const PublishedStore = () => {
   const [htmlContent, setHtmlContent] = useState('');
   const [customerInfo, setCustomerInfo] = useState(null);
   const iframeRef = React.useRef(null);
+  const categoriesDropdownRef = React.useRef(null);
   
   // Login/Register modal state
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -231,6 +232,24 @@ const PublishedStore = () => {
   
   // Ref to store callback function for order button clicks
   const orderButtonCallbackRef = React.useRef(null);
+
+  useEffect(() => {
+    if (!showCategoriesModal) return;
+
+    const handleClickOutside = (event) => {
+      if (
+        categoriesDropdownRef.current &&
+        !categoriesDropdownRef.current.contains(event.target)
+      ) {
+        setShowCategoriesModal(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCategoriesModal]);
 
   // Automatically calculate shipping fee when address or weight changes
   useEffect(() => {
@@ -3417,55 +3436,60 @@ const PublishedStore = () => {
         </div>
       )}
 
-      {/* Categories Modal */}
+      {/* Categories Dropdown */}
       {showCategoriesModal && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowCategoriesModal(false)}
-        >
-          <div 
-            className="bg-white rounded-lg max-w-md w-full p-6"
-            onClick={(e) => e.stopPropagation()}
+        <div className="fixed inset-0 z-40 pointer-events-none">
+          <div
+            ref={categoriesDropdownRef}
+            className="pointer-events-auto absolute top-24 right-6 w-80 bg-white rounded-2xl border border-purple-200 shadow-2xl p-4"
           >
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">Product Categories</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold text-gray-800">Product Categories</h2>
               <button
                 onClick={() => setShowCategoriesModal(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
+                className="text-gray-500 hover:text-gray-700 text-xl leading-none"
+                aria-label="Close categories"
               >
                 ×
               </button>
             </div>
             {categories.length > 0 ? (
-              <div className="space-y-2">
+              <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
                 <button
                   onClick={() => {
                     clearCategoryFilter();
                     setShowCategoriesModal(false);
                   }}
-                  className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
-                    selectedCategory === '' 
-                      ? 'border-purple-600 bg-purple-50 text-purple-700' 
+                  className={`w-full text-left px-4 py-2 rounded-xl border transition-colors ${
+                    selectedCategory === ''
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
                       : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50'
                   }`}
                 >
-                  <span className="font-semibold">All Products</span>
-                  <span className="text-sm text-gray-500 ml-2">({products.length} items)</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">All Products</span>
+                    <span className="text-xs text-gray-500">({products.length})</span>
+                  </div>
                 </button>
                 {categories.map((category) => {
                   const categoryCount = products.filter(p => p.category === category).length;
                   return (
                     <button
                       key={category}
-                      onClick={() => handleCategoryClick(category)}
-                      className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
+                      onClick={() => {
+                        handleCategoryClick(category);
+                        setShowCategoriesModal(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 rounded-xl border transition-colors ${
                         selectedCategory === category
-                          ? 'border-purple-600 bg-purple-50 text-purple-700'
+                          ? 'border-purple-500 bg-purple-50 text-purple-700'
                           : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50'
                       }`}
                     >
-                      <span className="font-semibold">{category}</span>
-                      <span className="text-sm text-gray-500 ml-2">({categoryCount} items)</span>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold capitalize">{category}</span>
+                        <span className="text-xs text-gray-500">({categoryCount})</span>
+                      </div>
                     </button>
                   );
                 })}
@@ -3474,16 +3498,6 @@ const PublishedStore = () => {
               <p className="text-gray-600 text-center py-4">
                 No categories available yet.
               </p>
-            )}
-            {selectedCategory && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <button
-                  onClick={clearCategoryFilter}
-                  className="w-full px-4 py-2 text-purple-600 hover:bg-purple-50 rounded-lg font-medium"
-                >
-                  Clear Filter
-                </button>
-              </div>
             )}
           </div>
         </div>
