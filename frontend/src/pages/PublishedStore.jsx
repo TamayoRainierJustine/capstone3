@@ -6,7 +6,6 @@ import { PASSWORD_REQUIREMENTS_TEXT, passwordMeetsRequirements } from '../utils/
 import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
 import { useAuth } from '../context/AuthContext';
 import { FaUserCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { QRCodeSVG } from 'qrcode.react';
 
 // Template mapping
 const templateFileMap = {
@@ -244,31 +243,10 @@ const PublishedStore = () => {
     return calculateSubtotal() + shipping;
   };
 
-  // Generate QRPH-compatible QR code with amount
-  // QRPH (Philippines QR Code Standard) allows embedding amount in QR code
-  // This format is compatible with GCash, PayMaya, and other e-wallets that support QRPH
-  const generateQRPHCode = () => {
-    const totalAmount = calculateTotal();
-    const phoneNumber = store?.phone || '';
-    const merchantName = store?.storeName || 'Merchant';
-    const merchantCity = store?.municipality || store?.province || 'Philippines';
-    
-    if (!phoneNumber || totalAmount <= 0) {
-      return null;
-    }
-
-    // QRPH/EMV QR Code format for payment
-    // Format: 000201010212{merchant_account_info}54{amount}58{country}59{merchant_name}60{merchant_city}6304{CRC}
-    // Simplified version for GCash/PayMaya compatibility
-    // Using format: {phone_number}|{amount}|{merchant_name}
-    // This format is recognized by most e-wallets in the Philippines
-    
-    // Alternative: EMV QR Code format (more standard)
-    // For now, using a simpler format that works with GCash scanning
-    const qrData = `${phoneNumber}|${totalAmount.toFixed(2)}|${merchantName}`;
-    
-    return qrData;
-  };
+  // Note: Dynamic QR codes with embedded amounts require official GCash/QRPH merchant account authorization
+  // GCash QR codes with amount must come from official merchant accounts
+  // Using static uploaded QR code from GCash app is the recommended approach
+  // Customers will manually enter the amount shown below the QR code
 
   const proceedToCheckout = () => {
     if (cartItems.length === 0) {
@@ -3873,24 +3851,9 @@ const PublishedStore = () => {
                           </div>
                           <div className="flex justify-center mb-3">
                             <div className="bg-white p-4 rounded-lg shadow-sm">
-                              {/* Generate QRPH-compatible QR code with amount */}
-                              {store?.phone && calculateTotal() > 0 ? (
-                                <div className="flex justify-center">
-                                  <QRCodeSVG
-                                    value={generateQRPHCode() || ''}
-                                    size={280}
-                                    level="H"
-                                    includeMargin={true}
-                                    style={{ 
-                                      width: '280px', 
-                                      height: '280px',
-                                      maxWidth: '280px',
-                                      maxHeight: '280px'
-                                    }}
-                                  />
-                                </div>
-                              ) : store?.content?.payment?.gcashQrImage || store?.content?.gcashQrImage ? (
-                                // Fallback to uploaded static QR code if no phone number
+                              {/* Display uploaded static GCash QR code */}
+                              {/* Note: Dynamic QR codes with amount require official GCash merchant account */}
+                              {store?.content?.payment?.gcashQrImage || store?.content?.gcashQrImage ? (
                                 <img
                                   src={store.content.payment?.gcashQrImage || store.content.gcashQrImage}
                                   alt="GCash QR Code"
@@ -3914,37 +3877,43 @@ const PublishedStore = () => {
                                 />
                               ) : (
                                 <div className="w-48 h-48 flex items-center justify-center text-gray-500 text-sm text-center p-4">
-                                  <p>Please configure your GCash number in Store Settings to generate QRPH payment QR code</p>
+                                  <p>Please upload your GCash QR code in Payment Settings</p>
                                 </div>
                               )}
                             </div>
                           </div>
                           <div className="text-center text-sm text-gray-700 mb-4">
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
-                              <p className="text-lg font-bold text-green-600 mb-2">
-                                <strong>Amount to Pay:</strong> ₱{calculateTotal().toFixed(2)}
+                            <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 mb-3">
+                              <p className="text-xl font-bold text-green-600 mb-2">
+                                <strong>Amount to Pay: ₱{calculateTotal().toFixed(2)}</strong>
                               </p>
-                              <p className="text-sm text-gray-700 font-medium">
-                                ✅ QRPH QR Code - Ang amount ay awtomatikong makikita sa GCash app
+                              <p className="text-sm text-gray-800 font-semibold mb-1">
+                                ⚠️ PAKILAGAY ANG AMOUNT NA ITO MANUALLY
+                              </p>
+                              <p className="text-xs text-gray-600">
+                                I-enter ang amount na <strong>₱{calculateTotal().toFixed(2)}</strong> sa GCash app pagkatapos mag-scan
                               </p>
                             </div>
                             {store?.phone && (
                               <p className="mt-1 text-sm"><strong>GCash Number:</strong> {store.phone}</p>
                             )}
-                            <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-2">
+                            <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
                               <p className="text-xs text-gray-700 text-left">
-                                <strong>Paano magbayad gamit ang QRPH:</strong>
-                                <br />
-                                1. I-scan ang QR code gamit ang GCash app (o iba pang e-wallet)
-                                <br />
-                                2. Makikita ang amount na ₱{calculateTotal().toFixed(2)} awtomatiko
-                                <br />
-                                3. I-verify ang recipient details at amount
-                                <br />
-                                4. I-tap ang "Pay" upang kumpleto ang pagbabayad
+                                <strong className="text-blue-800">📱 Paano magbayad:</strong>
                                 <br />
                                 <br />
-                                <span className="text-green-600 font-semibold">💡 QRPH ay suportado ng GCash, PayMaya, at iba pang e-wallets!</span>
+                                1. <strong>I-scan ang QR code</strong> gamit ang GCash app
+                                <br />
+                                2. <strong>Ilagay ang amount: ₱{calculateTotal().toFixed(2)}</strong> (manual entry)
+                                <br />
+                                3. I-verify ang recipient details (pangalan at mobile number)
+                                <br />
+                                4. I-tap ang <strong>"Pay"</strong> upang kumpleto ang pagbabayad
+                                <br />
+                                5. <strong>Kopyahin ang Reference Number</strong> mula sa GCash app at i-paste sa form sa ibaba
+                                <br />
+                                <br />
+                                <span className="text-blue-700 font-semibold">💡 Tip: Maaari mo ring i-send sa GCash number {store?.phone || 'ng merchant'} at ilagay ang amount na ₱{calculateTotal().toFixed(2)}</span>
                               </p>
                             </div>
                           </div>
