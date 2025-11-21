@@ -113,16 +113,36 @@ const PublishedStore = () => {
   };
   
   // Helper function to pre-fill order form with customer info
+  // Automatically determines weight band from product weight
   const prefillOrderForm = (product) => {
     const customerData = getCustomerData();
     const weightValue = product && product.weight ? parseFloat(product.weight) : 0;
     let defaultWeightBand = '';
     
+    // Automatically determine weight band based on product weight
     if (weightValue > 0) {
-      if (weightValue <= 0.5) defaultWeightBand = '0-0.5';
-      else if (weightValue > 0.5 && weightValue <= 1) defaultWeightBand = '0.5-1';
-      else if (weightValue > 1 && weightValue <= 3) defaultWeightBand = '1-3';
-      else if (weightValue >= 5 && weightValue <= 6) defaultWeightBand = '5-6';
+      if (weightValue <= 0.5) {
+        defaultWeightBand = '0-0.5';
+      } else if (weightValue > 0.5 && weightValue <= 1) {
+        defaultWeightBand = '0.5-1';
+      } else if (weightValue > 1 && weightValue <= 3) {
+        defaultWeightBand = '1-3';
+      } else if (weightValue > 3 && weightValue < 5) {
+        // For weights between 3-5kg, default to 1-3kg band (nearest)
+        defaultWeightBand = '1-3';
+      } else if (weightValue >= 5 && weightValue <= 6) {
+        defaultWeightBand = '5-6';
+      } else if (weightValue > 6) {
+        // For weights above 6kg, default to highest band
+        defaultWeightBand = '5-6';
+      }
+    }
+    
+    // Calculate initial shipping fee if weight band and region are available
+    let initialShipping = 0;
+    if (defaultWeightBand && customerData?.region) {
+      const destinationArea = getDestinationArea(customerData.region, customerData.province);
+      initialShipping = getShippingRate(defaultWeightBand, destinationArea);
     }
     
     return {
@@ -131,12 +151,12 @@ const PublishedStore = () => {
       customerPhone: customerData?.phone || '',
       quantity: 1,
       paymentMethod: 'gcash',
-      region: '',
-      province: '',
-      municipality: '',
-      barangay: '',
+      region: customerData?.region || '',
+      province: customerData?.province || '',
+      municipality: customerData?.municipality || '',
+      barangay: customerData?.barangay || '',
       weightBand: defaultWeightBand,
-      shipping: 0,
+      shipping: initialShipping,
       paymentReference: ''
     };
   };
@@ -171,7 +191,8 @@ const PublishedStore = () => {
           image: imageUrl,
           quantity: quantity || 1,
           stock: product.stock,
-          category: product.category || ''
+          category: product.category || '',
+          weight: product.weight ? parseFloat(product.weight) : 0
         }
       ];
     });
@@ -235,10 +256,16 @@ const PublishedStore = () => {
       return;
     }
     setCheckoutItems(cartItems);
+    // Use first product for weight calculation (could be enhanced to calculate total weight for multiple items)
     const firstProduct = cartItems[0]
-      ? { id: cartItems[0].id, price: cartItems[0].price, weight: cartItems[0].weight }
+      ? { 
+          id: cartItems[0].id, 
+          price: cartItems[0].price, 
+          weight: cartItems[0].weight || 0 
+        }
       : null;
-    setOrderData(prefillOrderForm(firstProduct));
+    const prefilledData = prefillOrderForm(firstProduct);
+    setOrderData(prefilledData);
     setProvincesList([]);
     setMunicipalitiesList([]);
     setBarangaysList([]);
@@ -355,10 +382,12 @@ const PublishedStore = () => {
   };
 
   // Helper: shipping rate table by weight band and destination
+  // Uses store's custom shipping rates if available, otherwise falls back to default rates
   const getShippingRate = (weightBand, destinationArea) => {
     if (!weightBand || !destinationArea) return 0;
 
-    const rates = {
+    // Default shipping rates (fallback)
+    const defaultRates = {
       '0-0.5': {
         'Visayas': 85,
         'Metro Manila': 100,
@@ -389,7 +418,11 @@ const PublishedStore = () => {
       }
     };
 
-    return rates[weightBand]?.[destinationArea] || 0;
+    // Get store's custom shipping rates if available
+    const storeShippingRates = store?.content?.shippingRates;
+    const rates = storeShippingRates || defaultRates;
+
+    return rates[weightBand]?.[destinationArea] || defaultRates[weightBand]?.[destinationArea] || 0;
   };
   
   // Ref to store callback function for order button clicks
