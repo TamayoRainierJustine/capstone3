@@ -228,10 +228,48 @@ const PublishedStore = () => {
         name: selectedProduct.name,
         price: parseFloat(selectedProduct.price || 0),
         quantity: parseInt(orderData.quantity) || 1,
-        image: selectedProduct.image || null
+        image: selectedProduct.image || null,
+        weight: selectedProduct.weight ? parseFloat(selectedProduct.weight) : 0
       }];
     }
     return [];
+  };
+
+  // Get product weight from checkout items
+  const getProductWeight = () => {
+    const items = getCheckoutItems();
+    if (items.length > 0) {
+      // For multiple items, calculate total weight
+      const totalWeight = items.reduce((sum, item) => {
+        const itemWeight = item.weight ? parseFloat(item.weight) : 0;
+        const quantity = item.quantity || 1;
+        return sum + (itemWeight * quantity);
+      }, 0);
+      return totalWeight;
+    }
+    return 0;
+  };
+
+  // Automatically determine weight band from product weight (read-only, no user selection)
+  const getWeightBandFromWeight = (weight) => {
+    if (!weight || weight <= 0) return '';
+    
+    if (weight <= 0.5) {
+      return '0-0.5';
+    } else if (weight > 0.5 && weight <= 1) {
+      return '0.5-1';
+    } else if (weight > 1 && weight <= 3) {
+      return '1-3';
+    } else if (weight > 3 && weight < 5) {
+      // For weights between 3-5kg, use 1-3kg band (nearest)
+      return '1-3';
+    } else if (weight >= 5 && weight <= 6) {
+      return '5-6';
+    } else if (weight > 6) {
+      // For weights above 6kg, use highest band
+      return '5-6';
+    }
+    return '';
   };
 
   const calculateSubtotal = () => {
@@ -473,14 +511,31 @@ const PublishedStore = () => {
     return () => clearTimeout(timer);
   }, [cartMessage]);
 
-  // Automatically calculate shipping fee when address or weight changes
+  // Automatically calculate shipping fee when address or product weight changes
   useEffect(() => {
     try {
-      if (!orderData.region || !orderData.weightBand) {
+      const productWeight = getProductWeight();
+      if (!orderData.region || !productWeight || productWeight <= 0) {
         return;
       }
+      
+      // Auto-determine weight band from product weight
+      const autoWeightBand = getWeightBandFromWeight(productWeight);
+      if (!autoWeightBand) {
+        return;
+      }
+      
+      // Update weight band in orderData automatically
+      if (orderData.weightBand !== autoWeightBand) {
+        setOrderData(prev => ({
+          ...prev,
+          weightBand: autoWeightBand
+        }));
+      }
+      
+      // Calculate shipping fee
       const destinationArea = getDestinationArea(orderData.region, orderData.province);
-      const rate = getShippingRate(orderData.weightBand, destinationArea);
+      const rate = getShippingRate(autoWeightBand, destinationArea);
       if (rate && !Number.isNaN(rate)) {
         setOrderData(prev => ({
           ...prev,
@@ -490,7 +545,7 @@ const PublishedStore = () => {
     } catch (err) {
       console.error('Error calculating shipping rate:', err);
     }
-  }, [orderData.region, orderData.province, orderData.weightBand]);
+  }, [orderData.region, orderData.province, checkoutItems, selectedProduct, orderData.quantity]);
   
   // Create a global function that the iframe can call
   useEffect(() => {
@@ -3796,32 +3851,41 @@ const PublishedStore = () => {
                   <div>
                     <h3 className="font-semibold text-lg mb-3">Shipping Fee</h3>
                     <div className="space-y-2">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Package Weight *</label>
-                        <select
-                          required
-                          value={orderData.weightBand}
-                          onChange={(e) => handleOrderChange('weightBand', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        >
-                          <option value="">Select weight range</option>
-                          <option value="0-0.5">500g and below</option>
-                          <option value="0.5-1">500g - 1kg</option>
-                          <option value="1-3">1kg - 3kg</option>
-                          <option value="5-6">5kg - 6kg</option>
-                        </select>
-                        <p className="mt-1 text-xs text-gray-500">
-                          Shipping fee is automatically calculated based on weight and destination (Visayas, Metro Manila, Luzon, Mindanao, Island).
-                        </p>
-                      </div>
+                      {/* Display Product Weight and Weight Band (Read-only) */}
+                      {getProductWeight() > 0 ? (
+                        <div className="mb-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="space-y-2">
+                            <p className="text-sm text-gray-700">
+                              <strong>Product Weight:</strong> <span className="text-blue-700 font-semibold text-base">{getProductWeight().toFixed(2)} kg</span>
+                            </p>
+                            <p className="text-sm text-gray-700">
+                              <strong>Weight Band:</strong> <span className="text-blue-700 font-semibold">{getWeightBandFromWeight(getProductWeight()) || 'N/A'}</span>
+                            </p>
+                            <p className="text-xs text-gray-600 mt-2">
+                              ✅ Ang weight at weight band ay awtomatikong kinuha mula sa product details na nilagay ng seller.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-sm text-yellow-800">
+                            ⚠️ Walang weight na naka-set sa product. Pakicontact ang seller para sa shipping fee.
+                          </p>
+                        </div>
+                      )}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Calculated Shipping Fee</label>
                         <input
                           type="text"
                           readOnly
-                          value={orderData.shipping ? `₱${parseFloat(orderData.shipping).toFixed(2)}` : 'Select weight and address to see shipping fee'}
+                          value={orderData.shipping ? `₱${parseFloat(orderData.shipping).toFixed(2)}` : (getProductWeight() > 0 ? 'Select shipping address to see shipping fee' : 'Product weight is required to calculate shipping fee')}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700"
                         />
+                        {getProductWeight() > 0 && (
+                          <p className="mt-1 text-xs text-gray-500">
+                            Shipping fee ay awtomatikong kinakalkula base sa product weight ({getProductWeight().toFixed(2)} kg) at shipping address.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
