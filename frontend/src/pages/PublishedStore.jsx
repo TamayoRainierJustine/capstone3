@@ -164,6 +164,14 @@ const PublishedStore = () => {
   const addProductToCart = (product, quantity = 1) => {
     if (!product) return;
     
+    // Debug: Log product data to check weight
+    console.log('Adding product to cart:', {
+      id: product.id,
+      name: product.name,
+      weight: product.weight,
+      weightType: typeof product.weight
+    });
+    
     // Process image URL using getImageUrl helper
     let imageUrl = product.image || product.imageUrl || product.imageSrc || null;
     if (imageUrl && imageUrl !== '/imgplc.jpg') {
@@ -171,6 +179,13 @@ const PublishedStore = () => {
         imageUrl = getImageUrl(imageUrl) || imageUrl;
       }
     }
+    
+    // Parse weight - handle both string and number
+    const productWeight = product.weight !== undefined && product.weight !== null 
+      ? parseFloat(product.weight) 
+      : 0;
+    
+    console.log('Parsed weight:', productWeight);
     
     setCartItems(prev => {
       const existing = prev.find(item => item.id === product.id);
@@ -192,7 +207,7 @@ const PublishedStore = () => {
           quantity: quantity || 1,
           stock: product.stock,
           category: product.category || '',
-          weight: product.weight ? parseFloat(product.weight) : 0
+          weight: productWeight
         }
       ];
     });
@@ -221,17 +236,36 @@ const PublishedStore = () => {
   }, [cartItems]);
 
   const getCheckoutItems = () => {
-    if (checkoutItems.length > 0) return checkoutItems;
+    if (checkoutItems.length > 0) {
+      console.log('✅ getCheckoutItems - using checkoutItems:', checkoutItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        weight: item.weight,
+        weightType: typeof item.weight
+      })));
+      return checkoutItems;
+    }
     if (selectedProduct) {
+      const weight = selectedProduct.weight !== undefined && selectedProduct.weight !== null
+        ? parseFloat(selectedProduct.weight)
+        : 0;
+      console.log('✅ getCheckoutItems - using selectedProduct:', {
+        id: selectedProduct.id,
+        name: selectedProduct.name,
+        weight: selectedProduct.weight,
+        weightType: typeof selectedProduct.weight,
+        parsedWeight: weight
+      });
       return [{
         id: selectedProduct.id,
         name: selectedProduct.name,
         price: parseFloat(selectedProduct.price || 0),
         quantity: parseInt(orderData.quantity) || 1,
         image: selectedProduct.image || null,
-        weight: selectedProduct.weight ? parseFloat(selectedProduct.weight) : 0
+        weight: weight
       }];
     }
+    console.log('⚠️ getCheckoutItems - returning empty array');
     return [];
   };
 
@@ -856,6 +890,16 @@ const PublishedStore = () => {
             `/products/public/${response.data.id}`
           );
           fetchedProducts = productsResponse.data || [];
+          console.log('📦 Fetched products from API:', fetchedProducts.length);
+          if (fetchedProducts.length > 0) {
+            console.log('📦 Sample product:', {
+              id: fetchedProducts[0].id,
+              name: fetchedProducts[0].name,
+              weight: fetchedProducts[0].weight,
+              weightType: typeof fetchedProducts[0].weight,
+              allKeys: Object.keys(fetchedProducts[0])
+            });
+          }
           setProducts(fetchedProducts);
           setFilteredProducts(fetchedProducts);
         } catch (productsError) {
