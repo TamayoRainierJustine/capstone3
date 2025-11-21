@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import { getImageUrl } from '../utils/imageUrl';
 import { PASSWORD_REQUIREMENTS_TEXT, passwordMeetsRequirements } from '../utils/passwordRules';
@@ -3223,17 +3223,21 @@ const PublishedStore = () => {
               </button>
               <div className="mt-4 text-center text-sm text-gray-600">
                 Don't have an account?{' '}
-                <Link 
-                  to="/register" 
-                  state={{ returnUrl: window.location.pathname }}
+                <button
+                  type="button"
                   className="text-purple-600 font-semibold hover:underline"
                   onClick={() => {
                     setShowLoginModal(false);
+                    setShowInitialLoginModal(true);
+                    setModalMode('register');
+                    setLoginError('');
+                    setRegisterError('');
+                    setLoginNotice('');
                     setPendingOrderProduct(null);
                   }}
                 >
                   Sign up
-                </Link>
+                </button>
               </div>
             </form>
           </div>
