@@ -6,6 +6,7 @@ import { PASSWORD_REQUIREMENTS_TEXT, passwordMeetsRequirements } from '../utils/
 import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
 import { useAuth } from '../context/AuthContext';
 import { FaUserCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { QRCodeSVG } from 'qrcode.react';
 
 // Template mapping
 const templateFileMap = {
@@ -241,6 +242,23 @@ const PublishedStore = () => {
   const calculateTotal = () => {
     const shipping = parseFloat(orderData.shipping) || 0;
     return calculateSubtotal() + shipping;
+  };
+
+  // Generate GCash payment QR code data with amount
+  const getGCashQRCodeData = () => {
+    const totalAmount = calculateTotal();
+    const phoneNumber = store?.phone || '';
+    
+    if (!phoneNumber) {
+      return null;
+    }
+
+    // Format for GCash payment request with amount
+    // Format: {phone_number}|{amount}|{description}
+    // This format allows GCash app to pre-fill the amount when scanning
+    // The pipe (|) separator is commonly used in payment QR codes
+    const orderDescription = `Order #${Date.now()}`;
+    return `${phoneNumber}|${totalAmount.toFixed(2)}|${orderDescription}`;
   };
 
   const proceedToCheckout = () => {
@@ -3845,27 +3863,65 @@ const PublishedStore = () => {
                             <p className="text-sm text-gray-600">Scan this QR code with your GCash app</p>
                           </div>
                           <div className="flex justify-center mb-3">
-                            <div className="bg-white p-4 rounded-lg">
-                              {/* Display uploaded GCash QR code from store content */}
-                              {store?.content?.payment?.gcashQrImage || store?.content?.gcashQrImage ? (
+                            <div className="bg-white p-4 rounded-lg shadow-sm">
+                              {/* Generate dynamic QR code with amount */}
+                              {store?.phone && calculateTotal() > 0 ? (
+                                <div className="flex justify-center">
+                                  <QRCodeSVG
+                                    value={getGCashQRCodeData() || ''}
+                                    size={280}
+                                    level="H"
+                                    includeMargin={true}
+                                    style={{ 
+                                      width: '280px', 
+                                      height: '280px',
+                                      maxWidth: '280px',
+                                      maxHeight: '280px'
+                                    }}
+                                  />
+                                </div>
+                              ) : store?.content?.payment?.gcashQrImage || store?.content?.gcashQrImage ? (
+                                // Fallback to uploaded static QR code if no phone number
                                 <img
                                   src={store.content.payment?.gcashQrImage || store.content.gcashQrImage}
                                   alt="GCash QR Code"
-                                  className="w-48 h-48 object-contain"
-                                  style={{ maxWidth: '200px', maxHeight: '200px' }}
+                                  className="mx-auto"
+                                  style={{ 
+                                    width: '280px', 
+                                    height: '280px', 
+                                    minWidth: '280px',
+                                    minHeight: '280px',
+                                    maxWidth: '280px',
+                                    maxHeight: '280px',
+                                    objectFit: 'contain',
+                                    imageRendering: 'crisp-edges',
+                                    imageRendering: '-webkit-optimize-contrast',
+                                    imageRendering: 'pixelated'
+                                  }}
+                                  onError={(e) => {
+                                    console.error('Error loading QR code image');
+                                    e.target.style.display = 'none';
+                                  }}
                                 />
                               ) : (
                                 <div className="w-48 h-48 flex items-center justify-center text-gray-500 text-sm text-center p-4">
-                                  <p>Please upload your GCash QR code in Payment Settings</p>
+                                  <p>Please configure your GCash number in Store Settings to generate payment QR code</p>
                                 </div>
                               )}
                             </div>
                           </div>
                           <div className="text-center text-sm text-gray-700 mb-4">
-                            <p><strong>Amount:</strong> ₱{calculateTotal().toFixed(2)}</p>
+                            <p className="text-lg font-bold text-green-600 mb-2">
+                              <strong>Amount to Pay:</strong> ₱{calculateTotal().toFixed(2)}
+                            </p>
                             {store?.phone && (
                               <p className="mt-1"><strong>GCash Number:</strong> {store.phone}</p>
                             )}
+                            <p className="mt-2 text-xs text-gray-500">
+                              💡 Ang QR code ay may kasamang amount. Kapag i-scan, makikita ang amount sa GCash app.
+                              <br />
+                              Kung hindi automatic ang amount, pakilagay manual: ₱{calculateTotal().toFixed(2)}
+                            </p>
                           </div>
                           {/* Payment Reference Code Input */}
                           <div className="mt-4">

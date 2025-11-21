@@ -145,11 +145,38 @@ const Payment = () => {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
+                        
+                        // Validate file type
+                        if (!file.type.startsWith('image/')) {
+                          setMessage('Please upload an image file (PNG, JPG, etc.)');
+                          return;
+                        }
+                        
+                        // Validate file size (max 5MB)
+                        if (file.size > 5 * 1024 * 1024) {
+                          setMessage('Image file is too large. Maximum size is 5MB.');
+                          return;
+                        }
+                        
                         const reader = new FileReader();
                         reader.onload = (event) => {
                           const result = event.target?.result;
                           if (typeof result === 'string') {
-                            setConfig((prev) => ({ ...prev, gcashQrImage: result }));
+                            // Verify the image loaded correctly
+                            const img = new Image();
+                            img.onload = () => {
+                              // Check minimum dimensions (QR codes should be at least 200x200)
+                              if (img.width < 200 || img.height < 200) {
+                                setMessage('QR code image is too small. Please use an image that is at least 200x200 pixels.');
+                                return;
+                              }
+                              setConfig((prev) => ({ ...prev, gcashQrImage: result }));
+                              setMessage('');
+                            };
+                            img.onerror = () => {
+                              setMessage('Invalid image file. Please try again with a valid PNG or JPG image.');
+                            };
+                            img.src = result;
                           }
                         };
                         reader.readAsDataURL(file);
@@ -158,16 +185,37 @@ const Payment = () => {
                     />
                     <p className="mt-1 text-xs text-gray-500">
                       Upload the GCash QR code you want your customers to scan when they choose GCash.
+                      <br />
+                      <strong>Tips for a valid QR code:</strong>
+                      <br />
+                      • Use high-resolution image (at least 500x500px recommended)
+                      <br />
+                      • Ensure the QR code has white padding/margin around it
+                      <br />
+                      • Use PNG format for best quality (or high-quality JPG)
+                      <br />
+                      • Make sure the QR code is clear and not blurry
                     </p>
                   </div>
                   {config.gcashQrImage && (
                     <div className="mt-3">
                       <p className="text-sm font-medium text-gray-700 mb-2">Preview</p>
-                      <div className="inline-block border rounded-lg p-2 bg-gray-50">
+                      <div className="inline-block border rounded-lg p-3 bg-white">
                         <img
                           src={config.gcashQrImage}
-                          alt="GCash QR Code"
-                          className="max-h-48 w-auto object-contain"
+                          alt="GCash QR Code Preview"
+                          style={{ 
+                            width: '250px', 
+                            height: '250px', 
+                            minWidth: '250px',
+                            minHeight: '250px',
+                            objectFit: 'contain',
+                            display: 'block'
+                          }}
+                          onError={(e) => {
+                            console.error('Error loading QR code preview');
+                            e.target.style.display = 'none';
+                          }}
                         />
                       </div>
                       <button
