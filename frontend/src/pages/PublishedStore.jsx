@@ -54,7 +54,6 @@ const PublishedStore = () => {
   const [verificationLoading, setVerificationLoading] = useState(false);
   const [resendVerificationLoading, setResendVerificationLoading] = useState(false);
   const [showCartModal, setShowCartModal] = useState(false);
-  const [cartSearchTerm, setCartSearchTerm] = useState('');
   
   const storeLogoUrl = React.useMemo(() => {
     if (!store) return null;
@@ -114,34 +113,141 @@ const PublishedStore = () => {
     };
   };
 
-  const cartModalProducts = React.useMemo(() => {
-    if (!Array.isArray(products)) return [];
-    if (!cartSearchTerm.trim()) return products;
-    const term = cartSearchTerm.trim().toLowerCase();
-    return products.filter((product) => {
-      const name = (product.name || '').toLowerCase();
-      const category = (product.category || '').toLowerCase();
-      return name.includes(term) || category.includes(term);
+  const addProductToCart = (product, quantity = 1) => {
+    if (!product) return;
+    setCartItems(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      if (existing) {
+        return prev.map(item =>
+          item.id === product.id
+            ? { ...item, quantity: Math.min(99, item.quantity + quantity) }
+            : item
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: product.id,
+          storeId: store?.id,
+          name: product.name,
+          price: parseFloat(product.price || 0),
+          image: product.image || product.imageUrl || product.imageSrc || null,
+          quantity: quantity || 1,
+          stock: product.stock,
+          category: product.category || ''
+        }
+      ];
     });
-  }, [products, cartSearchTerm]);
-
-  const closeCartModal = () => {
-    setShowCartModal(false);
-    setCartSearchTerm('');
+    setCartMessage(`${product.name} added to cart`);
+    setShowCartModal(true);
   };
 
-  const handleCartOrderClick = (product) => {
-    if (!product) return;
-    setSelectedProduct(product);
-    setOrderData(prefillOrderForm(product));
+  const removeCartItem = (productId) => {
+    setCartItems(prev => prev.filter(item => item.id !== productId));
+  };
+
+  const updateCartQuantity = (productId, quantity) => {
+    const safeQty = Math.max(1, Math.min(99, quantity));
+    setCartItems(prev =>
+      prev.map(item =>
+        item.id === productId ? { ...item, quantity: safeQty } : item
+      )
+    );
+  };
+
+  const clearCart = () => setCartItems([]);
+
+  const cartTotals = React.useMemo(() => {
+    const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return { subtotal, totalItems: cartItems.reduce((sum, item) => sum + item.quantity, 0) };
+  }, [cartItems]);
+
+  const getCheckoutItems = () => {
+    if (checkoutItems.length > 0) return checkoutItems;
+    if (selectedProduct) {
+      return [{
+        id: selectedProduct.id,
+        name: selectedProduct.name,
+        price: parseFloat(selectedProduct.price || 0),
+        quantity: parseInt(orderData.quantity) || 1,
+        image: selectedProduct.image || null
+      }];
+    }
+    return [];
+  };
+
+  const calculateSubtotal = () => {
+    return getCheckoutItems().reduce((sum, item) => sum + item.price * item.quantity, 0);
+  };
+
+  const calculateTotal = () => {
+    const shipping = parseFloat(orderData.shipping) || 0;
+    return calculateSubtotal() + shipping;
+  };
+
+  const proceedToCheckout = () => {
+    if (cartItems.length === 0) {
+      setCartMessage('Your cart is empty');
+      return;
+    }
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setShowCartModal(false);
+      setShowLoginModal(true);
+      setPendingOrderProduct({ cartCheckout: true });
+      return;
+    }
+    setCheckoutItems(cartItems);
+    const firstProduct = cartItems[0]
+      ? { id: cartItems[0].id, price: cartItems[0].price, weight: cartItems[0].weight }
+      : null;
+    setOrderData(prefillOrderForm(firstProduct));
     setProvincesList([]);
     setMunicipalitiesList([]);
     setBarangaysList([]);
     setOrderError('');
     setOrderSuccess(false);
+    setOrderReferenceNumber(null);
     setShowCartModal(false);
     setShowOrderModal(true);
   };
+
+  const handleCustomerLogout = () => {
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('customerInfo');
+    } catch (err) {
+      console.warn('Unable to clear credentials:', err);
+    }
+    setCustomerInfo(null);
+    setCheckoutItems([]);
+    setCartItems([]);
+    setShowOrderModal(false);
+    setShowCartModal(false);
+    setShowInitialLoginModal(true);
+    setModalMode('login');
+  };
+
+  const recordOrderHistory = (orderResponse) => {
+    if (!orderResponse) return;
+    const entry = {
+      orderNumber: orderResponse.orderNumber,
+      status: orderResponse.status || 'pending',
+      paymentStatus: orderResponse.paymentStatus || 'pending',
+      subtotal: parseFloat(orderResponse.subtotal || 0),
+      shipping: parseFloat(orderResponse.shipping || 0),
+      total: parseFloat(orderResponse.total || 0),
+      placedAt: orderResponse.createdAt || new Date().toISOString(),
+      items: orderResponse.OrderItems?.map(item => ({
+        id: item.productId,
+        name: item.Product?.name || `Product ${item.productId}`,
+        quantity: item.quantity,
+        price: parseFloat(item.price || 0)
+      })) || getCheckoutItems()
+    };
+    setOrderHistory(prev => [entry, ...prev].slice(0, 20));
+  };
+
   
   // Register form state
   const [registerForm, setRegisterForm] = useState({
@@ -181,6 +287,7 @@ const PublishedStore = () => {
   const [orderError, setOrderError] = useState('');
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderReferenceNumber, setOrderReferenceNumber] = useState(null);
+  const [showOrderHistoryModal, setShowOrderHistoryModal] = useState(false);
 
   // Helper: classify destination area based on region/province
   const getDestinationArea = (regionCode, provinceCode) => {
@@ -269,6 +376,28 @@ const PublishedStore = () => {
     };
   }, [showCategoriesModal]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('cartItems', JSON.stringify(cartItems));
+    } catch (err) {
+      console.warn('Unable to persist cart items:', err);
+    }
+  }, [cartItems]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('customerOrderHistory', JSON.stringify(orderHistory));
+    } catch (err) {
+      console.warn('Unable to persist order history:', err);
+    }
+  }, [orderHistory]);
+
+  useEffect(() => {
+    if (!cartMessage) return;
+    const timer = setTimeout(() => setCartMessage(''), 2500);
+    return () => clearTimeout(timer);
+  }, [cartMessage]);
+
   // Automatically calculate shipping fee when address or weight changes
   useEffect(() => {
     try {
@@ -292,26 +421,15 @@ const PublishedStore = () => {
   useEffect(() => {
     // Store the callback in window so iframe can access it
     window.openOrderModal = (product) => {
-      // Check if user is authenticated
       const token = localStorage.getItem('token');
       
       if (!token) {
-        // User not logged in - show login modal first, store product for later
         setPendingOrderProduct(product);
         setShowLoginModal(true);
         return;
       }
       
-      // User is logged in - open order modal directly
-      setSelectedProduct(product);
-      setShowOrderModal(true);
-      setOrderData(prefillOrderForm(product));
-      setProvincesList([]);
-      setMunicipalitiesList([]);
-      setBarangaysList([]);
-      setOrderError('');
-      setOrderSuccess(false);
-      setOrderReferenceNumber(null);
+      addProductToCart(product);
     };
     
     return () => {
@@ -392,11 +510,14 @@ const PublishedStore = () => {
         
         // If there was a pending order, open the order modal now
         if (pendingOrderProduct) {
-          // Small delay to ensure state is updated
           setTimeout(() => {
-            window.openOrderModal(pendingOrderProduct);
+            if (pendingOrderProduct.cartCheckout) {
+              setShowCartModal(true);
+            } else {
+              window.openOrderModal(pendingOrderProduct);
+            }
             setPendingOrderProduct(null);
-          }, 100);
+          }, 150);
         }
       } else {
         setLoginError('No token received from server');
@@ -698,17 +819,9 @@ const PublishedStore = () => {
   // Update callback ref whenever products or state setters change
   useEffect(() => {
     orderButtonCallbackRef.current = (product) => {
-      setSelectedProduct(product);
-      setShowOrderModal(true);
-      setOrderData(prefillOrderForm(product));
-      setProvincesList([]);
-      setMunicipalitiesList([]);
-      setBarangaysList([]);
-      setOrderError('');
-      setOrderSuccess(false);
-      setOrderReferenceNumber(null);
+      addProductToCart(product);
     };
-  }, [products]);
+  }, [products, store]);
 
   // Update iframe with store content
   useEffect(() => {
@@ -1847,7 +1960,6 @@ const PublishedStore = () => {
               e.preventDefault();
               e.stopPropagation();
               setShowCartModal(true);
-              setCartSearchTerm('');
             };
             icon.style.cursor = 'pointer';
             return;
@@ -1908,17 +2020,40 @@ const PublishedStore = () => {
                     </div>
                     ` : ''}
                   </div>
+                  <div style="display:flex;gap:0.75rem;margin-top:1.5rem;flex-wrap:wrap;">
+                    <button id="view-orders" style="flex:1;min-width:140px;background:#c9a961;color:#1a1a1a;border:none;border-radius:6px;padding:0.6rem;font-weight:600;cursor:pointer;">Track Orders</button>
+                    <button id="logout-customer" style="flex:1;min-width:140px;background:transparent;color:#e0e0e0;border:1px solid #c9a961;border-radius:6px;padding:0.6rem;font-weight:600;cursor:pointer;">Sign Out</button>
+                  </div>
                 `;
                 
                 profileModal.appendChild(profileContent);
                 iframeDoc.body.appendChild(profileModal);
                 
-                // Close button handler
                 const closeBtn = profileModal.querySelector('#close-profile');
                 closeBtn.onclick = () => profileModal.remove();
                 profileModal.onclick = (e) => {
                   if (e.target === profileModal) profileModal.remove();
                 };
+                const ordersBtn = profileModal.querySelector('#view-orders');
+                if (ordersBtn) {
+                  ordersBtn.onclick = function(evt) {
+                    evt.preventDefault();
+                    if (window.parent && window.parent !== window) {
+                      window.parent.postMessage({ type: 'SHOW_ORDER_HISTORY' }, '*');
+                    }
+                    profileModal.remove();
+                  };
+                }
+                const logoutBtn = profileModal.querySelector('#logout-customer');
+                if (logoutBtn) {
+                  logoutBtn.onclick = function(evt) {
+                    evt.preventDefault();
+                    if (window.parent && window.parent !== window) {
+                      window.parent.postMessage({ type: 'CUSTOMER_LOGOUT' }, '*');
+                    }
+                    profileModal.remove();
+                  };
+                }
               } else {
                 // Not logged in, show login modal
                 setShowLoginModal(true);
@@ -2489,17 +2624,18 @@ const PublishedStore = () => {
         }
         
         if (product) {
-          setSelectedProduct(product);
-          setShowOrderModal(true);
-          setOrderData(prefillOrderForm(product));
-          setProvincesList([]);
-          setMunicipalitiesList([]);
-          setBarangaysList([]);
-          setOrderError('');
-          setOrderSuccess(false);
+          addProductToCart(product);
         }
       }
       
+      if (event.data && event.data.type === 'SHOW_ORDER_HISTORY') {
+        setShowOrderHistoryModal(true);
+      }
+
+      if (event.data && event.data.type === 'CUSTOMER_LOGOUT') {
+        handleCustomerLogout();
+      }
+
       // Handle product lookup request
       if (event.data && event.data.type === 'GET_PRODUCT_BY_NAME' && event.data.productName) {
         const product = products.find(p => 
@@ -2538,14 +2674,7 @@ const PublishedStore = () => {
             ) || (products.length > 0 ? products[0] : null);
             
             if (matchingProduct) {
-              setSelectedProduct(matchingProduct);
-              setShowOrderModal(true);
-              setOrderData(prefillOrderForm(matchingProduct));
-              setProvincesList([]);
-              setMunicipalitiesList([]);
-              setBarangaysList([]);
-              setOrderError('');
-              setOrderSuccess(false);
+              addProductToCart(matchingProduct);
             }
           }
         }
@@ -2657,13 +2786,20 @@ const PublishedStore = () => {
       setOrderLoading(false);
       setShowOrderModal(false);
       setShowLoginModal(true);
-      setPendingOrderProduct(selectedProduct);
+      setPendingOrderProduct({ cartCheckout: true });
       return;
     }
 
     try {
-      if (!selectedProduct || !store) {
-        setOrderError('Product or store information missing');
+      if (!store) {
+        setOrderError('Store information missing');
+        setOrderLoading(false);
+        return;
+      }
+
+      const itemsForCheckout = getCheckoutItems();
+      if (itemsForCheckout.length === 0) {
+        setOrderError('Your cart is empty.');
         setOrderLoading(false);
         return;
       }
@@ -2707,10 +2843,10 @@ const PublishedStore = () => {
       // Create order
       const orderPayload = {
         storeId: store.id,
-        items: [{
-          productId: selectedProduct.id,
-          quantity: parseInt(orderData.quantity) || 1
-        }],
+        items: itemsForCheckout.map(item => ({
+          productId: item.id,
+          quantity: item.quantity
+        })),
         shippingAddress,
         customerName: orderData.customerName,
         customerEmail: orderData.customerEmail,
@@ -2739,23 +2875,25 @@ const PublishedStore = () => {
             });
             clearTimeout(timeoutId);
 
-            // Store the reference number from the response
             if (response.data?.orderNumber) {
               setOrderReferenceNumber(response.data.orderNumber);
             }
 
+            recordOrderHistory(response.data);
+            clearCart();
+            setCheckoutItems([]);
+            setSelectedProduct(null);
+
             setOrderSuccess(true);
             setOrderError('');
             
-            // Close modal after 5 seconds (increased to give time to see reference number)
             setTimeout(() => {
               setShowOrderModal(false);
               setOrderSuccess(false);
               setOrderReferenceNumber(null);
-              setSelectedProduct(null);
             }, 5000);
             
-            return; // Success, exit retry loop
+            return;
           } catch (apiError) {
             clearTimeout(timeoutId);
             lastError = apiError;
@@ -2801,14 +2939,6 @@ const PublishedStore = () => {
     } finally {
       setOrderLoading(false);
     }
-  };
-
-  // Calculate order total
-  const calculateTotal = () => {
-    if (!selectedProduct) return 0;
-    const subtotal = parseFloat(selectedProduct.price || 0) * (parseInt(orderData.quantity) || 1);
-    const shipping = parseFloat(orderData.shipping) || 0;
-    return subtotal + shipping;
   };
 
   return (
@@ -3263,97 +3393,116 @@ const PublishedStore = () => {
       {showCartModal && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={closeCartModal}
+          onClick={() => setShowCartModal(false)}
         >
           <div 
-            className="bg-white rounded-lg max-w-3xl w-full max-h-[85vh] flex flex-col"
+            className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <div className="p-6 border-b flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Quick Cart</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Shopping Cart</h2>
                 <p className="text-sm text-gray-500">
-                  I-browse ang mga produkto at mag-place ng order sa isang click.
+                  {cartTotals.totalItems} item{cartTotals.totalItems === 1 ? '' : 's'} ready to checkout
                 </p>
               </div>
               <button
-                onClick={closeCartModal}
+                onClick={() => setShowCartModal(false)}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
                 ×
               </button>
             </div>
-            <div className="p-6 space-y-4 overflow-hidden flex-1">
-              {products.length > 0 ? (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Hanapin ang produkto
-                    </label>
-                    <input
-                      type="text"
-                      value={cartSearchTerm}
-                      onChange={(e) => setCartSearchTerm(e.target.value)}
-                      placeholder="Hal. Balisong, Ceramic Mug, Premium Blade"
-                      autoFocus
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                  <div className="space-y-3 overflow-y-auto pr-1" style={{ maxHeight: '55vh' }}>
-                    {cartModalProducts.length > 0 ? (
-                      cartModalProducts.map((product, index) => (
-                        <div
-                          key={product.id || `${product.name || 'product'}-${index}`}
-                          className="border border-gray-200 rounded-lg p-4 bg-gray-50 flex flex-col md:flex-row md:items-center gap-4"
-                        >
-                          <div className="flex-1">
-                            <p className="font-semibold text-gray-900 text-lg">
-                              {product.name || 'Untitled product'}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              ₱{parseFloat(product.price || 0).toFixed(2)}
-                              {product.category ? ` • ${product.category}` : ''}
-                            </p>
-                            {product.description && (
-                              <p className="text-sm text-gray-500 mt-2">
-                                {product.description}
-                              </p>
-                            )}
+
+            {cartMessage && (
+              <div className="mx-6 mt-4 p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg">
+                {cartMessage}
+              </div>
+            )}
+
+            {cartItems.length > 0 ? (
+              <>
+                <div className="p-6 space-y-4">
+                  {cartItems.map(item => (
+                    <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center gap-4 flex-1">
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-lg" />
+                        ) : (
+                          <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 text-sm">
+                            No Image
                           </div>
-                          <div className="flex flex-col gap-2" style={{ minWidth: '140px' }}>
-                            {product.stock !== undefined && (
-                              <span className="text-xs text-gray-500">
-                                Stock: {product.stock}
-                              </span>
-                            )}
-                            <button
-                              onClick={() => handleCartOrderClick(product)}
-                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                            >
-                              Order
-                            </button>
-                          </div>
+                        )}
+                        <div>
+                          <p className="font-semibold text-gray-900">{item.name}</p>
+                          <p className="text-sm text-gray-500">₱{item.price.toFixed(2)} each</p>
+                          {item.stock !== undefined && (
+                            <p className="text-xs text-gray-400">Stock: {item.stock}</p>
+                          )}
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-center text-gray-500 py-12">
-                        <p>Walang produkto na tumugma sa "{cartSearchTerm}".</p>
                       </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="text-center text-gray-500 py-16">
-                  <p>Wala pang mga produktong naka-publish ang store na ito.</p>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center border border-gray-300 rounded-lg">
+                          <button
+                            className="px-3 py-1 text-lg"
+                            onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
+                          >
+                            −
+                          </button>
+                          <span className="px-4 py-1 text-sm font-semibold">{item.quantity}</span>
+                          <button
+                            className="px-3 py-1 text-lg"
+                            onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
+                          >
+                            +
+                          </button>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-900">₱{(item.price * item.quantity).toFixed(2)}</p>
+                          <button
+                            className="text-xs text-red-500 hover:underline mt-1"
+                            onClick={() => removeCartItem(item.id)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
+                <div className="border-t border-gray-200 p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-gray-50 rounded-b-2xl">
+                  <button
+                    type="button"
+                    onClick={clearCart}
+                    className="text-sm text-gray-600 hover:text-red-500 font-medium"
+                  >
+                    Clear Cart
+                  </button>
+                  <div className="flex flex-col md:flex-row md:items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">Subtotal</p>
+                      <p className="text-2xl font-bold text-gray-900">₱{cartTotals.subtotal.toFixed(2)}</p>
+                    </div>
+                    <button
+                      onClick={proceedToCheckout}
+                      className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    >
+                      Proceed to Checkout
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="p-12 text-center text-gray-500">
+                <p>Your cart is empty. Browse products and click “Add to cart”.</p>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* Order Modal */}
-      {showOrderModal && selectedProduct && (
+      {showOrderModal && (checkoutItems.length > 0 || selectedProduct) && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
           onClick={() => !orderLoading && setShowOrderModal(false)}
@@ -3374,13 +3523,23 @@ const PublishedStore = () => {
                 </button>
               </div>
 
-              {/* Product Info */}
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold text-lg mb-2">{selectedProduct.name}</h3>
-                <p className="text-gray-600 mb-2">Price: ₱{parseFloat(selectedProduct.price || 0).toFixed(2)}</p>
-                {selectedProduct.stock !== undefined && (
-                  <p className="text-sm text-gray-500">Stock Available: {selectedProduct.stock}</p>
-                )}
+                <h3 className="font-semibold text-lg mb-3">Items in your order</h3>
+                <div className="space-y-3">
+                  {getCheckoutItems().map(item => (
+                    <div key={item.id} className="flex items-center justify-between text-sm">
+                      <div>
+                        <p className="font-medium text-gray-800">{item.name}</p>
+                        <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                      </div>
+                      <p className="font-semibold text-gray-900">₱{(item.price * item.quantity).toFixed(2)}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between font-semibold border-t border-gray-200 pt-3 mt-3">
+                  <span>Subtotal</span>
+                  <span>₱{calculateSubtotal().toFixed(2)}</span>
+                </div>
               </div>
 
               {orderSuccess ? (
@@ -3395,6 +3554,28 @@ const PublishedStore = () => {
                     </div>
                   )}
                   <p className="text-gray-600">Thank you for your order. The store owner will contact you soon.</p>
+                  <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+                    <button
+                      onClick={() => {
+                        setShowOrderHistoryModal(true);
+                        setShowOrderModal(false);
+                        setOrderSuccess(false);
+                      }}
+                      className="px-4 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50"
+                    >
+                      Track Order
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowOrderModal(false);
+                        setOrderSuccess(false);
+                        setOrderReferenceNumber(null);
+                      }}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <form onSubmit={handleOrderSubmit} className="space-y-4">
@@ -3432,20 +3613,6 @@ const PublishedStore = () => {
                         />
                       </div>
                     </div>
-                  </div>
-
-                  {/* Quantity */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max={selectedProduct.stock || 999}
-                      required
-                      value={orderData.quantity}
-                      onChange={(e) => handleOrderChange('quantity', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
                   </div>
 
                   {/* Shipping Address */}
@@ -3578,7 +3745,7 @@ const PublishedStore = () => {
                       </label>
                       
                       {/* GCash QR Code */}
-                      {orderData.paymentMethod === 'gcash' && selectedProduct && (
+                      {orderData.paymentMethod === 'gcash' && (
                         <div className="mt-4 p-4 bg-gray-50 rounded-lg border-2 border-green-500">
                           <div className="text-center mb-3">
                             <h4 className="font-semibold text-gray-800 mb-1">GCash Payment QR Code</h4>
@@ -3635,7 +3802,7 @@ const PublishedStore = () => {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span>Subtotal:</span>
-                        <span>₱{((parseFloat(selectedProduct.price || 0) * (parseInt(orderData.quantity) || 1)).toFixed(2))}</span>
+                        <span>₱{calculateSubtotal().toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Shipping:</span>
@@ -3739,6 +3906,69 @@ const PublishedStore = () => {
         </div>
       )}
 
+      {/* Order History */}
+      {showOrderHistoryModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowOrderHistoryModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Your Orders</h2>
+                <p className="text-sm text-gray-500">Track the status of your recent purchases</p>
+              </div>
+              <button
+                onClick={() => setShowOrderHistoryModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            {orderHistory.length > 0 ? (
+              <div className="divide-y divide-gray-200">
+                {orderHistory.map(order => (
+                  <div key={order.orderNumber} className="p-6 flex flex-col gap-2 bg-gray-50">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div>
+                        <p className="text-sm text-gray-500">Order Number</p>
+                        <p className="font-semibold text-gray-900">{order.orderNumber}</p>
+                      </div>
+                      <div className="flex gap-2 text-sm">
+                        <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-700 capitalize">{order.status}</span>
+                        <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 capitalize">{order.paymentStatus}</span>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      <p>Placed on {new Date(order.placedAt).toLocaleString()}</p>
+                    </div>
+                    <div className="bg-white rounded-lg border border-gray-200 p-3 space-y-2">
+                      {order.items.map(item => (
+                        <div key={`${order.orderNumber}-${item.id}`} className="flex justify-between text-sm">
+                          <span>{item.name} × {item.quantity}</span>
+                          <span>₱{(item.price * item.quantity).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-between font-semibold text-gray-900">
+                      <span>Total</span>
+                      <span>₱{parseFloat(order.total || 0).toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-12 text-center text-gray-500">
+                <p>No orders yet. Add items to your cart and place your first order!</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div 
         className="w-full h-screen" 
         style={{ overflow: 'hidden', position: 'relative' }}
@@ -3778,14 +4008,7 @@ const PublishedStore = () => {
                 ) || (products.length > 0 ? products[0] : null);
                 
                 if (matchingProduct) {
-                  setSelectedProduct(matchingProduct);
-                  setShowOrderModal(true);
-                  setOrderData(prefillOrderForm(matchingProduct));
-                  setProvincesList([]);
-                  setMunicipalitiesList([]);
-                  setBarangaysList([]);
-                  setOrderError('');
-                  setOrderSuccess(false);
+                  addProductToCart(matchingProduct);
                 }
               }
             }
@@ -3833,6 +4056,9 @@ const PublishedStore = () => {
                         if (button.closest('.hero') && button.classList.contains('cta-button')) return;
                         if (button.hasAttribute('data-handler-attached')) return;
                         button.setAttribute('data-handler-attached', 'true');
+                        if (!button.classList.contains('cta-button')) {
+                          button.textContent = 'Add to Cart';
+                        }
                         
                         button.addEventListener('click', function(e) {
                           e.preventDefault();
