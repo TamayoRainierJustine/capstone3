@@ -275,41 +275,6 @@ const Payment = () => {
               )}
             </div>
 
-            {/* COD Configuration */}
-            <div className="pb-6 border-t pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">Cash on Delivery (COD)</h3>
-                  <p className="text-sm text-gray-600">
-                    Enable Cash on Delivery payments. Customers will pay with cash when they receive their order.
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={config.codEnabled ?? false}
-                    onChange={(e) => setConfig({ ...config, codEnabled: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                </label>
-              </div>
-              {(config.codEnabled ?? false) && (
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-semibold text-blue-800 mb-2">💵 Cash on Delivery</h4>
-                  <p className="text-sm text-gray-700 mb-3">
-                    When COD is enabled, customers can choose to pay with cash upon delivery of their order.
-                  </p>
-                  <div className="text-xs text-gray-600 space-y-1">
-                    <p>• Payment will be collected when the order is delivered</p>
-                    <p>• Customers will see COD as a payment option during checkout</p>
-                    <p>• Make sure to prepare for cash collection during delivery</p>
-                    <p>• COD orders typically have a payment status of "pending" until delivery is completed</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
           </div>
 
           <div className="mt-8 flex justify-end">
