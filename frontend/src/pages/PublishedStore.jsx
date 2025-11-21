@@ -28,6 +28,7 @@ const PublishedStore = () => {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
+  const [categoriesDropdownPosition, setCategoriesDropdownPosition] = useState({ top: 120, left: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
@@ -580,6 +581,20 @@ const PublishedStore = () => {
   useEffect(() => {
     const handleMessage = (event) => {
       if (event.data && event.data.type === 'SHOW_CATEGORIES') {
+        if (event.data.rect && iframeRef.current) {
+          try {
+            const iframeRect = iframeRef.current.getBoundingClientRect();
+            const rect = event.data.rect;
+            const topOffset = iframeRect.top + rect.bottom + window.scrollY + 8;
+            const leftOffset = iframeRect.left + rect.left + rect.width / 2 + window.scrollX;
+            setCategoriesDropdownPosition({ top: topOffset, left: leftOffset });
+          } catch (err) {
+            console.warn('Could not calculate dropdown position:', err);
+            setCategoriesDropdownPosition({ top: 120, left: null });
+          }
+        } else {
+          setCategoriesDropdownPosition({ top: 120, left: null });
+        }
         setShowCategoriesModal(true);
       }
     };
@@ -1584,7 +1599,17 @@ const PublishedStore = () => {
               // Trigger categories modal in parent window
               try {
                 if (window.parent && window.parent.postMessage) {
-                  window.parent.postMessage({ type: 'SHOW_CATEGORIES' }, '*');
+                  const rect = link.getBoundingClientRect();
+                  window.parent.postMessage({ 
+                    type: 'SHOW_CATEGORIES',
+                    rect: {
+                      top: rect.top,
+                      left: rect.left,
+                      width: rect.width,
+                      height: rect.height,
+                      bottom: rect.bottom
+                    }
+                  }, '*');
                 }
               } catch (err) {
                 console.error('Cannot post message to parent:', err);
@@ -3441,7 +3466,14 @@ const PublishedStore = () => {
         <div className="fixed inset-0 z-40 pointer-events-none">
           <div
             ref={categoriesDropdownRef}
-            className="pointer-events-auto absolute top-24 right-6 w-80 bg-white rounded-2xl border border-purple-200 shadow-2xl p-4"
+            style={{
+              position: 'absolute',
+              top: categoriesDropdownPosition.top,
+              ...(categoriesDropdownPosition.left !== null
+                ? { left: categoriesDropdownPosition.left, transform: 'translateX(-50%)' }
+                : { right: 24 })
+            }}
+            className="pointer-events-auto w-72 bg-white rounded-2xl border border-purple-200 shadow-2xl p-4"
           >
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold text-gray-800">Product Categories</h2>
