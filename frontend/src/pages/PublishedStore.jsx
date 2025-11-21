@@ -67,7 +67,17 @@ const PublishedStore = () => {
   const getCustomerData = () => {
     let customerData = customerInfo;
     
-    // If customerInfo not in state, try to get from auth context
+    if (!customerData) {
+      try {
+        const stored = localStorage.getItem('customerInfo');
+        if (stored) {
+          customerData = JSON.parse(stored);
+        }
+      } catch (err) {
+        console.warn('Unable to parse stored customer info:', err);
+      }
+    }
+    
     if (!customerData && user && user.type === 'customer') {
       customerData = user;
     }
@@ -313,14 +323,17 @@ const PublishedStore = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token && !loading) {
-      // Small delay to ensure store content is loaded
-      const timer = setTimeout(() => {
-        setShowInitialLoginModal(true);
-        setModalMode('login');
-      }, 500);
-      return () => clearTimeout(timer);
+      if (!customerInfo) {
+        const timer = setTimeout(() => {
+          setShowInitialLoginModal(true);
+          setModalMode('login');
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    } else if (token && customerInfo) {
+      setShowInitialLoginModal(false);
     }
-  }, [loading]);
+  }, [loading, customerInfo]);
   
   const startCustomerVerification = (email, message) => {
     if (!email) {
@@ -361,7 +374,9 @@ const PublishedStore = () => {
         loginContext(response.data.user);
         
         // Store customer info for pre-filling order form
-        setCustomerInfo(response.data.user);
+        const loggedInCustomer = response.data.user;
+        setCustomerInfo(loggedInCustomer);
+        localStorage.setItem('customerInfo', JSON.stringify(loggedInCustomer));
         
         // Clear form
         setLoginEmail('');
@@ -1650,7 +1665,7 @@ const PublishedStore = () => {
             navbar.innerHTML = navbar.innerHTML.replace(/Truvara/gi, logoDisplayName);
           }
           
-          const footerElement = iframeDoc.querySelector('footer');
+        const footerElement = iframeDoc.querySelector('footer');
           if (footerElement) {
             const footerHTML = footerElement.innerHTML;
             footerElement.innerHTML = footerHTML.replace(/Truvara(?!\s*©)/gi, logoDisplayName);
@@ -1659,7 +1674,7 @@ const PublishedStore = () => {
 
         // Add navigation link functionality and remove About/Gallery links
         // Add click handlers to navigation links
-        const navLinks = iframeDoc.querySelectorAll('.nav-links a, .navbar a');
+        const navLinks = iframeDoc.querySelectorAll('.nav-links a, .navbar a, nav a, header nav a');
         navLinks.forEach(link => {
           const linkText = link.textContent.trim().toLowerCase();
           
