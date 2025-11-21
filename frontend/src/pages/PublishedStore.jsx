@@ -55,6 +55,34 @@ const PublishedStore = () => {
   const [resendVerificationLoading, setResendVerificationLoading] = useState(false);
   const [showCartModal, setShowCartModal] = useState(false);
   
+  // Cart state - initialize from localStorage if available
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const stored = localStorage.getItem('cartItems');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (err) {
+      console.warn('Unable to load cart items from localStorage:', err);
+    }
+    return [];
+  });
+  const [checkoutItems, setCheckoutItems] = useState([]);
+  const [cartMessage, setCartMessage] = useState('');
+  
+  // Order history state - initialize from localStorage if available
+  const [orderHistory, setOrderHistory] = useState(() => {
+    try {
+      const stored = localStorage.getItem('customerOrderHistory');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (err) {
+      console.warn('Unable to load order history from localStorage:', err);
+    }
+    return [];
+  });
+  
   const storeLogoUrl = React.useMemo(() => {
     if (!store) return null;
     const logoSource = store.logo || store?.content?.branding?.logo;
