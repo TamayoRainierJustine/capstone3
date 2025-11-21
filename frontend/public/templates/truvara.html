@@ -76,6 +76,23 @@
             opacity: 1;
         }
 
+        .nav-icons {
+            display: flex;
+            gap: 1.25rem;
+            align-items: center;
+        }
+
+        .nav-icon {
+            color: #5c4033;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-icon:hover {
+            color: #d4a574;
+        }
+
         /* Hero Section */
         .hero {
             min-height: 90vh;
@@ -340,6 +357,11 @@
                 <a href="#">Shop Now</a>
                 <a href="#">Categories</a>
                 <a href="#">Contact</a>
+            </div>
+            <div class="nav-icons">
+                <a href="#" class="nav-icon" aria-label="Search">🔍</a>
+                <a href="#" class="nav-icon" aria-label="Account">👤</a>
+                <a href="#" class="nav-icon" aria-label="Cart">🛒</a>
             </div>
         </div>
     </nav>

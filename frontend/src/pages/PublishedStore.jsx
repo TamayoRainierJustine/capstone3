@@ -44,6 +44,8 @@ const PublishedStore = () => {
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [pendingOrderProduct, setPendingOrderProduct] = useState(null);
+  const [showCartModal, setShowCartModal] = useState(false);
+  const [cartSearchTerm, setCartSearchTerm] = useState('');
   
   const storeLogoUrl = React.useMemo(() => {
     if (!store) return null;
@@ -91,6 +93,35 @@ const PublishedStore = () => {
       shipping: 0,
       paymentReference: ''
     };
+  };
+
+  const cartModalProducts = React.useMemo(() => {
+    if (!Array.isArray(products)) return [];
+    if (!cartSearchTerm.trim()) return products;
+    const term = cartSearchTerm.trim().toLowerCase();
+    return products.filter((product) => {
+      const name = (product.name || '').toLowerCase();
+      const category = (product.category || '').toLowerCase();
+      return name.includes(term) || category.includes(term);
+    });
+  }, [products, cartSearchTerm]);
+
+  const closeCartModal = () => {
+    setShowCartModal(false);
+    setCartSearchTerm('');
+  };
+
+  const handleCartOrderClick = (product) => {
+    if (!product) return;
+    setSelectedProduct(product);
+    setOrderData(prefillOrderForm(product));
+    setProvincesList([]);
+    setMunicipalitiesList([]);
+    setBarangaysList([]);
+    setOrderError('');
+    setOrderSuccess(false);
+    setShowCartModal(false);
+    setShowOrderModal(true);
   };
   
   // Register form state
@@ -1606,21 +1637,66 @@ const PublishedStore = () => {
           link.style.pointerEvents = 'auto';
         });
 
+        // Ensure nav icon styles exist
+        if (!iframeDoc.getElementById('structura-nav-icon-style')) {
+          const navIconStyle = iframeDoc.createElement('style');
+          navIconStyle.id = 'structura-nav-icon-style';
+          navIconStyle.textContent = `
+            .nav-icons {
+              display: flex;
+              gap: 1rem;
+              align-items: center;
+            }
+            .nav-icon {
+              text-decoration: none !important;
+              font-size: 1.1rem;
+              cursor: pointer;
+              transition: opacity 0.2s ease;
+            }
+            .nav-icon:hover {
+              opacity: 0.8;
+            }
+          `;
+          iframeDoc.head.appendChild(navIconStyle);
+        }
+
+        // Ensure nav icons exist for templates that lack them
+        if (!iframeDoc.querySelector('.nav-icons .nav-icon, .nav-icon')) {
+          const navWrapper = iframeDoc.querySelector('.nav-content, .navbar, nav');
+          if (navWrapper) {
+            const navIconsWrapper = iframeDoc.createElement('div');
+            navIconsWrapper.className = 'nav-icons';
+            navIconsWrapper.innerHTML = `
+              <a href="#" class="nav-icon" aria-label="Search">🔍</a>
+              <a href="#" class="nav-icon" aria-label="Account">👤</a>
+              <a href="#" class="nav-icon" aria-label="Cart">🛒</a>
+            `;
+            navWrapper.appendChild(navIconsWrapper);
+          }
+        }
+
         // Handle nav icons (Search, Account, Cart)
         const navIcons = iframeDoc.querySelectorAll('.nav-icons .nav-icon, .nav-icon');
         navIcons.forEach(icon => {
-          const ariaLabel = icon.getAttribute('aria-label') || '';
+          if (!icon || icon.getAttribute('data-nav-icon-handler') === 'true') return;
+          icon.setAttribute('data-nav-icon-handler', 'true');
+          const ariaLabel = (icon.getAttribute('aria-label') || icon.getAttribute('title') || '').toLowerCase();
           const iconText = icon.textContent.trim();
           
-          // Remove cart icon
-          if (ariaLabel.toLowerCase() === 'cart' || iconText === '🛒') {
-            icon.style.display = 'none';
-            icon.remove();
+          // Handle cart icon
+          if (ariaLabel.includes('cart') || iconText === '🛒') {
+            icon.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowCartModal(true);
+              setCartSearchTerm('');
+            };
+            icon.style.cursor = 'pointer';
             return;
           }
           
           // Handle Account icon - show profile
-          if (ariaLabel.toLowerCase() === 'account' || iconText === '👤') {
+          if (ariaLabel.includes('account') || iconText === '👤') {
             icon.onclick = (e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -1696,7 +1772,7 @@ const PublishedStore = () => {
           }
           
           // Handle Search icon
-          if (ariaLabel.toLowerCase() === 'search' || iconText === '🔍') {
+          if (ariaLabel.includes('search') || iconText === '🔍') {
             icon.onclick = (e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -2918,6 +2994,99 @@ const PublishedStore = () => {
                 </Link>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Cart Modal */}
+      {showCartModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={closeCartModal}
+        >
+          <div 
+            className="bg-white rounded-lg max-w-3xl w-full max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Quick Cart</h2>
+                <p className="text-sm text-gray-500">
+                  I-browse ang mga produkto at mag-place ng order sa isang click.
+                </p>
+              </div>
+              <button
+                onClick={closeCartModal}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6 space-y-4 overflow-hidden flex-1">
+              {products.length > 0 ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Hanapin ang produkto
+                    </label>
+                    <input
+                      type="text"
+                      value={cartSearchTerm}
+                      onChange={(e) => setCartSearchTerm(e.target.value)}
+                      placeholder="Hal. Balisong, Ceramic Mug, Premium Blade"
+                      autoFocus
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div className="space-y-3 overflow-y-auto pr-1" style={{ maxHeight: '55vh' }}>
+                    {cartModalProducts.length > 0 ? (
+                      cartModalProducts.map((product, index) => (
+                        <div
+                          key={product.id || `${product.name || 'product'}-${index}`}
+                          className="border border-gray-200 rounded-lg p-4 bg-gray-50 flex flex-col md:flex-row md:items-center gap-4"
+                        >
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900 text-lg">
+                              {product.name || 'Untitled product'}
+                            </p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              ₱{parseFloat(product.price || 0).toFixed(2)}
+                              {product.category ? ` • ${product.category}` : ''}
+                            </p>
+                            {product.description && (
+                              <p className="text-sm text-gray-500 mt-2">
+                                {product.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-2" style={{ minWidth: '140px' }}>
+                            {product.stock !== undefined && (
+                              <span className="text-xs text-gray-500">
+                                Stock: {product.stock}
+                              </span>
+                            )}
+                            <button
+                              onClick={() => handleCartOrderClick(product)}
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                            >
+                              Order
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center text-gray-500 py-12">
+                        <p>Walang produkto na tumugma sa "{cartSearchTerm}".</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center text-gray-500 py-16">
+                  <p>Wala pang mga produktong naka-publish ang store na ito.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

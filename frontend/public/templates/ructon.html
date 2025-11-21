@@ -54,6 +54,23 @@
             gap: 2.5rem;
         }
 
+        .nav-icons {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-icon {
+            color: #a1a1aa;
+            font-size: 1.25rem;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-icon:hover {
+            color: #e4e4e7;
+        }
+
         .nav-links a {
             color: #a1a1aa;
             text-decoration: none;
@@ -376,6 +393,11 @@
                 <a href="#">Shop Now</a>
                 <a href="#">Categories</a>
                 <a href="#">Contact</a>
+            </div>
+            <div class="nav-icons">
+                <a href="#" class="nav-icon" aria-label="Search">🔍</a>
+                <a href="#" class="nav-icon" aria-label="Account">👤</a>
+                <a href="#" class="nav-icon" aria-label="Cart">🛒</a>
             </div>
         </div>
     </nav>
