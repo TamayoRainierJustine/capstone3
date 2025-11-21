@@ -9,7 +9,9 @@ import {
   resendVerificationCode,
   requestPasswordReset,
   resetPasswordWithCode,
-  testEmailSend
+  testEmailSend,
+  verifyCustomerWithCode,
+  resendCustomerVerification
 } from '../controllers/authController.js';
 
 const router = express.Router();
@@ -29,5 +31,7 @@ router.post('/email/test', testEmailSend);
 // Customer authentication (for published store buyers)
 router.post('/customer/register', registerCustomer);
 router.post('/customer/login', loginCustomer);
+router.post('/customer/verify', verifyCustomerWithCode);
+router.post('/customer/resend-verification', resendCustomerVerification);
 
 export default router;

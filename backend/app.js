@@ -322,6 +322,28 @@ process.on('SIGINT', () => shutdown('SIGINT'));
   }
 
   try {
+    console.log('🛠️ Ensuring Customers verification schema is up to date...');
+    await sequelize.query('ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "isVerified" BOOLEAN DEFAULT false');
+    await sequelize.query('ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "emailVerifiedAt" TIMESTAMP WITH TIME ZONE');
+    await sequelize.query(`
+      CREATE TABLE IF NOT EXISTS "CustomerVerificationTokens" (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        code VARCHAR(20) NOT NULL,
+        "expiresAt" TIMESTAMP WITH TIME ZONE NOT NULL,
+        used BOOLEAN DEFAULT false,
+        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await sequelize.query('CREATE INDEX IF NOT EXISTS "idx_customer_verification_email" ON "CustomerVerificationTokens"(email)');
+    await sequelize.query('CREATE INDEX IF NOT EXISTS "idx_customer_verification_expires" ON "CustomerVerificationTokens"("expiresAt")');
+    console.log('✅ Customers verification schema verified');
+  } catch (customerSchemaErr) {
+    console.warn('⚠️ Skipping Customers verification schema ensure:', customerSchemaErr.message);
+  }
+
+  try {
     console.log('🛠️ Ensuring Products schema is up to date...');
     await sequelize.query('ALTER TABLE "Products" ADD COLUMN IF NOT EXISTS "weight" DECIMAL(10,2) DEFAULT 0');
     await sequelize.query('ALTER TABLE "Products" ADD COLUMN IF NOT EXISTS "category" VARCHAR(255)');

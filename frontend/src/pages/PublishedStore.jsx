@@ -44,8 +44,15 @@ const PublishedStore = () => {
   const [loginPassword, setLoginPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [loginNotice, setLoginNotice] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [pendingOrderProduct, setPendingOrderProduct] = useState(null);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationError, setVerificationError] = useState('');
+  const [verificationMessage, setVerificationMessage] = useState('');
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const [resendVerificationLoading, setResendVerificationLoading] = useState(false);
   const [showCartModal, setShowCartModal] = useState(false);
   const [cartSearchTerm, setCartSearchTerm] = useState('');
   
@@ -315,10 +322,28 @@ const PublishedStore = () => {
     }
   }, [loading]);
   
+  const startCustomerVerification = (email, message) => {
+    if (!email) {
+      setRegisterError('Email is required for verification.');
+      return;
+    }
+    setVerificationEmail(email);
+    setVerificationCode('');
+    setVerificationError('');
+    setVerificationMessage(message || `Enter the 6-digit code sent to ${email}.`);
+    setModalMode('verify');
+    setShowInitialLoginModal(true);
+    setShowLoginModal(false);
+    setLoginError('');
+    setLoginNotice('');
+    setRegisterError('');
+  };
+
   // Handle login submission
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
+    setLoginNotice('');
     setLoginLoading(true);
 
     try {
@@ -345,6 +370,10 @@ const PublishedStore = () => {
         // Close both modals
         setShowLoginModal(false);
         setShowInitialLoginModal(false);
+        setVerificationMessage('');
+        setVerificationError('');
+        setVerificationCode('');
+        setVerificationEmail('');
         
         // If there was a pending order, open the order modal now
         if (pendingOrderProduct) {
@@ -359,8 +388,8 @@ const PublishedStore = () => {
       }
     } catch (error) {
       const msg = error.response?.data?.message;
-      if (error.response?.status === 403) {
-        setLoginError(msg || 'Please verify your email to continue.');
+      if (error.response?.status === 403 && error.response?.data?.requiresVerification) {
+        startCustomerVerification(loginEmail, msg || 'Please verify your email to continue.');
       } else {
         setLoginError(msg || 'Invalid email or password. Please try again.');
       }
@@ -395,10 +424,7 @@ const PublishedStore = () => {
         password: registerForm.password
       });
 
-      // After successful registration, switch to login mode
       setRegisterError('');
-      setModalMode('login');
-      setLoginEmail(registerForm.email);
       setRegisterForm({
         firstName: '',
         lastName: '',
@@ -406,15 +432,64 @@ const PublishedStore = () => {
         password: '',
         confirmPassword: ''
       });
-      
-      // Show success message
-      setLoginError('');
-      alert('Registration successful! Please log in to continue.');
+
+      startCustomerVerification(
+        registerForm.email,
+        response.data?.message || 'We sent a verification code to your email.'
+      );
     } catch (error) {
       setRegisterError(
         error.response?.data?.message || 
         'An error occurred during registration. Please try again.'
       );
+  const handleCustomerVerification = async (e) => {
+    e.preventDefault();
+    if (!verificationEmail) {
+      setVerificationError('Email is required.');
+      return;
+    }
+    if (!verificationCode || verificationCode.length < 4) {
+      setVerificationError('Please enter the verification code.');
+      return;
+    }
+    setVerificationError('');
+    setVerificationLoading(true);
+    try {
+      const payload = { email: verificationEmail, code: verificationCode.trim() };
+      const response = await apiClient.post('/auth/customer/verify', payload);
+      setVerificationMessage(response.data?.message || 'Email verified! Please log in.');
+      setLoginNotice('Email verified! Please log in to continue.');
+      setModalMode('login');
+      setLoginEmail(verificationEmail);
+      setVerificationCode('');
+    } catch (error) {
+      setVerificationError(
+        error.response?.data?.message || 'Verification failed. Please check the code and try again.'
+      );
+    } finally {
+      setVerificationLoading(false);
+    }
+  };
+
+  const handleResendCustomerVerification = async () => {
+    if (!verificationEmail) {
+      setVerificationError('Email is required.');
+      return;
+    }
+    setVerificationError('');
+    setResendVerificationLoading(true);
+    try {
+      const response = await apiClient.post('/auth/customer/resend-verification', { email: verificationEmail });
+      setVerificationMessage(response.data?.message || 'We sent a new code to your email.');
+    } catch (error) {
+      setVerificationError(
+        error.response?.data?.message || 'Unable to resend code right now. Please try again shortly.'
+      );
+    } finally {
+      setResendVerificationLoading(false);
+    }
+  };
+
     } finally {
       setRegisterLoading(false);
     }
@@ -2736,7 +2811,14 @@ const PublishedStore = () => {
             <div className="mb-6 text-center">
               <div className="flex justify-end mb-2">
                 <button
-                  onClick={() => setShowInitialLoginModal(false)}
+                  onClick={() => {
+                    setShowInitialLoginModal(false);
+                    setModalMode('login');
+                    setVerificationError('');
+                    setVerificationMessage('');
+                    setVerificationCode('');
+                    setLoginNotice('');
+                  }}
                   className="text-gray-500 hover:text-gray-700 text-2xl"
                 >
                   ×
@@ -2744,47 +2826,124 @@ const PublishedStore = () => {
               </div>
               <div className="space-y-2">
                 <h3 className="text-2xl font-bold text-gray-800">
-                  {modalMode === 'login' ? 'Welcome Back!' : 'Join Us Today'}
+                  {modalMode === 'verify'
+                    ? 'Verify your email'
+                    : modalMode === 'login'
+                      ? 'Welcome Back!'
+                      : 'Join Us Today'}
                 </h3>
                 <p className="text-gray-600 text-sm">
-                  {modalMode === 'login' 
-                    ? '✨ Log in to explore our amazing products and start shopping' 
-                    : '🎉 Create your account to discover exclusive products and special offers'}
+                  {modalMode === 'verify'
+                    ? `Enter the verification code we sent to ${verificationEmail || 'your email'}.`
+                    : modalMode === 'login'
+                      ? '✨ Log in to explore our amazing products and start shopping'
+                      : '🎉 Create your account to discover exclusive products and special offers'}
                 </p>
               </div>
             </div>
 
             {/* Tabs for Login/Register */}
-            <div className="flex border-b mb-4">
-              <button
-                onClick={() => {
-                  setModalMode('login');
-                  setLoginError('');
-                  setRegisterError('');
-                }}
-                className={`flex-1 py-2 px-4 text-center font-medium ${
-                  modalMode === 'login'
-                    ? 'border-b-2 border-purple-600 text-purple-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Login
-              </button>
-              <button
-                onClick={() => {
-                  setModalMode('register');
-                  setLoginError('');
-                  setRegisterError('');
-                }}
-                className={`flex-1 py-2 px-4 text-center font-medium ${
-                  modalMode === 'register'
-                    ? 'border-b-2 border-purple-600 text-purple-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Register
-              </button>
-            </div>
+            {modalMode !== 'verify' && (
+              <div className="flex border-b mb-4">
+                <button
+                  onClick={() => {
+                    setModalMode('login');
+                    setLoginError('');
+                    setRegisterError('');
+                    setLoginNotice('');
+                  }}
+                  className={`flex-1 py-2 px-4 text-center font-medium ${
+                    modalMode === 'login'
+                      ? 'border-b-2 border-purple-600 text-purple-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => {
+                    setModalMode('register');
+                    setLoginError('');
+                    setRegisterError('');
+                    setLoginNotice('');
+                  }}
+                  className={`flex-1 py-2 px-4 text-center font-medium ${
+                    modalMode === 'register'
+                      ? 'border-b-2 border-purple-600 text-purple-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Register
+                </button>
+              </div>
+            )}
+
+            {/* Verification Form */}
+            {modalMode === 'verify' && (
+              <form onSubmit={handleCustomerVerification}>
+                <div className="space-y-3 mb-4">
+                  <input
+                    type="email"
+                    value={verificationEmail}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600"
+                  />
+                  <input
+                    type="text"
+                    name="verificationCode"
+                    id="customer-verification-code"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    placeholder="Enter 6-digit code"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 tracking-[0.3em] text-center text-lg"
+                  />
+                </div>
+                {verificationError && (
+                  <div className="text-red-600 text-sm mb-3">
+                    {verificationError}
+                  </div>
+                )}
+                {verificationMessage && (
+                  <div className="text-green-600 text-sm mb-3">
+                    {verificationMessage}
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={verificationLoading}
+                  className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {verificationLoading ? 'Verifying...' : 'Verify Email'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResendCustomerVerification}
+                  disabled={resendVerificationLoading}
+                  className="w-full mt-3 px-4 py-2 border border-purple-500 text-purple-600 rounded-lg hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {resendVerificationLoading ? 'Sending...' : 'Resend code'}
+                </button>
+                <div className="mt-4 text-center text-sm text-gray-600">
+                  Wrong email?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalMode('register');
+                      setVerificationError('');
+                      setVerificationMessage('');
+                      setVerificationCode('');
+                    }}
+                    className="text-purple-600 font-semibold hover:underline"
+                  >
+                    Register again
+                  </button>
+                </div>
+              </form>
+            )}
 
             {/* Login Form */}
             {modalMode === 'login' && (
@@ -2827,6 +2986,11 @@ const PublishedStore = () => {
                     {loginError}
                   </div>
                 )}
+                {loginNotice && (
+                  <div className="text-green-600 text-sm mb-4">
+                    {loginNotice}
+                  </div>
+                )}
                 <button 
                   type="submit" 
                   disabled={loginLoading}
@@ -2842,6 +3006,7 @@ const PublishedStore = () => {
                       setModalMode('register');
                       setLoginError('');
                       setRegisterError('');
+                      setLoginNotice('');
                     }}
                     className="text-purple-600 font-semibold hover:underline"
                   >
@@ -2952,6 +3117,7 @@ const PublishedStore = () => {
                       setModalMode('login');
                       setLoginError('');
                       setRegisterError('');
+                      setLoginNotice('');
                     }}
                     className="text-purple-600 font-semibold hover:underline"
                   >
@@ -2980,6 +3146,9 @@ const PublishedStore = () => {
                 onClick={() => {
                   setShowLoginModal(false);
                   setPendingOrderProduct(null);
+                  setLoginError('');
+                  setLoginNotice('');
+                  setModalMode('login');
                 }}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
@@ -3038,6 +3207,11 @@ const PublishedStore = () => {
               {loginError && (
                 <div className="text-red-600 text-sm mb-4">
                   {loginError}
+                </div>
+              )}
+              {loginNotice && (
+                <div className="text-green-600 text-sm mb-4">
+                  {loginNotice}
                 </div>
               )}
               <button 

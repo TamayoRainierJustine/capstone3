@@ -6,6 +6,7 @@ import Customer from '../models/customer.js';
 import sequelize from '../config/db.js';
 import PasswordResetToken from '../models/passwordResetToken.js';
 import EmailVerificationToken from '../models/emailVerificationToken.js';
+import CustomerVerificationToken from '../models/customerVerificationToken.js';
 import { sendEmail } from '../utils/email.js';
 
 const PASSWORD_REQUIREMENTS_TEXT = 'Password must be at least 8 characters and include uppercase, lowercase, and a number.';
@@ -47,6 +48,28 @@ const sendVerificationEmail = async ({ email, firstName = 'there', req }) => {
     return true;
   } catch (err) {
     console.error('Failed to send verification email:', err.message);
+    return false;
+  }
+};
+
+const sendCustomerVerificationEmail = async ({ email, firstName = 'there' }) => {
+  try {
+    await CustomerVerificationToken.update({ used: true }, { where: { email, used: false } });
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    await CustomerVerificationToken.create({ email, code, expiresAt });
+
+    const subject = 'Verify your Structura shop account';
+    const html = `<p>Hi ${firstName || 'there'},</p>
+      <p>Use this verification code to activate your Structura buyer account:</p>
+      <p style="font-size:22px;letter-spacing:6px;font-weight:bold">${code}</p>
+      <p>This code expires in 30 minutes.</p>`;
+    const text = `Your Structura verification code is ${code}. It expires in 30 minutes.`;
+
+    await sendEmail({ to: email, subject, html, text });
+    return true;
+  } catch (err) {
+    console.error('Failed to send customer verification email:', err.message);
     return false;
   }
 };
@@ -529,11 +552,25 @@ export const registerCustomer = async (req, res) => {
     // Check if customer exists
     const existingCustomer = await Customer.findOne({ 
       where: { email },
-      attributes: ['id', 'email']
+      attributes: ['id', 'email', 'firstName', 'isVerified']
     });
 
     if (existingCustomer) {
-      return res.status(400).json({ message: 'Customer already exists' });
+      if (existingCustomer.isVerified) {
+        return res.status(400).json({ message: 'Customer already exists' });
+      }
+
+      const resent = await sendCustomerVerificationEmail({
+        email,
+        firstName: existingCustomer.firstName
+      });
+
+      return res.status(resent ? 200 : 202).json({
+        message: resent
+          ? 'Account already exists but is not verified. We resent the verification code.'
+          : 'Account already exists but is not verified. Please request a new verification code.',
+        requiresVerification: true
+      });
     }
 
     // Hash password
@@ -545,15 +582,13 @@ export const registerCustomer = async (req, res) => {
       lastName,
       email,
       password: hashedPassword,
+      isVerified: false
     });
 
-    // Remove password from response
-    const customerWithoutPassword = {
-      id: customer.id,
-      firstName: customer.firstName,
-      lastName: customer.lastName,
-      email: customer.email,
-    };
+    const verificationEmailSent = await sendCustomerVerificationEmail({
+      email,
+      firstName
+    });
 
     const duration = Date.now() - startTime;
     if (process.env.NODE_ENV !== 'production' && duration > 3000) {
@@ -561,8 +596,10 @@ export const registerCustomer = async (req, res) => {
     }
 
     res.status(201).json({
-      message: 'Customer registered successfully.',
-      customer: customerWithoutPassword
+      message: verificationEmailSent
+        ? 'Registration successful! We sent a verification code to your email.'
+        : 'Registration successful! Please request a new verification code.',
+      requiresVerification: true
     });
   } catch (err) {
     const duration = Date.now() - startTime;
@@ -612,12 +649,19 @@ export const loginCustomer = async (req, res) => {
     // Find customer
     const customer = await Customer.findOne({ 
       where: { email },
-      attributes: ['id', 'firstName', 'lastName', 'email', 'password'],
+      attributes: ['id', 'firstName', 'lastName', 'email', 'password', 'isVerified'],
       raw: false
     });
 
     if (!customer) {
       return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    if (!customer.isVerified) {
+      return res.status(403).json({
+        message: 'Please verify your email before logging in.',
+        requiresVerification: true
+      });
     }
 
     // Compare password
@@ -676,5 +720,79 @@ export const loginCustomer = async (req, res) => {
       message: 'Login failed', 
       error: err.message || 'Unknown error occurred'
     });
+  }
+};
+
+export const verifyCustomerWithCode = async (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) {
+    return res.status(400).json({ message: 'Email and code are required' });
+  }
+
+  try {
+    const token = await CustomerVerificationToken.findOne({
+      where: {
+        email,
+        code,
+        used: false,
+        expiresAt: { [Op.gt]: new Date() }
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    if (!token) {
+      return res.status(400).json({ message: 'Invalid or expired code' });
+    }
+
+    const customer = await Customer.findOne({ where: { email } });
+    if (!customer) {
+      return res.status(400).json({ message: 'Account not found' });
+    }
+
+    customer.isVerified = true;
+    customer.emailVerifiedAt = new Date();
+    await customer.save();
+
+    token.used = true;
+    await token.save();
+
+    return res.json({ message: 'Email verified successfully' });
+  } catch (err) {
+    console.error('verifyCustomerWithCode error:', err.message);
+    return res.status(500).json({ message: 'Failed to verify email' });
+  }
+};
+
+export const resendCustomerVerification = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: 'Email is required' });
+
+  try {
+    const customer = await Customer.findOne({
+      where: { email },
+      attributes: ['id', 'firstName', 'isVerified']
+    });
+
+    if (!customer) {
+      return res.status(200).json({ message: 'If the account exists, we resent a code.' });
+    }
+
+    if (customer.isVerified) {
+      return res.status(200).json({ message: 'Account is already verified.' });
+    }
+
+    const sent = await sendCustomerVerificationEmail({
+      email,
+      firstName: customer.firstName
+    });
+
+    return res.status(sent ? 200 : 202).json({
+      message: sent
+        ? 'A new verification code was sent to your email.'
+        : 'Unable to send email. Please try again later.'
+    });
+  } catch (err) {
+    console.error('resendCustomerVerification error:', err.message);
+    return res.status(500).json({ message: 'Failed to resend verification code' });
   }
 };
