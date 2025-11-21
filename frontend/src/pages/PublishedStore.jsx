@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import { getImageUrl } from '../utils/imageUrl';
 import { PASSWORD_REQUIREMENTS_TEXT, passwordMeetsRequirements } from '../utils/passwordRules';
@@ -21,6 +21,7 @@ const templateFileMap = {
 const PublishedStore = () => {
   const { domain } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { login: loginContext, user } = useAuth();
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
@@ -971,6 +972,44 @@ const PublishedStore = () => {
       setFilteredProducts(products.filter(p => p.category === selectedCategory));
     }
   }, [products, selectedCategory]);
+
+  // Handle product ID from QR code scan (URL query parameter)
+  useEffect(() => {
+    const productId = searchParams.get('product');
+    const addToCart = searchParams.get('addToCart'); // Optional: addToCart=true to auto-add to cart
+    
+    if (productId && products.length > 0 && store) {
+      const product = products.find(p => p.id === parseInt(productId));
+      
+      if (product) {
+        console.log('📱 QR Code product detected:', product.name);
+        
+        // Scroll to products section first
+        setTimeout(() => {
+          const productsSection = iframeRef.current?.contentDocument?.querySelector('.products, .products-section, #products');
+          if (productsSection) {
+            productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          
+          // If addToCart=true, automatically add product to cart and open cart modal
+          if (addToCart === 'true') {
+            setTimeout(() => {
+              addProductToCart(product, 1);
+              setShowCartModal(true);
+              // Remove query parameters after handling
+              setSearchParams({});
+            }, 500);
+          } else {
+            // Just highlight the product (remove query parameter after showing)
+            setTimeout(() => {
+              setSearchParams({});
+            }, 1000);
+          }
+        }, 300);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, store]);
 
   // Handle category selection
   const handleCategoryClick = (category) => {

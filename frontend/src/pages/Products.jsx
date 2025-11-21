@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import { getImageUrl } from '../utils/imageUrl';
 import Header from '../components/Header';
+import { QRCodeSVG } from 'qrcode.react';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -11,12 +12,30 @@ const Products = () => {
   const [error, setError] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [categories, setCategories] = useState([]);
+  const [store, setStore] = useState(null);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+    fetchStore();
   }, []);
+
+  const fetchStore = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await apiClient.get('/stores');
+      if (response.data && response.data.length > 0) {
+        setStore(response.data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching store:', error);
+    }
+  };
 
   useEffect(() => {
     if (selectedCategory === '') {
@@ -292,18 +311,29 @@ const Products = () => {
                     <span className="text-xl font-bold text-purple-600">₱{parseFloat(product.price).toFixed(2)}</span>
                     <span className="text-sm text-gray-600">Stock: {product.stock}</span>
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 flex-wrap gap-2">
                     <button
                       onClick={() => navigate(`/dashboard/products/${product.id}/edit`)}
-                      className="flex-1 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-sm"
+                      className="flex-1 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-sm min-w-[60px]"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleToggleActive(product)}
-                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
+                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm min-w-[80px]"
                     >
                       {product.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        setShowQRModal(true);
+                      }}
+                      className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm"
+                      title="Generate QR Code"
+                      disabled={!store?.domainName || store?.status !== 'published'}
+                    >
+                      QR Code
                     </button>
                     <button
                       onClick={() => handleDelete(product.id)}
@@ -319,6 +349,92 @@ const Products = () => {
         )}
         </div>
       </div>
+
+      {/* QR Code Modal */}
+      {showQRModal && selectedProduct && store && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Product QR Code</h2>
+              <button
+                onClick={() => {
+                  setShowQRModal(false);
+                  setSelectedProduct(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            {store.status === 'published' && store.domainName ? (
+              <>
+                <div className="text-center mb-4">
+                  <p className="text-sm text-gray-600 mb-2">{selectedProduct.name}</p>
+                  <p className="text-lg font-semibold text-purple-600">₱{parseFloat(selectedProduct.price).toFixed(2)}</p>
+                </div>
+                
+                <div className="flex justify-center mb-4 p-4 bg-white border-2 border-gray-200 rounded-lg">
+                  <QRCodeSVG
+                    value={`${window.location.origin}/published/${encodeURIComponent(store.domainName)}?product=${selectedProduct.id}&addToCart=true`}
+                    size={256}
+                    level="H"
+                    includeMargin={true}
+                  />
+                </div>
+                
+                <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                  <p className="text-xs text-gray-600 mb-2 font-medium">Scan this QR code to:</p>
+                  <ul className="text-xs text-gray-600 list-disc list-inside space-y-1">
+                    <li>Open product in your published store</li>
+                    <li>Automatically add to cart</li>
+                    <li>Checkout using GCash</li>
+                  </ul>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => {
+                      const qrUrl = `${window.location.origin}/published/${encodeURIComponent(store.domainName)}?product=${selectedProduct.id}&addToCart=true`;
+                      navigator.clipboard.writeText(qrUrl);
+                      alert('QR Code URL copied to clipboard!');
+                    }}
+                    className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                  >
+                    Copy Link
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowQRModal(false);
+                      setSelectedProduct(null);
+                    }}
+                    className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-red-600 mb-2">Store not published yet</p>
+                <p className="text-sm text-gray-600 mb-4">
+                  Please publish your store first to generate QR codes.
+                </p>
+                <button
+                  onClick={() => {
+                    setShowQRModal(false);
+                    setSelectedProduct(null);
+                    navigate('/publish');
+                  }}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                >
+                  Go to Publish Page
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
