@@ -6,7 +6,6 @@ import { PASSWORD_REQUIREMENTS_TEXT, passwordMeetsRequirements } from '../utils/
 import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
 import { useAuth } from '../context/AuthContext';
 import { FaUserCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { QRCodeSVG } from 'qrcode.react';
 
 // Template mapping
 const templateFileMap = {
@@ -244,22 +243,9 @@ const PublishedStore = () => {
     return calculateSubtotal() + shipping;
   };
 
-  // Generate GCash payment QR code data with amount
-  const getGCashQRCodeData = () => {
-    const totalAmount = calculateTotal();
-    const phoneNumber = store?.phone || '';
-    
-    if (!phoneNumber) {
-      return null;
-    }
-
-    // Format for GCash payment request with amount
-    // Format: {phone_number}|{amount}|{description}
-    // This format allows GCash app to pre-fill the amount when scanning
-    // The pipe (|) separator is commonly used in payment QR codes
-    const orderDescription = `Order #${Date.now()}`;
-    return `${phoneNumber}|${totalAmount.toFixed(2)}|${orderDescription}`;
-  };
+  // Note: Dynamic QR codes with embedded amounts require official GCash merchant account authorization
+  // Using static QR code from store settings is the recommended approach
+  // Customers will manually enter the amount shown below the QR code
 
   const proceedToCheckout = () => {
     if (cartItems.length === 0) {
@@ -3864,24 +3850,8 @@ const PublishedStore = () => {
                           </div>
                           <div className="flex justify-center mb-3">
                             <div className="bg-white p-4 rounded-lg shadow-sm">
-                              {/* Generate dynamic QR code with amount */}
-                              {store?.phone && calculateTotal() > 0 ? (
-                                <div className="flex justify-center">
-                                  <QRCodeSVG
-                                    value={getGCashQRCodeData() || ''}
-                                    size={280}
-                                    level="H"
-                                    includeMargin={true}
-                                    style={{ 
-                                      width: '280px', 
-                                      height: '280px',
-                                      maxWidth: '280px',
-                                      maxHeight: '280px'
-                                    }}
-                                  />
-                                </div>
-                              ) : store?.content?.payment?.gcashQrImage || store?.content?.gcashQrImage ? (
-                                // Fallback to uploaded static QR code if no phone number
+                              {/* Display uploaded GCash QR code - static QR codes require GCash merchant authorization for amount embedding */}
+                              {store?.content?.payment?.gcashQrImage || store?.content?.gcashQrImage ? (
                                 <img
                                   src={store.content.payment?.gcashQrImage || store.content.gcashQrImage}
                                   alt="GCash QR Code"
@@ -3905,23 +3875,36 @@ const PublishedStore = () => {
                                 />
                               ) : (
                                 <div className="w-48 h-48 flex items-center justify-center text-gray-500 text-sm text-center p-4">
-                                  <p>Please configure your GCash number in Store Settings to generate payment QR code</p>
+                                  <p>Please upload your GCash QR code in Payment Settings</p>
                                 </div>
                               )}
                             </div>
                           </div>
                           <div className="text-center text-sm text-gray-700 mb-4">
-                            <p className="text-lg font-bold text-green-600 mb-2">
-                              <strong>Amount to Pay:</strong> ₱{calculateTotal().toFixed(2)}
-                            </p>
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                              <p className="text-lg font-bold text-green-600 mb-2">
+                                <strong>Amount to Pay:</strong> ₱{calculateTotal().toFixed(2)}
+                              </p>
+                              <p className="text-sm text-gray-700 font-medium">
+                                ⚠️ Pakilagay ang amount na ito MANUALLY sa GCash app
+                              </p>
+                            </div>
                             {store?.phone && (
-                              <p className="mt-1"><strong>GCash Number:</strong> {store.phone}</p>
+                              <p className="mt-1 text-sm"><strong>GCash Number:</strong> {store.phone}</p>
                             )}
-                            <p className="mt-2 text-xs text-gray-500">
-                              💡 Ang QR code ay may kasamang amount. Kapag i-scan, makikita ang amount sa GCash app.
-                              <br />
-                              Kung hindi automatic ang amount, pakilagay manual: ₱{calculateTotal().toFixed(2)}
-                            </p>
+                            <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-2">
+                              <p className="text-xs text-gray-700 text-left">
+                                <strong>Paano magbayad:</strong>
+                                <br />
+                                1. I-scan ang QR code gamit ang GCash app
+                                <br />
+                                2. <strong>Ilagay ang amount: ₱{calculateTotal().toFixed(2)}</strong>
+                                <br />
+                                3. I-verify ang recipient details
+                                <br />
+                                4. I-tap ang "Pay" upang kumpleto ang pagbabayad
+                              </p>
+                            </div>
                           </div>
                           {/* Payment Reference Code Input */}
                           <div className="mt-4">
