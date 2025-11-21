@@ -34,7 +34,7 @@ export const getProducts = async (req, res) => {
       Product.findAll({
         where: { storeId: store.id },
         attributes: ['id', 'storeId', 'name', 'description', 'price', 'stock', 
-                     'image', 'category', 'isActive', 'createdAt', 'updatedAt'],
+                     'image', 'category', 'weight', 'isActive', 'createdAt', 'updatedAt'],
         order: [['createdAt', 'DESC']],
         limit: 1000 // Limit to prevent large queries
       }),
@@ -428,7 +428,7 @@ export const getPublicProducts = async (req, res) => {
         isActive: true
       },
       attributes: ['id', 'storeId', 'name', 'description', 'price', 'stock', 
-                   'image', 'category', 'isActive', 'createdAt', 'updatedAt'],
+                   'image', 'category', 'weight', 'isActive', 'createdAt', 'updatedAt'],
       order: [['createdAt', 'DESC']]
     });
 
