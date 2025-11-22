@@ -388,9 +388,36 @@ const PublishedStore = () => {
       : null;
     const prefilledData = prefillOrderForm(firstProduct);
     setOrderData(prefilledData);
-    setProvincesList([]);
-    setMunicipalitiesList([]);
-    setBarangaysList([]);
+    
+    // Populate dropdown lists based on pre-filled address
+    if (prefilledData.region) {
+      const provinces = getProvincesByRegion(prefilledData.region);
+      setProvincesList(provinces || []);
+      
+      if (prefilledData.province) {
+        const municipalities = getCityMunByProvince(prefilledData.province);
+        setMunicipalitiesList(municipalities || []);
+        
+        if (prefilledData.municipality) {
+          const barangaysData = getBarangayByMun(prefilledData.municipality);
+          const barangaysArray = barangaysData?.data || barangaysData || [];
+          setBarangaysList(Array.isArray(barangaysArray) ? barangaysArray.map(brgy => ({
+            brgy_code: brgy.brgy_code || brgy.code || brgy.brgyCode || '',
+            name: (brgy.name || brgy.brgy_name || brgy.brgyName || '').toUpperCase()
+          })) : []);
+        } else {
+          setBarangaysList([]);
+        }
+      } else {
+        setMunicipalitiesList([]);
+        setBarangaysList([]);
+      }
+    } else {
+      setProvincesList([]);
+      setMunicipalitiesList([]);
+      setBarangaysList([]);
+    }
+    
     setOrderError('');
     setOrderSuccess(false);
     setOrderReferenceNumber(null);
@@ -1198,6 +1225,76 @@ const PublishedStore = () => {
 
     calculateShipping();
   }, [orderData.region, orderData.province, orderData.municipality, orderData.barangay, orderData.weightBand, checkoutItems, selectedProduct, orderData.quantity, store]);
+
+  // Populate dropdown lists when order modal opens with saved customer address
+  useEffect(() => {
+    if (showOrderModal && orderData.region) {
+      // Populate provinces if region is set and list is empty
+      if (provincesList.length === 0) {
+        const provinces = getProvincesByRegion(orderData.region);
+        if (provinces && provinces.length > 0) {
+          setProvincesList(provinces);
+        }
+      }
+      
+      // Populate municipalities if province is set and list is empty
+      if (orderData.province && municipalitiesList.length === 0) {
+        const municipalities = getCityMunByProvince(orderData.province);
+        if (municipalities && municipalities.length > 0) {
+          setMunicipalitiesList(municipalities);
+        }
+      }
+      
+      // Populate barangays if municipality is set and list is empty
+      if (orderData.municipality && barangaysList.length === 0) {
+        const barangaysData = getBarangayByMun(orderData.municipality);
+        const barangaysArray = barangaysData?.data || barangaysData || [];
+        if (Array.isArray(barangaysArray) && barangaysArray.length > 0) {
+          setBarangaysList(barangaysArray.map(brgy => ({
+            brgy_code: brgy.brgy_code || brgy.code || brgy.brgyCode || '',
+            name: (brgy.name || brgy.brgy_name || brgy.brgyName || '').toUpperCase()
+          })));
+        }
+      }
+    }
+  }, [showOrderModal, orderData.region, orderData.province, orderData.municipality]);
+  
+  // Pre-fill order form when selectedProduct is set and order modal opens
+  useEffect(() => {
+    if (selectedProduct && showOrderModal) {
+      const prefilledData = prefillOrderForm(selectedProduct);
+      setOrderData(prefilledData);
+      
+      // Populate dropdown lists based on pre-filled address
+      if (prefilledData.region) {
+        const provinces = getProvincesByRegion(prefilledData.region);
+        setProvincesList(provinces || []);
+        
+        if (prefilledData.province) {
+          const municipalities = getCityMunByProvince(prefilledData.province);
+          setMunicipalitiesList(municipalities || []);
+          
+          if (prefilledData.municipality) {
+            const barangaysData = getBarangayByMun(prefilledData.municipality);
+            const barangaysArray = barangaysData?.data || barangaysData || [];
+            setBarangaysList(Array.isArray(barangaysArray) ? barangaysArray.map(brgy => ({
+              brgy_code: brgy.brgy_code || brgy.code || brgy.brgyCode || '',
+              name: (brgy.name || brgy.brgy_name || brgy.brgyName || '').toUpperCase()
+            })) : []);
+          } else {
+            setBarangaysList([]);
+          }
+        } else {
+          setMunicipalitiesList([]);
+          setBarangaysList([]);
+        }
+      } else {
+        setProvincesList([]);
+        setMunicipalitiesList([]);
+        setBarangaysList([]);
+      }
+    }
+  }, [selectedProduct, showOrderModal]);
   
   // Create global functions that the iframe can call
   useEffect(() => {
