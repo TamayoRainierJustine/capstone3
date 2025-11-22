@@ -53,6 +53,21 @@ const Orders = () => {
     }
   };
 
+  const handleCancellationRequest = async (orderId, action) => {
+    try {
+      const token = localStorage.getItem('token');
+      await apiClient.put(
+        `/orders/${orderId}/cancellation`,
+        { action } // 'approve' or 'reject'
+      );
+
+      fetchOrders();
+    } catch (error) {
+      console.error('Error handling cancellation request:', error);
+      alert(error.response?.data?.message || 'Failed to handle cancellation request');
+    }
+  };
+
   const updatePaymentStatus = async (orderId, newPaymentStatus, transactionId = null, notes = null) => {
     try {
       const token = localStorage.getItem('token');
@@ -243,6 +258,35 @@ const Orders = () => {
                         <p className="text-xs text-gray-600 mt-1">No payment reference provided by buyer</p>
                       </div>
                     )}
+                    {/* Cancellation Request Status */}
+                    {order.cancellationRequest && order.cancellationRequest !== 'none' && (
+                      <div className="mt-2 p-3 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+                        <p className="text-xs font-medium text-yellow-800 mb-1">
+                          Cancellation Request: <span className="capitalize">{order.cancellationRequest}</span>
+                        </p>
+                        {order.cancellationReason && (
+                          <p className="text-xs text-yellow-700 mt-1">
+                            <strong>Reason:</strong> {order.cancellationReason}
+                          </p>
+                        )}
+                        {order.cancellationRequest === 'requested' && (
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => handleCancellationRequest(order.id, 'approve')}
+                              className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                            >
+                              Approve Cancellation
+                            </button>
+                            <button
+                              onClick={() => handleCancellationRequest(order.id, 'reject')}
+                              className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                            >
+                              Reject Request
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <p className="text-sm text-gray-600 mt-2">
                       {new Date(order.createdAt).toLocaleDateString()} at{' '}
                       {new Date(order.createdAt).toLocaleTimeString()}
@@ -361,6 +405,35 @@ const Orders = () => {
                       <p className="text-xs text-gray-500 mt-1 break-all max-w-xs">
                         TXN: {order.paymentTransactionId}
                       </p>
+                    )}
+                    {/* Cancellation Request Status */}
+                    {order.cancellationRequest && order.cancellationRequest !== 'none' && (
+                      <div className="mt-2 p-3 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+                        <p className="text-xs font-medium text-yellow-800 mb-1">
+                          Cancellation Request: <span className="capitalize">{order.cancellationRequest}</span>
+                        </p>
+                        {order.cancellationReason && (
+                          <p className="text-xs text-yellow-700 mt-1">
+                            <strong>Reason:</strong> {order.cancellationReason}
+                          </p>
+                        )}
+                        {order.cancellationRequest === 'requested' && (
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => handleCancellationRequest(order.id, 'approve')}
+                              className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                            >
+                              Approve Cancellation
+                            </button>
+                            <button
+                              onClick={() => handleCancellationRequest(order.id, 'reject')}
+                              className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                            >
+                              Reject Request
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

@@ -35,6 +35,16 @@ const Order = sequelize.define('Order', {
     type: DataTypes.ENUM('pending', 'processing', 'shipped', 'completed', 'cancelled'),
     defaultValue: 'pending'
   },
+  cancellationRequest: {
+    type: DataTypes.ENUM('none', 'requested', 'approved', 'rejected'),
+    defaultValue: 'none',
+    comment: 'Customer cancellation request status'
+  },
+  cancellationReason: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Reason provided by customer for cancellation request'
+  },
   paymentMethod: {
     type: DataTypes.ENUM('gcash', 'paypal', 'card', 'cod'),
     allowNull: false

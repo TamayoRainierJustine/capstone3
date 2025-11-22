@@ -432,6 +432,30 @@ const PublishedStore = () => {
     return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
   };
 
+  // Request order cancellation
+  const requestOrderCancellation = async (orderNumber, reason) => {
+    try {
+      const response = await apiClient.post('/orders/cancel', {
+        orderNumber,
+        reason
+      });
+
+      if (response.data.success) {
+        // Refresh order history
+        const customerData = getCustomerData();
+        if (customerData?.email) {
+          await fetchCustomerOrders(customerData.email);
+        }
+        setCancellationModal(null);
+        setCancellationReason('');
+        alert('Cancellation request submitted. Waiting for store owner approval.');
+      }
+    } catch (error) {
+      console.error('Error requesting cancellation:', error);
+      alert(error.response?.data?.message || 'Failed to submit cancellation request');
+    }
+  };
+
   // Fetch customer orders from backend to sync with latest status
   const fetchCustomerOrders = async (customerEmail) => {
     if (!customerEmail) return;
@@ -446,6 +470,8 @@ const PublishedStore = () => {
         orderNumber: order.orderNumber,
         status: order.status || 'pending',
         paymentStatus: order.paymentStatus || 'pending',
+        cancellationRequest: order.cancellationRequest || 'none',
+        cancellationReason: order.cancellationReason || null,
         subtotal: order.subtotal || 0,
         shipping: order.shipping || 0,
         total: order.total || 0,
@@ -4601,14 +4627,30 @@ const PublishedStore = () => {
                         <p className="text-sm text-gray-500">Order Number</p>
                         <p className="font-semibold text-gray-900">{order.orderNumber}</p>
                       </div>
-                      <div className="flex gap-2 text-sm">
+                      <div className="flex gap-2 text-sm flex-wrap">
                         <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-700 capitalize">{getStatusLabel(order.status)}</span>
                         <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 capitalize">{getPaymentStatusLabel(order.paymentStatus)}</span>
+                        {order.cancellationRequest === 'requested' && (
+                          <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700">Cancellation Requested</span>
+                        )}
+                        {order.cancellationRequest === 'approved' && (
+                          <span className="px-3 py-1 rounded-full bg-green-100 text-green-700">Cancellation Approved</span>
+                        )}
+                        {order.cancellationRequest === 'rejected' && (
+                          <span className="px-3 py-1 rounded-full bg-red-100 text-red-700">Cancellation Rejected</span>
+                        )}
                       </div>
                     </div>
                     <div className="text-sm text-gray-600">
                       <p>Placed on {new Date(order.placedAt).toLocaleString()}</p>
                     </div>
+                    {/* Cancellation Request Reason */}
+                    {order.cancellationReason && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p className="text-xs font-medium text-yellow-800 mb-1">Cancellation Reason:</p>
+                        <p className="text-sm text-yellow-700">{order.cancellationReason}</p>
+                      </div>
+                    )}
                     <div className="bg-white rounded-lg border border-gray-200 p-3 space-y-2">
                       {order.items.map(item => (
                         <div key={`${order.orderNumber}-${item.id}`} className="flex justify-between text-sm">
@@ -4621,6 +4663,19 @@ const PublishedStore = () => {
                       <span>Total</span>
                       <span>₱{parseFloat(order.total || 0).toFixed(2)}</span>
                     </div>
+                    {/* Cancel Order Button - Only show if order is not cancelled and not already requested */}
+                    {order.status !== 'cancelled' && 
+                     order.status !== 'completed' && 
+                     order.status !== 'shipped' &&
+                     order.cancellationRequest !== 'requested' &&
+                     order.cancellationRequest !== 'approved' && (
+                      <button
+                        onClick={() => setCancellationModal(order.orderNumber)}
+                        className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium self-start"
+                      >
+                        Request Cancellation
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

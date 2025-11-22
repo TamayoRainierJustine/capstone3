@@ -751,3 +751,118 @@ export const getCustomerOrders = async (req, res) => {
   }
 };
 
+// Request order cancellation (public route for customers)
+export const requestOrderCancellation = async (req, res) => {
+  try {
+    const { orderNumber, reason } = req.body;
+
+    if (!orderNumber) {
+      return res.status(400).json({ message: 'Order number is required' });
+    }
+
+    // Find the order
+    const order = await Order.findOne({
+      where: { orderNumber }
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check if order can be cancelled
+    if (order.status === 'cancelled') {
+      return res.status(400).json({ message: 'Order is already cancelled' });
+    }
+
+    if (order.status === 'completed' || order.status === 'shipped') {
+      return res.status(400).json({ message: 'Cannot cancel order that is already shipped or completed' });
+    }
+
+    // Check if cancellation is already requested
+    if (order.cancellationRequest === 'requested') {
+      return res.status(400).json({ message: 'Cancellation request already submitted' });
+    }
+
+    if (order.cancellationRequest === 'approved') {
+      return res.status(400).json({ message: 'Cancellation already approved' });
+    }
+
+    // Update order with cancellation request
+    await order.update({
+      cancellationRequest: 'requested',
+      cancellationReason: reason || null
+    });
+
+    res.json({
+      success: true,
+      message: 'Cancellation request submitted. Waiting for store owner approval.',
+      order: order
+    });
+  } catch (error) {
+    console.error('Error requesting order cancellation:', error);
+    res.status(500).json({ message: 'Error requesting cancellation', error: error.message });
+  }
+};
+
+// Handle cancellation request (for store owner - approve or reject)
+export const handleCancellationRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action } = req.body; // 'approve' or 'reject'
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    if (!action || !['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ message: 'Action must be "approve" or "reject"' });
+    }
+
+    const store = await Store.findOne({ where: { userId } });
+    if (!store) {
+      return res.status(404).json({ message: 'Store not found' });
+    }
+
+    const order = await Order.findOne({
+      where: { id, storeId: store.id }
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (order.cancellationRequest !== 'requested') {
+      return res.status(400).json({ message: 'No pending cancellation request for this order' });
+    }
+
+    if (action === 'approve') {
+      // Approve cancellation - mark order as cancelled
+      await order.update({
+        cancellationRequest: 'approved',
+        status: 'cancelled'
+      });
+
+      res.json({
+        success: true,
+        message: 'Cancellation approved. Order has been cancelled.',
+        order: order
+      });
+    } else if (action === 'reject') {
+      // Reject cancellation request
+      await order.update({
+        cancellationRequest: 'rejected'
+      });
+
+      res.json({
+        success: true,
+        message: 'Cancellation request rejected.',
+        order: order
+      });
+    }
+  } catch (error) {
+    console.error('Error handling cancellation request:', error);
+    res.status(500).json({ message: 'Error handling cancellation request', error: error.message });
+  }
+};
+
