@@ -2715,7 +2715,7 @@ const PublishedStore = () => {
             
             // Convert region code to name
             if (store.region && isCode(store.region)) {
-              const region = regions.find(r => r.reg_code === store.region);
+              const region = regionsList.find(r => r.reg_code === store.region);
               regionName = region?.name || store.region;
             } else if (store.region) {
               regionName = store.region; // Already a name
@@ -2724,7 +2724,7 @@ const PublishedStore = () => {
             // Convert province code to name
             if (store.province) {
               if (isCode(store.province) && store.region) {
-                const regionCode = isCode(store.region) ? store.region : regions.find(r => r.name === store.region)?.reg_code || store.region;
+                const regionCode = isCode(store.region) ? store.region : regionsList.find(r => r.name === store.region)?.reg_code || store.region;
                 const provinces = getProvincesByRegion(regionCode);
                 const province = provinces.find(p => p.prov_code === store.province);
                 provinceName = province?.name || store.province;
@@ -2737,7 +2737,7 @@ const PublishedStore = () => {
             if (store.municipality) {
               if (isCode(store.municipality) && store.province) {
                 const provinceCode = isCode(store.province) ? store.province : (() => {
-                  const regionCode = isCode(store.region) ? store.region : regions.find(r => r.name === store.region)?.reg_code || store.region;
+                  const regionCode = isCode(store.region) ? store.region : regionsList.find(r => r.name === store.region)?.reg_code || store.region;
                   const provinces = getProvincesByRegion(regionCode);
                   return provinces.find(p => p.name === store.province)?.prov_code || store.province;
                 })();
@@ -2754,7 +2754,7 @@ const PublishedStore = () => {
               if (isCode(store.barangay) && store.municipality) {
                 const municipalityCode = isCode(store.municipality) ? store.municipality : (() => {
                   const provinceCode = isCode(store.province) ? store.province : (() => {
-                    const regionCode = isCode(store.region) ? store.region : regions.find(r => r.name === store.region)?.reg_code || store.region;
+                    const regionCode = isCode(store.region) ? store.region : regionsList.find(r => r.name === store.region)?.reg_code || store.region;
                     const provinces = getProvincesByRegion(regionCode);
                     return provinces.find(p => p.name === store.province)?.prov_code || store.province;
                   })();
@@ -2861,29 +2861,29 @@ const PublishedStore = () => {
           
           // Convert region code to name
           if (store.region && isCode(store.region)) {
-            const region = regions.find(r => r.reg_code === store.region);
+            const region = regionsList.find(r => r.reg_code === store.region);
             regionName = region?.name || store.region;
           } else if (store.region) {
             regionName = store.region; // Already a name
           }
           
-          // Convert province code to name
-          if (store.province) {
-            if (isCode(store.province) && store.region) {
-              const regionCode = isCode(store.region) ? store.region : regions.find(r => r.name === store.region)?.reg_code || store.region;
-              const provinces = getProvincesByRegion(regionCode);
-              const province = provinces.find(p => p.prov_code === store.province);
-              provinceName = province?.name || store.province;
-            } else {
-              provinceName = store.province; // Already a name
+            // Convert province code to name
+            if (store.province) {
+              if (isCode(store.province) && store.region) {
+                const regionCode = isCode(store.region) ? store.region : regionsList.find(r => r.name === store.region)?.reg_code || store.region;
+                const provinces = getProvincesByRegion(regionCode);
+                const province = provinces.find(p => p.prov_code === store.province);
+                provinceName = province?.name || store.province;
+              } else {
+                provinceName = store.province; // Already a name
+              }
             }
-          }
-          
-          // Convert municipality code to name
-          if (store.municipality) {
-            if (isCode(store.municipality) && store.province) {
-              const provinceCode = isCode(store.province) ? store.province : (() => {
-                const regionCode = isCode(store.region) ? store.region : regions.find(r => r.name === store.region)?.reg_code || store.region;
+            
+            // Convert municipality code to name
+            if (store.municipality) {
+              if (isCode(store.municipality) && store.province) {
+                const provinceCode = isCode(store.province) ? store.province : (() => {
+                  const regionCode = isCode(store.region) ? store.region : regionsList.find(r => r.name === store.region)?.reg_code || store.region;
                 const provinces = getProvincesByRegion(regionCode);
                 return provinces.find(p => p.name === store.province)?.prov_code || store.province;
               })();
@@ -2900,7 +2900,7 @@ const PublishedStore = () => {
             if (isCode(store.barangay) && store.municipality) {
               const municipalityCode = isCode(store.municipality) ? store.municipality : (() => {
                 const provinceCode = isCode(store.province) ? store.province : (() => {
-                  const regionCode = isCode(store.region) ? store.region : regions.find(r => r.name === store.region)?.reg_code || store.region;
+                  const regionCode = isCode(store.region) ? store.region : regionsList.find(r => r.name === store.region)?.reg_code || store.region;
                   const provinces = getProvincesByRegion(regionCode);
                   return provinces.find(p => p.name === store.province)?.prov_code || store.province;
                 })();
