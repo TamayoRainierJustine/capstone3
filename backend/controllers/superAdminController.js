@@ -13,11 +13,11 @@ export const getAllStores = async (req, res) => {
     
     const whereClause = {};
     if (status === 'published') {
-      whereClause.isPublished = true;
-    } else if (status === 'unpublished') {
-      whereClause.isPublished = false;
+      whereClause.status = 'published';
+    } else if (status === 'unpublished' || status === 'draft') {
+      whereClause.status = 'draft';
     }
-    // If status is 'all' or not provided, don't filter by isPublished
+    // If status is 'all' or not provided, don't filter by status
     
     if (search) {
       whereClause[Op.or] = [
@@ -91,7 +91,7 @@ export const getAllStores = async (req, res) => {
 export const getStoreStatistics = async (req, res) => {
   try {
     const totalStores = await Store.count();
-    const publishedStores = await Store.count({ where: { isPublished: true } });
+    const publishedStores = await Store.count({ where: { status: 'published' } });
     const totalUsers = await User.count({ where: { role: 'admin' } });
     const totalOrders = await Order.count();
     
@@ -146,8 +146,21 @@ export const updateStoreStatus = async (req, res) => {
       return res.status(404).json({ message: 'Store not found' });
     }
 
-    await store.update({ isPublished });
-    res.json({ message: 'Store status updated', store });
+    // Convert isPublished boolean to status enum
+    const newStatus = isPublished ? 'published' : 'draft';
+    await store.update({ status: newStatus });
+    
+    const updatedStore = await Store.findByPk(id, {
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+          required: false
+        }
+      ]
+    });
+    
+    res.json({ message: 'Store status updated', store: updatedStore });
   } catch (error) {
     console.error('Error updating store status:', error);
     res.status(500).json({ message: 'Error updating store status', error: error.message });

@@ -219,7 +219,7 @@ const SuperAdminDashboard = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{store.domainName}</div>
-                        {store.isPublished && (
+                        {store.status === 'published' && (
                           <a
                             href={`/published/${store.domainName}`}
                             target="_blank"
@@ -245,11 +245,11 @@ const SuperAdminDashboard = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          store.isPublished 
+                          store.status === 'published'
                             ? 'bg-green-100 text-green-800' 
                             : 'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {store.isPublished ? 'Published' : 'Unpublished'}
+                          {store.status === 'published' ? 'Published' : 'Unpublished'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -258,14 +258,14 @@ const SuperAdminDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex gap-2 items-center">
                           <button
-                            onClick={() => handleToggleStoreStatus(store.id, store.isPublished)}
+                            onClick={() => handleToggleStoreStatus(store.id, store.status === 'published')}
                             className={`px-3 py-1 rounded ${
-                              store.isPublished
+                              store.status === 'published'
                                 ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                                 : 'bg-green-100 text-green-800 hover:bg-green-200'
                             }`}
                           >
-                            {store.isPublished ? 'Unpublish' : 'Publish'}
+                            {store.status === 'published' ? 'Unpublish' : 'Publish'}
                           </button>
                           <button
                             onClick={() => handleDeleteStore(store.id, store.storeName)}
