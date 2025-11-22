@@ -3,13 +3,13 @@ import User from '../models/user.js';
 import Order from '../models/order.js';
 import { Op } from 'sequelize';
 
-// Ensure associations are set up
-import '../models/store.js'; // This will run the associations
-
 // Get all stores (Super Admin only)
 export const getAllStores = async (req, res) => {
   try {
+    console.log('📊 getAllStores called by user:', req.user?.email, 'role:', req.user?.role);
+    
     const { status, search } = req.query;
+    console.log('📊 Query params - status:', status, 'search:', search);
     
     const whereClause = {};
     if (status === 'published') {
@@ -26,48 +26,49 @@ export const getAllStores = async (req, res) => {
       ];
     }
 
-    // Use raw query with JOIN to avoid association issues
-    let stores;
-    try {
-      stores = await Store.findAll({
-        where: whereClause,
-        include: [
-          {
-            model: User,
-            attributes: ['id', 'firstName', 'lastName', 'email'],
-            required: false // LEFT JOIN
-          }
-        ],
-        order: [['createdAt', 'DESC']]
-      });
-    } catch (includeError) {
-      console.error('Error with include, trying without:', includeError);
-      // Fallback: query stores without User include
-      stores = await Store.findAll({
-        where: whereClause,
-        order: [['createdAt', 'DESC']]
-      });
-      
-      // Manually fetch user data for each store
-      for (const store of stores) {
-        if (store.userId) {
-          try {
-            const user = await User.findByPk(store.userId, {
-              attributes: ['id', 'firstName', 'lastName', 'email']
-            });
-            if (user) {
-              store.dataValues.User = user;
-            }
-          } catch (userError) {
-            console.error(`Error fetching user for store ${store.id}:`, userError);
-          }
-        }
+    console.log('📊 Where clause:', JSON.stringify(whereClause));
+
+    // Fetch stores first without include to avoid association issues
+    const stores = await Store.findAll({
+      where: whereClause,
+      order: [['createdAt', 'DESC']],
+      attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
+                   'region', 'province', 'municipality', 'barangay', 'contactEmail', 
+                   'phone', 'logo', 'status', 'content', 'createdAt', 'updatedAt'],
+      raw: false // Keep as instances
+    });
+    
+    console.log('📊 Found', stores.length, 'stores');
+    
+    // Fetch user data separately
+    const userIds = [...new Set(stores.map(s => s.userId).filter(id => id !== null && id !== undefined))];
+    let userMap = new Map();
+    
+    if (userIds.length > 0) {
+      try {
+        const users = await User.findAll({
+          where: { id: { [Op.in]: userIds } },
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+          raw: true
+        });
+        
+        userMap = new Map(users.map(u => [u.id, u]));
+        console.log('📊 Found', users.length, 'users');
+      } catch (userError) {
+        console.error('⚠️ Error fetching users:', userError);
+        // Continue without user data
       }
     }
-
-    // Parse content if needed and format response
+    
+    // Format stores with user data
     const formattedStores = stores.map(store => {
       const storeData = store.toJSON();
+      
+      // Add user data if available
+      if (storeData.userId && userMap.has(storeData.userId)) {
+        storeData.User = userMap.get(storeData.userId);
+      }
+      
       // Parse content if it's a string
       if (storeData.content && typeof storeData.content === 'string') {
         try {
@@ -76,14 +77,32 @@ export const getAllStores = async (req, res) => {
           console.error('Error parsing store content:', e);
         }
       }
+      
       return storeData;
     });
 
+    console.log('✅ Returning', formattedStores.length, 'stores');
     res.json(formattedStores);
   } catch (error) {
-    console.error('Error fetching all stores:', error);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ message: 'Error fetching stores', error: error.message });
+    console.error('❌ Error in getAllStores:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error name:', error.name);
+    if (error.original) {
+      console.error('❌ Original error:', error.original);
+    }
+    if (error.stack) {
+      console.error('❌ Stack trace:', error.stack);
+    }
+    
+    res.status(500).json({ 
+      message: 'Error fetching stores', 
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? {
+        name: error.name,
+        stack: error.stack,
+        original: error.original
+      } : undefined
+    });
   }
 };
 
@@ -135,6 +154,7 @@ export const getStoreStatistics = async (req, res) => {
     res.json(stats);
   } catch (error) {
     console.error('❌ Error fetching statistics:', error);
+    console.error('❌ Error message:', error.message);
     console.error('❌ Error stack:', error.stack);
     res.status(500).json({ 
       message: 'Error fetching statistics', 
@@ -160,16 +180,22 @@ export const updateStoreStatus = async (req, res) => {
     await store.update({ status: newStatus });
     
     const updatedStore = await Store.findByPk(id, {
-      include: [
-        {
-          model: User,
-          attributes: ['id', 'firstName', 'lastName', 'email'],
-          required: false
-        }
-      ]
+      attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
+                   'region', 'province', 'municipality', 'barangay', 'contactEmail', 
+                   'phone', 'logo', 'status', 'content', 'createdAt', 'updatedAt']
     });
     
-    res.json({ message: 'Store status updated', store: updatedStore });
+    // Fetch user data separately
+    if (updatedStore.userId) {
+      const user = await User.findByPk(updatedStore.userId, {
+        attributes: ['id', 'firstName', 'lastName', 'email']
+      });
+      if (user) {
+        updatedStore.dataValues.User = user;
+      }
+    }
+    
+    res.json({ message: 'Store status updated', store: updatedStore.toJSON() });
   } catch (error) {
     console.error('Error updating store status:', error);
     res.status(500).json({ message: 'Error updating store status', error: error.message });
@@ -182,16 +208,23 @@ export const getStoreDetails = async (req, res) => {
     const { id } = req.params;
 
     const store = await Store.findByPk(id, {
-      include: [
-        {
-          model: User,
-          attributes: ['id', 'firstName', 'lastName', 'email', 'createdAt']
-        }
-      ]
+      attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
+                   'region', 'province', 'municipality', 'barangay', 'contactEmail', 
+                   'phone', 'logo', 'status', 'content', 'createdAt', 'updatedAt']
     });
 
     if (!store) {
       return res.status(404).json({ message: 'Store not found' });
+    }
+
+    // Fetch user data separately
+    if (store.userId) {
+      const user = await User.findByPk(store.userId, {
+        attributes: ['id', 'firstName', 'lastName', 'email', 'createdAt']
+      });
+      if (user) {
+        store.dataValues.User = user;
+      }
     }
 
     // Get store statistics
@@ -200,8 +233,10 @@ export const getStoreDetails = async (req, res) => {
       where: { storeId: store.id, paymentStatus: 'completed' }
     }) || 0;
 
+    const storeData = store.toJSON();
+    
     res.json({
-      ...store.toJSON(),
+      ...storeData,
       statistics: {
         orderCount,
         totalRevenue: parseFloat(totalRevenue)
@@ -232,4 +267,3 @@ export const deleteStore = async (req, res) => {
     res.status(500).json({ message: 'Error deleting store', error: error.message });
   }
 };
-
