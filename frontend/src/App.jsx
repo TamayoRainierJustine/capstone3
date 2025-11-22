@@ -15,6 +15,7 @@ import Dashboard from './pages/Dashboard';
 import StoreSetup from './pages/StoreSetup';
 import StoreTemplates from './pages/StoreTemplates';
 import PrivateRoute from './components/PrivateRoute';
+import SuperAdminRoute from './components/SuperAdminRoute';
 import DashboardLayout from './components/DashboardLayout';
 import AddProduct from './pages/AddProduct';
 import EditProduct from './pages/EditProduct';
@@ -31,6 +32,10 @@ import SalesAnalytics from './pages/SalesAnalytics';
 import MyStores from './pages/MyStores';
 import ShareSocial from './pages/ShareSocial';
 import StoreSettings from './pages/StoreSettings';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import HelpChat from './pages/HelpChat';
+import ApiApplication from './pages/ApiApplication';
+import SuperAdminApplications from './pages/SuperAdminApplications';
 import BladesmithStore from './pages/stores/BladesmithStore';
 import PotteryStore from './pages/stores/PotteryStore';
 import BalisongStore from './pages/stores/BalisongStore';
@@ -91,7 +96,13 @@ function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="store-settings" element={<StoreSettings />} />
             <Route path="share-social" element={<ShareSocial />} />
+            <Route path="help-chat" element={<HelpChat />} />
+            <Route path="api-application" element={<ApiApplication />} />
           </Route>
+
+          {/* Super Admin routes */}
+          <Route path="/super-admin" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
+          <Route path="/super-admin/applications" element={<SuperAdminRoute><SuperAdminApplications /></SuperAdminRoute>} />
 
           {/* Site Builder route */}
           <Route path="/site-builder" element={<PrivateRoute><SiteBuilder /></PrivateRoute>} />

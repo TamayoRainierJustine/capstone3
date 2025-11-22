@@ -355,6 +355,36 @@ const Dashboard = () => {
         />
         <TodoCard
           icon={
+            <div className="bg-teal-100 p-3 rounded-full">
+              <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+            </div>
+          }
+          title="Help & Support"
+          description="Get help with your store or contact support."
+          subDescription="Chat with our support team, ask questions, and get assistance with any issues you encounter."
+          actionText="Open Help Chat"
+          actionLink="/dashboard/help-chat"
+          variant="solid"
+        />
+        <TodoCard
+          icon={
+            <div className="bg-cyan-100 p-3 rounded-full">
+              <svg className="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+          }
+          title="API Applications"
+          description="Apply for QR API and Shipping API access."
+          subDescription="Submit an application to use QR payment APIs and distance-based shipping APIs. Requires BIR documents for approval."
+          actionText="Manage Applications"
+          actionLink="/dashboard/api-application"
+          variant="solid"
+        />
+        <TodoCard
+          icon={
             <div className="bg-green-100 p-3 rounded-full">
               <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
