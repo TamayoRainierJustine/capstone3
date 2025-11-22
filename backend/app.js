@@ -237,14 +237,40 @@ app.use((req, res) => {
 // Start server immediately to satisfy platform health checks, then sync DB in background
 console.log(`📊 NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
 console.log(`📊 PORT: ${process.env.PORT || 'not set'}`);
+console.log(`📊 RAILWAY_ENVIRONMENT: ${process.env.RAILWAY_ENVIRONMENT || 'not set'}`);
 
 // Start server - listen on all interfaces (0.0.0.0) for Railway/cloud deployment
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📝 Test endpoint: http://0.0.0.0:${PORT}/api/test`);
-  console.log(`❤️  Health check: http://0.0.0.0:${PORT}/api/health`);
-  console.log(`🔍 Debug routes: http://0.0.0.0:${PORT}/api/debug/routes`);
-});
+// Wrap in try-catch to ensure errors are logged
+let server;
+try {
+  console.log(`🔄 Attempting to start server on port ${PORT}...`);
+  server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server successfully started!`);
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📝 Test endpoint: http://0.0.0.0:${PORT}/api/test`);
+    console.log(`❤️  Health check: http://0.0.0.0:${PORT}/api/health`);
+    console.log(`🔍 Debug routes: http://0.0.0.0:${PORT}/api/debug/routes`);
+  });
+  
+  // Handle server errors
+  server.on('error', (error) => {
+    console.error('❌ Server error event:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    if (error.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use`);
+      process.exit(1);
+    }
+  });
+  
+  console.log('✅ Server listen() call completed');
+} catch (error) {
+  console.error('❌ Failed to start server:', error);
+  console.error('Error name:', error.name);
+  console.error('Error message:', error.message);
+  console.error('Error stack:', error.stack);
+  process.exit(1);
+}
 
 // Graceful shutdown to handle platform SIGTERM/SIGINT
 const shutdown = async (signal) => {
