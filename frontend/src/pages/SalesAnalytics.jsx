@@ -11,8 +11,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-  ComposedChart
+  ResponsiveContainer
 } from 'recharts';
 
 const SalesAnalytics = () => {
@@ -167,76 +166,6 @@ const SalesAnalytics = () => {
               )}
             </p>
           </div>
-        </div>
-
-        {/* Combined Sales & Orders Overview */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800">Sales & Orders Overview</h2>
-          <p className="text-sm text-gray-600 mb-6">Combined view of sales revenue and order volume over time</p>
-          {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={400}>
-              <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="monthLabel" 
-                  stroke="#6b7280"
-                  style={{ fontSize: '12px' }}
-                  tick={{ fill: '#6b7280' }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                />
-                <YAxis 
-                  yAxisId="sales"
-                  orientation="left"
-                  stroke="#8b5cf6"
-                  style={{ fontSize: '12px' }}
-                  tick={{ fill: '#8b5cf6' }}
-                  tickFormatter={(value) => {
-                    if (value >= 1000) return `₱${(value / 1000).toFixed(1)}k`;
-                    return `₱${value.toFixed(0)}`;
-                  }}
-                  domain={['auto', 'auto']}
-                />
-                <YAxis 
-                  yAxisId="orders"
-                  orientation="right"
-                  stroke="#6366f1"
-                  style={{ fontSize: '12px' }}
-                  tick={{ fill: '#6366f1' }}
-                  domain={[0, 'auto']}
-                  allowDecimals={false}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '20px' }}
-                  iconType="line"
-                />
-                <Bar 
-                  yAxisId="orders"
-                  dataKey="orders" 
-                  fill="#6366f1" 
-                  name="Orders" 
-                  radius={[4, 4, 0, 0]}
-                  opacity={0.7}
-                />
-                <Line 
-                  yAxisId="sales"
-                  type="monotone" 
-                  dataKey="sales" 
-                  stroke="#8b5cf6" 
-                  strokeWidth={3}
-                  name="Sales (₱)"
-                  dot={{ fill: '#8b5cf6', r: 5 }}
-                  activeDot={{ r: 7 }}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="text-center py-12 text-gray-500">
-              No data available for the selected period
-            </div>
-          )}
         </div>
 
         {/* Charts Grid */}
