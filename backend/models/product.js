@@ -67,5 +67,8 @@ Product.belongsTo(Store, {
 
 // Note: Store.hasMany(Product) is set up in store.js to avoid circular dependencies
 
+// ProductReview association will be set up in productReview.js to avoid circular dependencies
+// Product.hasMany(ProductReview) will be set up in productReview.js
+
 export default Product;
 

@@ -14,6 +14,7 @@ import superAdminRoutes from './routes/superAdminRoutes.js';
 import supportRoutes from './routes/supportRoutes.js';
 import apiApplicationRoutes from './routes/apiApplicationRoutes.js';
 import adminSetupRoutes from './routes/adminSetupRoutes.js';
+import productReviewRoutes from './routes/productReviewRoutes.js';
 import { servePublishedStoreHTML } from './controllers/publicStoreController.js';
 
 // Import models to ensure they are registered with Sequelize
@@ -27,6 +28,7 @@ import OrderItem from './models/orderItem.js';
 import SupportTicket from './models/supportTicket.js';
 import SupportMessage from './models/supportMessage.js';
 import ApiApplication from './models/apiApplication.js';
+import ProductReview from './models/productReview.js';
 
 // Set up model associations after all models are loaded
 Store.hasMany(Product, {
@@ -135,6 +137,9 @@ try {
 
   app.use('/api/admin-setup', adminSetupRoutes);
   console.log('✅ Admin Setup routes registered at /api/admin-setup');
+
+  app.use('/api', productReviewRoutes);
+  console.log('✅ Product Review routes registered at /api');
 
   // Register test route directly (not via router)
   // Test route to verify server is running
@@ -322,6 +327,29 @@ process.on('SIGINT', () => shutdown('SIGINT'));
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "verificationNotes" TEXT');
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "cancellationRequest" VARCHAR(50) DEFAULT \'none\'');
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "cancellationReason" TEXT');
+    
+    // Create ProductReviews table if not exists
+    try {
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS "ProductReviews" (
+          id SERIAL PRIMARY KEY,
+          "productId" INTEGER NOT NULL REFERENCES "Products"(id) ON DELETE CASCADE ON UPDATE CASCADE,
+          "customerId" INTEGER NOT NULL REFERENCES "Customers"(id) ON DELETE CASCADE ON UPDATE CASCADE,
+          "orderId" INTEGER REFERENCES "Orders"(id) ON DELETE SET NULL ON UPDATE CASCADE,
+          rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+          comment TEXT,
+          images JSON DEFAULT '[]',
+          "isVerifiedPurchase" BOOLEAN DEFAULT false,
+          "isVisible" BOOLEAN DEFAULT true,
+          "helpfulCount" INTEGER DEFAULT 0,
+          "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('✅ ProductReviews table ensured');
+    } catch (reviewErr) {
+      console.warn('⚠️ Skipping ProductReviews table ensure:', reviewErr.message);
+    }
     
     // Update Users.role to ENUM if not already
     try {
