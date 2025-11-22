@@ -636,30 +636,42 @@ export const getSalesAnalytics = async (req, res) => {
     const { startDate, endDate } = req.query;
     // Sales are counted when payment is received (completed) OR when customer has provided payment reference/receipt
     // This ensures sales are reflected even if store owner hasn't verified payment yet
-    const whereClause = {
-      storeId: store.id,
-      [Op.or]: [
-        { paymentStatus: 'completed' }, // Verified by store owner
-        { paymentStatus: 'processing' }, // Payment being processed
-        { 
-          // Has payment reference (customer provided reference number)
-          paymentReference: { [Op.ne]: null },
-          paymentStatus: { [Op.notIn]: ['failed', 'refunded'] } // Not failed or refunded
-        },
-        { 
-          // Has payment receipt (customer uploaded receipt)
-          paymentReceipt: { [Op.ne]: null },
-          paymentStatus: { [Op.notIn]: ['failed', 'refunded'] } // Not failed or refunded
-        }
-      ]
-    };
+    const whereConditions = [
+      { storeId: store.id },
+      {
+        [Op.or]: [
+          { paymentStatus: 'completed' }, // Verified by store owner
+          { paymentStatus: 'processing' }, // Payment being processed
+          { 
+            // Has payment reference (customer provided reference number)
+            paymentReference: { [Op.ne]: null },
+            paymentStatus: { [Op.notIn]: ['failed', 'refunded'] } // Not failed or refunded
+          },
+          { 
+            // Has payment receipt (customer uploaded receipt)
+            paymentReceipt: { [Op.ne]: null },
+            paymentStatus: { [Op.notIn]: ['failed', 'refunded'] } // Not failed or refunded
+          }
+        ]
+      }
+    ];
 
-    // Add date filter if provided
+    // Add date filter if provided (need to ensure date range includes full day)
     if (startDate && endDate) {
-      whereClause.createdAt = {
-        [Op.between]: [new Date(startDate), new Date(endDate)]
-      };
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0); // Start of day
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999); // End of day
+      whereConditions.push({
+        createdAt: {
+          [Op.between]: [start, end]
+        }
+      });
     }
+
+    const whereClause = whereConditions.length === 1 
+      ? whereConditions[0] 
+      : { [Op.and]: whereConditions };
 
     // Get monthly sales data
     const monthExpr = sequelize.fn('to_char', sequelize.col('createdAt'), 'YYYY-MM');
