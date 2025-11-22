@@ -552,6 +552,8 @@ const PublishedStore = () => {
   const [orderReferenceNumber, setOrderReferenceNumber] = useState(null);
   const [showOrderHistoryModal, setShowOrderHistoryModal] = useState(false);
   const [orderHistoryLoading, setOrderHistoryLoading] = useState(false);
+  const [cancellationModal, setCancellationModal] = useState(null);
+  const [cancellationReason, setCancellationReason] = useState('');
 
   // Helper: classify destination area based on region/province
   const getDestinationArea = (regionCode, provinceCode) => {
