@@ -115,16 +115,14 @@ export const getStoreStatistics = async (req, res) => {
     const publishedStores = await Store.count({ where: { status: 'published' } });
     
     // Count unique store owners (users who have at least one store)
-    // Use distinct userId from stores table instead of counting all admin users
-    const uniqueStoreOwners = await Store.count({
-      distinct: true,
-      col: 'userId',
-      where: {
-        userId: { [Op.ne]: null } // Exclude stores with null userId
-      }
-    });
+    // Use raw query to count distinct userIds from stores table
+    const sequelize = Store.sequelize;
+    const uniqueStoreOwnersResult = await sequelize.query(
+      `SELECT COUNT(DISTINCT "userId") as count FROM "Stores" WHERE "userId" IS NOT NULL`,
+      { type: sequelize.QueryTypes.SELECT }
+    );
+    const totalUsers = parseInt(uniqueStoreOwnersResult[0]?.count || 0);
     
-    const totalUsers = uniqueStoreOwners; // Use the count of unique store owners
     const totalOrders = await Order.count();
     
     // Calculate revenue from orders with completed payment
