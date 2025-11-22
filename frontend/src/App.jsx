@@ -33,6 +33,7 @@ import MyStores from './pages/MyStores';
 import ShareSocial from './pages/ShareSocial';
 import StoreSettings from './pages/StoreSettings';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import SuperAdminTickets from './pages/SuperAdminTickets';
 import HelpChat from './pages/HelpChat';
 import ApiApplication from './pages/ApiApplication';
 import SuperAdminApplications from './pages/SuperAdminApplications';
@@ -103,6 +104,7 @@ function App() {
           {/* Super Admin routes */}
           <Route path="/super-admin" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
           <Route path="/super-admin/applications" element={<SuperAdminRoute><SuperAdminApplications /></SuperAdminRoute>} />
+          <Route path="/super-admin/tickets" element={<SuperAdminRoute><SuperAdminTickets /></SuperAdminRoute>} />
 
           {/* Site Builder route */}
           <Route path="/site-builder" element={<PrivateRoute><SiteBuilder /></PrivateRoute>} />

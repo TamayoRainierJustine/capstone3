@@ -217,11 +217,19 @@ export const updateTicketStatus = async (req, res) => {
 
     const updateData = {};
     if (status) updateData.status = status;
-    if (assignedTo) updateData.assignedTo = assignedTo;
+    if (assignedTo !== undefined) updateData.assignedTo = assignedTo;
 
     await ticket.update(updateData);
 
-    res.json(ticket);
+    const updatedTicket = await SupportTicket.findByPk(id, {
+      include: [
+        { model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName', 'email'] },
+        { model: Store, attributes: ['id', 'storeName', 'domainName'] },
+        { model: User, as: 'assignee', attributes: ['id', 'firstName', 'lastName', 'email'] }
+      ]
+    });
+
+    res.json(updatedTicket);
   } catch (error) {
     console.error('Error updating ticket:', error);
     res.status(500).json({ message: 'Error updating ticket', error: error.message });

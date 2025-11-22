@@ -1,0 +1,21 @@
+-- ========================================
+-- UPDATE PASSWORD FOR SUPER ADMIN
+-- ========================================
+-- NOTE: You need to hash the password first using bcrypt
+-- The easiest way is to use the Node.js script: backend/scripts/update-password.js
+-- 
+-- But if you want to do it manually, you need to:
+-- 1. Generate a bcrypt hash (use Node.js or online bcrypt generator)
+-- 2. Then run this UPDATE command with the hashed password
+--
+-- Example (replace $2a$10$... with your actual bcrypt hash):
+-- ========================================
+-- UPDATE "Users" 
+-- SET password = '$2a$10$...your-bcrypt-hash-here...'
+-- WHERE email = 'rainiertamayo11067@gmail.com';
+--
+-- To generate bcrypt hash using Node.js:
+-- const bcrypt = require('bcryptjs');
+-- bcrypt.hash('ADMIn1234', 10).then(hash => console.log(hash));
+-- ========================================
+
