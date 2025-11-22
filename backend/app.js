@@ -13,6 +13,7 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import superAdminRoutes from './routes/superAdminRoutes.js';
 import supportRoutes from './routes/supportRoutes.js';
 import apiApplicationRoutes from './routes/apiApplicationRoutes.js';
+import adminSetupRoutes from './routes/adminSetupRoutes.js';
 import { servePublishedStoreHTML } from './controllers/publicStoreController.js';
 
 // Import models to ensure they are registered with Sequelize
@@ -109,6 +110,9 @@ try {
 
   app.use('/api/api-applications', apiApplicationRoutes);
   console.log('✅ API Application routes registered at /api/api-applications');
+
+  app.use('/api/admin-setup', adminSetupRoutes);
+  console.log('✅ Admin Setup routes registered at /api/admin-setup');
 
   // Register health and test routes directly (not via router)
   // Test route to verify server is running
