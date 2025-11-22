@@ -496,8 +496,9 @@ const PublishedStore = () => {
           }
         });
         
-        // Convert map to array and sort by date (newest first)
+        // Convert map to array, filter out cancelled orders, and sort by date (newest first)
         return Array.from(orderMap.values())
+          .filter(order => order.status !== 'cancelled') // Remove cancelled orders from display
           .sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt))
           .slice(0, 50); // Keep top 50
       });
