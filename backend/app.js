@@ -43,6 +43,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Register health check IMMEDIATELY (before any other setup) for Railway
+// This ensures Railway can reach the endpoint even if other parts fail
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
+});
+console.log('✅ Health check route registered at /api/health (early)');
+
 app.use(cors());
 // Increase body size limit to handle base64-encoded images (50MB for safety)
 // Base64 encoding increases size by ~33%, so a 5MB image becomes ~6.7MB
@@ -73,17 +83,6 @@ app.get('/store/:domain', servePublishedStoreHTML);
 console.log('========================================');
 console.log('Registering routes...');
 console.log('========================================');
-
-// Register health check FIRST (outside try-catch) so Railway can always reach it
-// Health check endpoint - simple for Railway (must be first)
-// Railway just needs a 200 response, don't require DB connection
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok',
-    timestamp: new Date().toISOString()
-  });
-});
-console.log('✅ Health check route registered at /api/health');
 
 try {
   console.log('productRoutes loaded:', !!productRoutes);
