@@ -238,11 +238,12 @@ app.use((req, res) => {
 console.log(`📊 NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
 console.log(`📊 PORT: ${process.env.PORT || 'not set'}`);
 
-const server = app.listen(PORT, () => {
+// Start server - listen on all interfaces (0.0.0.0) for Railway/cloud deployment
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📝 Test endpoint: http://localhost:${PORT}/api/test`);
-  console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🔍 Debug routes: http://localhost:${PORT}/api/debug/routes`);
+  console.log(`📝 Test endpoint: http://0.0.0.0:${PORT}/api/test`);
+  console.log(`❤️  Health check: http://0.0.0.0:${PORT}/api/health`);
+  console.log(`🔍 Debug routes: http://0.0.0.0:${PORT}/api/debug/routes`);
 });
 
 // Graceful shutdown to handle platform SIGTERM/SIGINT
