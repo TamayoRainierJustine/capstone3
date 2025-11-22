@@ -5511,6 +5511,9 @@ const PublishedStore = () => {
                       <div>
                         <p className="text-sm text-gray-500">Order Number</p>
                         <p className="font-semibold text-gray-900">{order.orderNumber}</p>
+                        {order.storeName && order.storeName !== store?.storeName && (
+                          <p className="text-xs text-gray-500 mt-1">From: {order.storeName}</p>
+                        )}
                       </div>
                       <div className="flex gap-2 text-sm flex-wrap">
                         <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-700 capitalize">{getStatusLabel(order.status)}</span>
