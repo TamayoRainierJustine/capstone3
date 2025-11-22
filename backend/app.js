@@ -40,6 +40,18 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
+// Add uncaught exception handler to catch startup errors
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  console.error('Error stack:', error.stack);
+  // Don't exit - let server try to start anyway
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise);
+  console.error('Reason:', reason);
+});
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
