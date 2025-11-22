@@ -95,12 +95,30 @@ const PublishedStore = () => {
   const [checkoutItems, setCheckoutItems] = useState([]);
   const [cartMessage, setCartMessage] = useState('');
   
-  // Order history state - initialize from localStorage if available
+  // Order history state - initialize from localStorage if available (filtered by current customer)
   const [orderHistory, setOrderHistory] = useState(() => {
     try {
+      // Get current customer email first
+      const customerInfo = localStorage.getItem('customerInfo');
+      if (customerInfo) {
+        const parsed = JSON.parse(customerInfo);
+        const customerEmail = parsed?.email;
+        
+        // Load orders specific to this customer
+        if (customerEmail) {
+          const storedKey = `customerOrderHistory_${customerEmail}`;
+          const stored = localStorage.getItem(storedKey);
+          if (stored) {
+            return JSON.parse(stored);
+          }
+        }
+      }
+      
+      // Fallback to old format (for migration, but don't use it directly)
       const stored = localStorage.getItem('customerOrderHistory');
       if (stored) {
-        return JSON.parse(stored);
+        // Return empty array - we'll fetch fresh from backend based on current customer
+        return [];
       }
     } catch (err) {
       console.warn('Unable to load order history from localStorage:', err);
@@ -385,12 +403,26 @@ const PublishedStore = () => {
 
   const handleCustomerLogout = () => {
     try {
+      // Get current customer email before clearing
+      const customerInfo = localStorage.getItem('customerInfo');
+      const customerEmail = customerInfo ? JSON.parse(customerInfo)?.email : null;
+      
+      // Clear credentials
       localStorage.removeItem('token');
       localStorage.removeItem('customerInfo');
+      
+      // Clear order history for this customer (stored with email key)
+      if (customerEmail) {
+        localStorage.removeItem(`customerOrderHistory_${customerEmail}`);
+      }
+      
+      // Also clear old format if exists
+      localStorage.removeItem('customerOrderHistory');
     } catch (err) {
       console.warn('Unable to clear credentials:', err);
     }
     setCustomerInfo(null);
+    setOrderHistory([]); // Clear order history state
     setCheckoutItems([]);
     setCartItems([]);
     setShowOrderModal(false);
@@ -747,29 +779,14 @@ const PublishedStore = () => {
         items: order.items || []
       }));
       
-      // Merge with localStorage orders - backend orders take precedence (they have latest status)
-      setOrderHistory(prev => {
-        const merged = [];
-        const orderMap = new Map();
-        
-        // Add backend orders first (latest status)
-        formattedOrders.forEach(order => {
-          orderMap.set(order.orderNumber, order);
-        });
-        
-        // Add localStorage orders if they're not in backend (fallback)
-        prev.forEach(order => {
-          if (!orderMap.has(order.orderNumber)) {
-            orderMap.set(order.orderNumber, order);
-          }
-        });
-        
-        // Convert map to array, filter out cancelled orders, and sort by date (newest first)
-        return Array.from(orderMap.values())
-          .filter(order => order.status !== 'cancelled') // Remove cancelled orders from display
-          .sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt))
-          .slice(0, 50); // Keep top 50
-      });
+      // Replace order history with backend orders (don't merge with localStorage for different customer)
+      // Backend orders are the source of truth - they're already filtered by customer email
+      const filteredOrders = formattedOrders
+        .filter(order => order.status !== 'cancelled') // Remove cancelled orders from display
+        .sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt))
+        .slice(0, 50); // Keep top 50
+      
+      setOrderHistory(filteredOrders);
     } catch (error) {
       console.error('Error fetching customer orders:', error);
       // Don't show error to user - just use localStorage data as fallback
@@ -1077,9 +1094,17 @@ const PublishedStore = () => {
     }
   }, [cartItems]);
 
+  // Save order history to localStorage with customer email as key
   useEffect(() => {
     try {
-      localStorage.setItem('customerOrderHistory', JSON.stringify(orderHistory));
+      const customerData = getCustomerData();
+      const customerEmail = customerData?.email;
+      
+      if (customerEmail && orderHistory.length > 0) {
+        // Store orders with customer email as part of the key
+        const storageKey = `customerOrderHistory_${customerEmail}`;
+        localStorage.setItem(storageKey, JSON.stringify(orderHistory));
+      }
     } catch (err) {
       console.warn('Unable to persist order history:', err);
     }
