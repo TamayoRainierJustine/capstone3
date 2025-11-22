@@ -10,6 +10,9 @@ import storeRoutes from './routes/storeRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import superAdminRoutes from './routes/superAdminRoutes.js';
+import supportRoutes from './routes/supportRoutes.js';
+import apiApplicationRoutes from './routes/apiApplicationRoutes.js';
 import { servePublishedStoreHTML } from './controllers/publicStoreController.js';
 
 // Import models to ensure they are registered with Sequelize
@@ -20,6 +23,9 @@ import Store from './models/store.js';
 import Product from './models/product.js';
 import Order from './models/order.js';
 import OrderItem from './models/orderItem.js';
+import SupportTicket from './models/supportTicket.js';
+import SupportMessage from './models/supportMessage.js';
+import ApiApplication from './models/apiApplication.js';
 
 // Set up model associations after all models are loaded
 Store.hasMany(Product, {
@@ -94,6 +100,15 @@ try {
 
   app.use('/api/payments', paymentRoutes);
   console.log('✅ Payment routes registered at /api/payments');
+
+  app.use('/api/admin', superAdminRoutes);
+  console.log('✅ Super Admin routes registered at /api/admin');
+
+  app.use('/api/support', supportRoutes);
+  console.log('✅ Support routes registered at /api/support');
+
+  app.use('/api/api-applications', apiApplicationRoutes);
+  console.log('✅ API Application routes registered at /api/api-applications');
 
   // Register health and test routes directly (not via router)
   // Test route to verify server is running
@@ -276,6 +291,21 @@ process.on('SIGINT', () => shutdown('SIGINT'));
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "verificationNotes" TEXT');
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "cancellationRequest" VARCHAR(50) DEFAULT \'none\'');
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "cancellationReason" TEXT');
+    
+    // Update Users.role to ENUM if not already
+    try {
+      await sequelize.query(`
+        DO $$ 
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_Users_role') THEN
+            CREATE TYPE "enum_Users_role" AS ENUM('user', 'admin', 'super_admin');
+          END IF;
+        END $$;
+      `);
+      await sequelize.query('ALTER TABLE "Users" ALTER COLUMN "role" TYPE "enum_Users_role" USING "role"::"enum_Users_role"');
+    } catch (e) {
+      console.log('Role enum update skipped or already exists:', e.message);
+    }
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "subtotal" DECIMAL(10,2) DEFAULT 0');
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "shipping" DECIMAL(10,2) DEFAULT 0');
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "total" DECIMAL(10,2) DEFAULT 0');
