@@ -26,6 +26,7 @@ const PublishedStore = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { login: loginContext, user } = useAuth();
   const [store, setStore] = useState(null);
+  const [hasQrApi, setHasQrApi] = useState(false);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -1243,6 +1244,17 @@ const PublishedStore = () => {
         console.log('✅ Store fetched:', response.data?.storeName, 'Domain:', response.data?.domainName);
 
         setStore(response.data);
+        
+        // Check QR API status for this store
+        if (response.data?.id) {
+          try {
+            const qrStatusResponse = await apiClient.get(`/api-applications/stores/${response.data.id}/qr-api-status`);
+            setHasQrApi(qrStatusResponse.data?.hasQrApi || false);
+          } catch (error) {
+            console.error('Error checking QR API status:', error);
+            setHasQrApi(false);
+          }
+        }
         
         // Update Open Graph meta tags for social media sharing
         const storeUrl = window.location.href;
@@ -4522,6 +4534,32 @@ const PublishedStore = () => {
                       
                       {/* GCash QR Code */}
                       {orderData.paymentMethod === 'gcash' && (() => {
+                        // Check if store has approved QR API
+                        if (!hasQrApi) {
+                          return (
+                            <div className="mt-4 p-4 bg-yellow-50 rounded-lg border-2 border-yellow-500">
+                              <div className="text-center">
+                                <div className="mb-3">
+                                  <svg className="mx-auto h-12 w-12 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                  </svg>
+                                </div>
+                                <h4 className="font-semibold text-gray-800 mb-2">QR Code Payment Not Available</h4>
+                                <p className="text-sm text-gray-600 mb-3">
+                                  This store has not yet been approved for QR code payment API access. 
+                                  Please contact the store owner or use an alternative payment method.
+                                </p>
+                                <div className="bg-white p-3 rounded border border-gray-300">
+                                  <p className="text-sm font-semibold text-gray-800 mb-1">Amount to Pay: ₱{calculateTotal().toFixed(2)}</p>
+                                  <p className="text-xs text-gray-600">
+                                    Store owner needs to apply for QR API access to enable QR code payments.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
                         const gcashNumber = store?.content?.payment?.gcashNumber || store?.phone || '';
                         const totalAmount = calculateTotal().toFixed(2);
                         const hasGcashNumber = gcashNumber && gcashNumber.trim() !== '';

@@ -5,14 +5,18 @@ import {
   getAllApplications,
   getApplication,
   reviewApplication,
-  uploadDocuments
+  uploadDocuments,
+  checkStoreQrApiStatus
 } from '../controllers/apiApplicationController.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireSuperAdmin } from '../middleware/checkRole.js';
 
 const router = express.Router();
 
-// All routes require authentication
+// Public route - check store QR API status (no auth required)
+router.get('/stores/:storeId/qr-api-status', checkStoreQrApiStatus);
+
+// All other routes require authentication
 router.use(authenticateToken);
 
 // Store owner routes

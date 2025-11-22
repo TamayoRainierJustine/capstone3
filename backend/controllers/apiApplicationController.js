@@ -279,3 +279,48 @@ export const reviewApplication = async (req, res) => {
   }
 };
 
+// Check if store has approved QR API (Public endpoint - for published stores)
+export const checkStoreQrApiStatus = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    
+    if (!storeId) {
+      return res.status(400).json({ message: 'Store ID is required' });
+    }
+
+    // Check if store exists
+    const store = await Store.findByPk(storeId);
+    if (!store) {
+      return res.status(404).json({ message: 'Store not found' });
+    }
+
+    // Find approved QR API application
+    const qrApplication = await ApiApplication.findOne({
+      where: {
+        storeId,
+        status: 'approved',
+        apiType: { [Op.in]: ['qr', 'both'] }
+      },
+      order: [['approvedAt', 'DESC']] // Get the most recent approved application
+    });
+
+    if (qrApplication) {
+      res.json({
+        hasQrApi: true,
+        applicationId: qrApplication.id,
+        apiType: qrApplication.apiType,
+        approvedAt: qrApplication.approvedAt,
+        qrApiKey: qrApplication.qrApiKey ? true : false // Don't expose the actual key, just indicate if it exists
+      });
+    } else {
+      res.json({
+        hasQrApi: false,
+        message: 'Store does not have an approved QR API application'
+      });
+    }
+  } catch (error) {
+    console.error('Error checking store QR API status:', error);
+    res.status(500).json({ message: 'Error checking QR API status', error: error.message });
+  }
+};
+
