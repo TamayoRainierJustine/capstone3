@@ -159,6 +159,9 @@ const PublishedStore = () => {
   // Automatically determines weight band from product weight
   const prefillOrderForm = (product) => {
     const customerData = getCustomerData();
+    
+    // Debug: Log customer data to check if address fields are present
+    console.log('prefillOrderForm - customerData:', customerData);
     const weightValue = product && product.weight ? parseFloat(product.weight) : 0;
     let defaultWeightBand = '';
     

@@ -653,10 +653,10 @@ export const loginCustomer = async (req, res) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    // Find customer
+    // Find customer - include address fields
     const customer = await Customer.findOne({ 
       where: { email },
-      attributes: ['id', 'firstName', 'lastName', 'email', 'password', 'isVerified'],
+      attributes: ['id', 'firstName', 'lastName', 'email', 'password', 'isVerified', 'region', 'province', 'municipality', 'barangay', 'houseNumber', 'street'],
       raw: false
     });
 
@@ -691,13 +691,19 @@ export const loginCustomer = async (req, res) => {
       }
     );
 
-    // Remove password from customer object before sending
+    // Remove password from customer object before sending - include address fields
     const customerWithoutPassword = {
       id: customer.id,
       firstName: customer.firstName,
       lastName: customer.lastName,
       email: customer.email,
-      type: 'customer'
+      type: 'customer',
+      region: customer.region || null,
+      province: customer.province || null,
+      municipality: customer.municipality || null,
+      barangay: customer.barangay || null,
+      houseNumber: customer.houseNumber || null,
+      street: customer.street || null
     };
 
     const duration = Date.now() - startTime;
