@@ -4731,19 +4731,33 @@ const PublishedStore = () => {
                                   <strong className="text-blue-800">📱 Paano magbayad:</strong>
                                   <br />
                                   <br />
-                                  1. <strong>I-scan ang QR code</strong> gamit ang GCash app
-                                  <br />
-                                  2. {hasGcashNum 
-                                    ? `I-verify ang amount na ₱${totalAmt} (nakalagay na sa QR code)`
-                                    : `Ilagay ang amount: ₱${totalAmt} (manual entry)`
-                                  }
-                                  <br />
-                                  3. I-verify ang recipient details (pangalan at mobile number)
-                                  <br />
-                                  4. I-tap ang <strong>"Pay"</strong> upang kumpleto ang pagbabayad
-                                  <br />
-                                  5. <strong>Kopyahin ang Reference Number</strong> mula sa GCash app at i-paste sa form sa ibaba
-                                  <br />
+                                  {hasQrApi ? (
+                                    <>
+                                      1. <strong>I-scan ang QR code</strong> gamit ang GCash app
+                                      <br />
+                                      2. I-verify ang amount na ₱{totalAmt} (nakalagay na sa QR code)
+                                      <br />
+                                      3. I-verify ang recipient details (pangalan at mobile number)
+                                      <br />
+                                      4. I-tap ang <strong>"Pay"</strong> upang kumpleto ang pagbabayad
+                                      <br />
+                                      5. <strong>Kopyahin ang Reference Number</strong> mula sa GCash app at i-paste sa form sa ibaba
+                                    </>
+                                  ) : (
+                                    <>
+                                      1. Buksan ang GCash app
+                                      <br />
+                                      2. Pumunta sa "Send Money"
+                                      <br />
+                                      3. I-enter ang GCash number: <span className="font-mono font-semibold">{gcashNum}</span>
+                                      <br />
+                                      4. I-enter ang amount: <span className="font-semibold">₱{totalAmt}</span>
+                                      <br />
+                                      5. I-tap ang "Send" at kumpletuhin ang transaction
+                                      <br />
+                                      6. <strong>Kopyahin ang Reference Number</strong> mula sa GCash app at i-paste sa form sa ibaba
+                                    </>
+                                  )}
                               </p>
                               </div>
                             </div>
