@@ -60,7 +60,7 @@ const SuperAdminDashboard = () => {
   };
 
   const handleDeleteStore = async (storeId, storeName) => {
-    if (!confirm(`Sigurado ka bang gusto mong tanggalin ang "${storeName}"? Ang lahat ng products, orders, at data nito ay mabubura na.\n\nHindi ito pwedeng i-undo!`)) {
+    if (!window.confirm(`Are you sure you want to delete "${storeName}"?\n\nAll products, orders, and data will be permanently deleted.\n\nThis action cannot be undone!\n\nClick "OK" to delete or "Cancel" to cancel.`)) {
       return;
     }
 
