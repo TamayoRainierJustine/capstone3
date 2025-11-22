@@ -634,13 +634,27 @@ export const getSalesAnalytics = async (req, res) => {
     }
 
     const { startDate, endDate } = req.query;
-    // Only filter by paymentStatus: 'completed' - sales are counted when payment is received
-    // Order status can be pending, processing, shipped, or completed - what matters is payment is completed
+    // Sales are counted when payment is received (completed) OR when customer has provided payment reference/receipt
+    // This ensures sales are reflected even if store owner hasn't verified payment yet
     const whereClause = {
       storeId: store.id,
-      paymentStatus: 'completed'
+      [Op.or]: [
+        { paymentStatus: 'completed' }, // Verified by store owner
+        { paymentStatus: 'processing' }, // Payment being processed
+        { 
+          // Has payment reference (customer provided reference number)
+          paymentReference: { [Op.ne]: null },
+          paymentStatus: { [Op.notIn]: ['failed', 'refunded'] } // Not failed or refunded
+        },
+        { 
+          // Has payment receipt (customer uploaded receipt)
+          paymentReceipt: { [Op.ne]: null },
+          paymentStatus: { [Op.notIn]: ['failed', 'refunded'] } // Not failed or refunded
+        }
+      ]
     };
 
+    // Add date filter if provided
     if (startDate && endDate) {
       whereClause.createdAt = {
         [Op.between]: [new Date(startDate), new Date(endDate)]
