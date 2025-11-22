@@ -515,7 +515,8 @@ const PublishedStore = () => {
       const reviews = response.data.reviews || [];
       
       // Get customer email from localStorage or context
-      const customerEmail = customerInfo?.email || localStorage.getItem('customerEmail');
+      const customerData = getCustomerData();
+      const customerEmail = customerData?.email;
       if (!customerEmail) {
         setHasReviewed(false);
         setUserReview(null);
@@ -536,6 +537,85 @@ const PublishedStore = () => {
       setHasReviewed(false);
       setUserReview(null);
     }
+  };
+
+  // Submit product review
+  const submitProductReview = async () => {
+    if (!detailProduct) return;
+    
+    if (!reviewForm.rating || reviewForm.rating < 1 || reviewForm.rating > 5) {
+      setReviewError('Please select a rating (1-5 stars)');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setReviewError('Please log in to submit a review');
+      setShowLoginModal(true);
+      setShowProductDetailModal(false);
+      return;
+    }
+
+    setSubmittingReview(true);
+    setReviewError('');
+
+    try {
+      // Upload images first if any
+      const uploadedImages = [];
+      if (reviewForm.images && reviewForm.images.length > 0) {
+        for (const file of reviewForm.images) {
+          try {
+            // For now, we'll just add the file name - backend can handle upload
+            // In the future, you can upload to Supabase here
+            uploadedImages.push(file.name);
+          } catch (err) {
+            console.error('Error uploading review image:', err);
+          }
+        }
+      }
+
+      await apiClient.post(`/products/${detailProduct.id}/reviews`, {
+        rating: reviewForm.rating,
+        comment: reviewForm.comment.trim() || null,
+        images: uploadedImages
+      });
+
+      // Reset form
+      setReviewForm({ rating: 0, comment: '', images: [] });
+      setShowReviewForm(false);
+      setHasReviewed(true);
+      
+      // Refresh reviews
+      await fetchProductReviews(detailProduct.id, 1, reviewFilter);
+      setReviewError('');
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      setReviewError(error.response?.data?.message || 'Failed to submit review. Please try again.');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  // Handle review image upload
+  const handleReviewImageUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 5) {
+      setReviewError('Maximum 5 images allowed');
+      return;
+    }
+    setReviewForm(prev => ({
+      ...prev,
+      images: [...prev.images, ...files].slice(0, 5)
+    }));
+    setReviewError('');
+  };
+
+  // Remove review image
+  const removeReviewImage = (index) => {
+    setReviewForm(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
   };
 
   // Open product detail modal
