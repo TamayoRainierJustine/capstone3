@@ -272,6 +272,8 @@ process.on('SIGINT', () => shutdown('SIGINT'));
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentStatus" VARCHAR(50) DEFAULT \'pending\'');
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentTransactionId" VARCHAR');
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentReference" VARCHAR');
+    await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "paymentReceipt" VARCHAR');
+    await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "verificationNotes" TEXT');
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "subtotal" DECIMAL(10,2) DEFAULT 0');
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "shipping" DECIMAL(10,2) DEFAULT 0');
     await sequelize.query('ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "total" DECIMAL(10,2) DEFAULT 0');

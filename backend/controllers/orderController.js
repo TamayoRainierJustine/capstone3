@@ -4,6 +4,9 @@ import Product from '../models/product.js';
 import Store from '../models/store.js';
 import sequelize from '../config/db.js';
 import { Op } from 'sequelize';
+import multer from 'multer';
+import path from 'path';
+import { uploadToSupabase } from '../utils/supabaseStorage.js';
 
 // Generate unique order number
 const generateOrderNumber = () => {
@@ -251,6 +254,33 @@ export const createOrder = async (req, res) => {
     const shippingCost = parseFloat(shipping) || 0;
     const total = subtotal + shippingCost;
 
+    // Handle payment receipt upload if provided
+    let paymentReceiptPath = null;
+    if (req.file) {
+      try {
+        const fileExtension = path.extname(req.file.originalname);
+        const fileName = `payment_receipt_${Date.now()}${fileExtension}`;
+        
+        const uploadResult = await Promise.race([
+          uploadToSupabase(
+            req.file.buffer,
+            'products', // Using products bucket for now (public access)
+            fileName,
+            req.file.mimetype
+          ),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('File upload timeout')), 15000)
+          )
+        ]);
+        
+        paymentReceiptPath = uploadResult.path;
+      } catch (fileError) {
+        console.error('Error uploading payment receipt:', fileError.message);
+        // Don't fail the order if receipt upload fails, just log it
+        console.warn('Order will be created without payment receipt');
+      }
+    }
+
     // Use transaction to ensure all operations succeed or fail together
     // Retry transaction creation if connection fails
     console.log('Step 5: Creating database transaction...');
@@ -293,6 +323,7 @@ export const createOrder = async (req, res) => {
         paymentMethod: paymentMethod || 'gcash',
         paymentStatus: 'pending',
         paymentReference: paymentReference || null, // Payment reference from buyer
+        paymentReceipt: paymentReceiptPath || null, // Payment receipt image path
         subtotal,
         shipping: shippingCost,
         total,
@@ -341,6 +372,7 @@ export const createOrder = async (req, res) => {
         paymentMethod: order.paymentMethod,
         paymentStatus: order.paymentStatus,
         paymentReference: order.paymentReference,
+        paymentReceipt: order.paymentReceipt,
         subtotal: order.subtotal,
         shipping: order.shipping,
         total: order.total,
@@ -508,7 +540,7 @@ export const updateOrderStatus = async (req, res) => {
 export const updatePaymentStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { paymentStatus, paymentTransactionId } = req.body;
+    const { paymentStatus, paymentTransactionId, verificationNotes } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -535,7 +567,8 @@ export const updatePaymentStatus = async (req, res) => {
 
     await order.update({
       paymentStatus,
-      paymentTransactionId: paymentTransactionId || order.paymentTransactionId
+      paymentTransactionId: paymentTransactionId || order.paymentTransactionId,
+      verificationNotes: verificationNotes !== undefined ? verificationNotes : order.verificationNotes
     });
 
     // If payment completed, update order status to processing

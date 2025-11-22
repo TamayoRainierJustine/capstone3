@@ -352,6 +352,9 @@ const PublishedStore = () => {
     setOrderError('');
     setOrderSuccess(false);
     setOrderReferenceNumber(null);
+    // Clear payment receipt when opening order modal
+    setPaymentReceiptFile(null);
+    setPaymentReceiptPreview(null);
     setShowCartModal(false);
     setShowOrderModal(true);
   };
@@ -517,6 +520,8 @@ const PublishedStore = () => {
   const [barangaysList, setBarangaysList] = useState([]);
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState('');
+  const [paymentReceiptFile, setPaymentReceiptFile] = useState(null);
+  const [paymentReceiptPreview, setPaymentReceiptPreview] = useState(null);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderReferenceNumber, setOrderReferenceNumber] = useState(null);
   const [showOrderHistoryModal, setShowOrderHistoryModal] = useState(false);
@@ -3314,20 +3319,48 @@ const PublishedStore = () => {
       };
 
       // Create order
-      const orderPayload = {
-        storeId: store.id,
-        items: itemsForCheckout.map(item => ({
+      // Use FormData if payment receipt is uploaded, otherwise use JSON
+      let orderPayload;
+      let headers = {};
+      
+      if (paymentReceiptFile && orderData.paymentMethod === 'gcash') {
+        // Use FormData for file upload
+        const formData = new FormData();
+        formData.append('storeId', store.id);
+        formData.append('items', JSON.stringify(itemsForCheckout.map(item => ({
           productId: item.id,
           quantity: item.quantity
-        })),
-        shippingAddress,
-        customerName: orderData.customerName,
-        customerEmail: orderData.customerEmail,
-        customerPhone: orderData.customerPhone || '',
-        paymentMethod: orderData.paymentMethod,
-        paymentReference: orderData.paymentReference || '', // Payment reference from buyer
-        shipping: parseFloat(orderData.shipping) || 0
-      };
+        }))));
+        formData.append('shippingAddress', JSON.stringify(shippingAddress));
+        formData.append('customerName', orderData.customerName);
+        formData.append('customerEmail', orderData.customerEmail);
+        formData.append('customerPhone', orderData.customerPhone || '');
+        formData.append('paymentMethod', orderData.paymentMethod);
+        formData.append('paymentReference', orderData.paymentReference || '');
+        formData.append('shipping', parseFloat(orderData.shipping) || 0);
+        formData.append('paymentReceipt', paymentReceiptFile);
+        orderPayload = formData;
+        // Don't set Content-Type header - browser will set it with boundary for FormData
+      } else {
+        // Use JSON for regular orders
+        orderPayload = {
+          storeId: store.id,
+          items: itemsForCheckout.map(item => ({
+            productId: item.id,
+            quantity: item.quantity
+          })),
+          shippingAddress,
+          customerName: orderData.customerName,
+          customerEmail: orderData.customerEmail,
+          customerPhone: orderData.customerPhone || '',
+          paymentMethod: orderData.paymentMethod,
+          paymentReference: orderData.paymentReference || '', // Payment reference from buyer
+          shipping: parseFloat(orderData.shipping) || 0
+        };
+        headers = {
+          'Content-Type': 'application/json'
+        };
+      }
 
       // Retry logic for 503 errors
       let retries = 3;
@@ -3342,9 +3375,7 @@ const PublishedStore = () => {
             const response = await apiClient.post('/orders', orderPayload, {
               signal: controller.signal,
               timeout: 30000,
-              headers: {
-                'Content-Type': 'application/json'
-              }
+              headers: headers
             });
             clearTimeout(timeoutId);
 
@@ -4369,6 +4400,52 @@ const PublishedStore = () => {
                               />
                               <p className="text-xs text-gray-500 mt-1">
                                 Enter the reference number shown in your GCash app after payment
+                              </p>
+                            </div>
+                            
+                            {/* Payment Receipt Upload - Optional but recommended */}
+                            <div className="mt-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Payment Receipt (Screenshot) <span className="text-gray-500 text-xs">(Optional but recommended)</span>
+                              </label>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    setPaymentReceiptFile(file);
+                                    // Create preview
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      setPaymentReceiptPreview(reader.result);
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              />
+                              {paymentReceiptPreview && (
+                                <div className="mt-2">
+                                  <img 
+                                    src={paymentReceiptPreview} 
+                                    alt="Payment receipt preview" 
+                                    className="max-w-xs max-h-48 border border-gray-300 rounded-lg"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPaymentReceiptFile(null);
+                                      setPaymentReceiptPreview(null);
+                                    }}
+                                    className="mt-2 text-xs text-red-600 hover:text-red-800"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              )}
+                              <p className="text-xs text-gray-500 mt-1">
+                                Upload a screenshot of your GCash payment confirmation for faster verification
                               </p>
                             </div>
                           </div>

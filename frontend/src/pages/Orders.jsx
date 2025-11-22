@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
-import { FaCopy, FaCheck } from 'react-icons/fa';
+import { FaCopy, FaCheck, FaEye, FaTimes } from 'react-icons/fa';
 import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
+import { getImageUrl } from '../utils/imageUrl';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -11,6 +12,8 @@ const Orders = () => {
   const [copiedRef, setCopiedRef] = useState(null);
   const [editingPayment, setEditingPayment] = useState(null);
   const [paymentTransactionId, setPaymentTransactionId] = useState('');
+  const [verificationNotes, setVerificationNotes] = useState('');
+  const [showReceiptModal, setShowReceiptModal] = useState(null);
 
   useEffect(() => {
     fetchOrders();
@@ -50,19 +53,21 @@ const Orders = () => {
     }
   };
 
-  const updatePaymentStatus = async (orderId, newPaymentStatus, transactionId = null) => {
+  const updatePaymentStatus = async (orderId, newPaymentStatus, transactionId = null, notes = null) => {
     try {
       const token = localStorage.getItem('token');
       await apiClient.put(
         `/orders/${orderId}/payment`,
         { 
           paymentStatus: newPaymentStatus,
-          paymentTransactionId: transactionId || undefined
+          paymentTransactionId: transactionId || undefined,
+          verificationNotes: notes !== null ? notes : undefined
         }
       );
 
       setEditingPayment(null);
       setPaymentTransactionId('');
+      setVerificationNotes('');
       fetchOrders();
     } catch (error) {
       console.error('Error updating payment status:', error);
@@ -196,7 +201,29 @@ const Orders = () => {
                         </div>
                         <p className="text-xs text-purple-600 mt-1">Buyer's payment reference number</p>
                       </div>
-                    ) : (
+                    )}
+                    {order.paymentReceipt && (
+                      <div className="mt-2 bg-green-50 border-2 border-green-300 rounded-lg px-4 py-3 inline-block">
+                        <p className="text-xs font-medium text-green-700 mb-2">Payment Receipt:</p>
+                        <div className="flex items-center gap-2">
+                          <img 
+                            src={getImageUrl(order.paymentReceipt)} 
+                            alt="Payment receipt" 
+                            className="w-20 h-20 object-cover rounded border border-green-400 cursor-pointer hover:opacity-80"
+                            onClick={() => setShowReceiptModal(order.paymentReceipt)}
+                          />
+                          <button
+                            onClick={() => setShowReceiptModal(order.paymentReceipt)}
+                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 flex items-center gap-1"
+                          >
+                            <FaEye size={12} />
+                            View Full Size
+                          </button>
+                        </div>
+                        <p className="text-xs text-green-600 mt-1">Click to view full receipt</p>
+                      </div>
+                    )}
+                    {!order.paymentReference && !order.paymentReceipt && (
                       <div className="mt-2 bg-gray-50 border-2 border-gray-300 rounded-lg px-4 py-3 inline-block">
                         <p className="text-xs font-medium text-gray-700 mb-1">Order Number:</p>
                         <div className="flex items-center gap-2">
@@ -238,7 +265,7 @@ const Orders = () => {
                     </div>
                     <div className="mb-2">
                       <label className="block text-xs font-medium text-gray-700 mb-1">Payment Status</label>
-                      {editingPayment === order.id ? (
+                          {editingPayment === order.id ? (
                         <div className="space-y-2">
                           <select
                             value={order.paymentStatus}
@@ -246,9 +273,9 @@ const Orders = () => {
                               const newStatus = e.target.value;
                               if (newStatus === 'completed') {
                                 // If marking as completed, use the transaction ID if provided
-                                updatePaymentStatus(order.id, newStatus, paymentTransactionId || order.paymentTransactionId || null);
+                                updatePaymentStatus(order.id, newStatus, paymentTransactionId || order.paymentTransactionId || null, verificationNotes || order.verificationNotes || '');
                               } else {
-                                updatePaymentStatus(order.id, newStatus);
+                                updatePaymentStatus(order.id, newStatus, null, verificationNotes || order.verificationNotes || '');
                               }
                             }}
                             className={`px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 ${getPaymentStatusColor(order.paymentStatus)} cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500`}
@@ -268,13 +295,21 @@ const Orders = () => {
                               className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
-                                  updatePaymentStatus(order.id, 'completed', paymentTransactionId);
+                                  updatePaymentStatus(order.id, 'completed', paymentTransactionId, verificationNotes || '');
                                 }
                               }}
                             />
                             <p className="text-xs text-gray-500 mt-1">Enter the transaction ID from GCash/PayPal receipt</p>
+                            <textarea
+                              placeholder="Verification Notes (optional)"
+                              value={editingPayment === order.id ? (verificationNotes || order.verificationNotes || '') : ''}
+                              onChange={(e) => setVerificationNotes(e.target.value)}
+                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded mt-2"
+                              rows="2"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Add notes about payment verification</p>
                             <button
-                              onClick={() => updatePaymentStatus(order.id, 'completed', paymentTransactionId)}
+                              onClick={() => updatePaymentStatus(order.id, 'completed', paymentTransactionId, verificationNotes || '')}
                               className="mt-2 w-full px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
                             >
                               Mark Payment as Completed
@@ -284,6 +319,7 @@ const Orders = () => {
                             onClick={() => {
                               setEditingPayment(null);
                               setPaymentTransactionId('');
+                              setVerificationNotes('');
                             }}
                             className="w-full px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded hover:bg-gray-300"
                           >
@@ -300,11 +336,18 @@ const Orders = () => {
                               onClick={() => {
                                 setEditingPayment(order.id);
                                 setPaymentTransactionId(order.paymentTransactionId || '');
+                                setVerificationNotes(order.verificationNotes || '');
                               }}
                               className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
                             >
                               Verify Payment
                             </button>
+                          )}
+                          {order.verificationNotes && (
+                            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                              <p className="font-medium text-blue-800 mb-1">Verification Notes:</p>
+                              <p className="text-blue-700">{order.verificationNotes}</p>
+                            </div>
                           )}
                         </div>
                       )}
@@ -412,6 +455,26 @@ const Orders = () => {
           </div>
         )}
       </div>
+
+      {/* Payment Receipt Modal */}
+      {showReceiptModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowReceiptModal(null)}>
+          <div className="bg-white rounded-lg p-4 max-w-4xl max-h-[90vh] overflow-auto relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowReceiptModal(null)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              <FaTimes size={24} />
+            </button>
+            <h3 className="text-lg font-semibold mb-4">Payment Receipt</h3>
+            <img 
+              src={getImageUrl(showReceiptModal)} 
+              alt="Payment receipt" 
+              className="max-w-full h-auto rounded border border-gray-300"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
