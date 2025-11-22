@@ -1110,9 +1110,15 @@ const PublishedStore = () => {
       return getImageUrl(imagePath) || imagePath;
     };
     
+    // Expose handleCustomerLogout function to window for iframe access
+    window.handleCustomerLogoutDirect = () => {
+      handleCustomerLogout();
+    };
+    
     return () => {
       delete window.openOrderModal;
       delete window.getImageUrl;
+      delete window.handleCustomerLogoutDirect;
     };
   }, []);
 
@@ -2848,10 +2854,36 @@ const PublishedStore = () => {
                 if (logoutBtn) {
                   logoutBtn.onclick = function(evt) {
                     evt.preventDefault();
-                    if (window.parent && window.parent !== window) {
-                      window.parent.postMessage({ type: 'CUSTOMER_LOGOUT' }, '*');
-                    }
+                    evt.stopPropagation();
                     profileModal.remove();
+                    
+                    // Try multiple methods to ensure logout works
+                    try {
+                      // Method 1: Send postMessage to parent window (if in iframe)
+                      if (window.parent && window.parent !== window) {
+                        window.parent.postMessage({ type: 'CUSTOMER_LOGOUT' }, '*');
+                      }
+                      
+                      // Method 2: Try direct call to parent window function
+                      if (window.parent && window.parent !== window && window.parent.handleCustomerLogoutDirect) {
+                        window.parent.handleCustomerLogoutDirect();
+                      }
+                      
+                      // Method 3: Try direct call to current window function (if not in iframe)
+                      if (window.handleCustomerLogoutDirect) {
+                        window.handleCustomerLogoutDirect();
+                      }
+                    } catch (err) {
+                      console.error('Error during logout:', err);
+                      // Last resort: try postMessage again
+                      try {
+                        if (window.parent && window.parent !== window) {
+                          window.parent.postMessage({ type: 'CUSTOMER_LOGOUT' }, '*');
+                        }
+                      } catch (finalErr) {
+                        console.error('Final logout attempt failed:', finalErr);
+                      }
+                    }
                   };
                 }
               } else {
