@@ -197,7 +197,7 @@ const Orders = () => {
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold">Order #{order.orderNumber}</h3>
-                    {order.paymentReference ? (
+                    {order.paymentReference && (
                       <div className="mt-2 bg-purple-50 border-2 border-purple-300 rounded-lg px-4 py-3 inline-block">
                         <p className="text-xs font-medium text-purple-700 mb-1">Transaction Reference Number:</p>
                         <div className="flex items-center gap-2">
