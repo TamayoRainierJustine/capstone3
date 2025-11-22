@@ -386,104 +386,104 @@ const Products = () => {
             </div>
             
             {store.status === 'published' && store.domainName ? (
-              <>
-                {!hasQrApi ? (
-                  <div className="text-center py-4">
-                    <div className="mb-3">
-                      <svg className="mx-auto h-12 w-12 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
-                    </div>
-                    <p className="text-red-600 font-semibold mb-2">QR Code Generation Not Available</p>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Your store needs to have an approved QR API application to generate QR codes.
-                      Please apply for QR API access in the Dashboard.
-                    </p>
-                    <button
-                      onClick={() => {
-                        setShowQRModal(false);
-                        setSelectedProduct(null);
-                        navigate('/dashboard');
-                      }}
-                      className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                    >
-                      Go to Dashboard
-                    </button>
+              !hasQrApi ? (
+                <div className="text-center py-4">
+                  <div className="mb-3">
+                    <svg className="mx-auto h-12 w-12 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
                   </div>
-                ) : (
-                  <>
-                    <div className="text-center mb-4">
-                      <p className="text-sm text-gray-600 mb-2">{selectedProduct.name}</p>
-                      <p className="text-lg font-semibold text-purple-600">₱{parseFloat(selectedProduct.price).toFixed(2)}</p>
-                    </div>
-                    
-                    <div className="flex justify-center mb-4 p-4 bg-white border-2 border-gray-200 rounded-lg">
-                      {(() => {
-                        const gcashNumber = store.content?.payment?.gcashNumber || '';
-                        const productUrl = `${window.location.origin}/published/${encodeURIComponent(store.domainName)}?product=${selectedProduct.id}&addToCart=true`;
-                        const productPrice = parseFloat(selectedProduct.price).toFixed(2);
-                        
-                        // Generate QR code value: Product URL (for store link) + GCash payment info
-                        // Format: URL with GCash info as query params
-                        const qrValue = gcashNumber 
-                          ? `${productUrl}&gcash=${encodeURIComponent(gcashNumber)}&amount=${productPrice}`
-                          : productUrl;
-                        
-                        return (
-                          <QRCodeSVG
-                            value={qrValue}
-                            size={256}
-                            level="H"
-                            includeMargin={true}
-                          />
-                        );
-                      })()}
-                    </div>
-                
-                <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                  <p className="text-xs text-gray-600 mb-2 font-medium">Scan this QR code to:</p>
-                  <ul className="text-xs text-gray-600 list-disc list-inside space-y-1">
-                    <li>Open product in your published store</li>
-                    <li>Automatically add to cart</li>
-                    <li>Checkout using GCash</li>
-                  </ul>
-                  {store.content?.payment?.gcashNumber ? (
-                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
-                      <p className="text-xs font-medium text-blue-800 mb-1">GCash Payment Info:</p>
-                      <p className="text-xs text-blue-700">Number: {store.content.payment.gcashNumber}</p>
-                      <p className="text-xs text-blue-700">Amount: ₱{parseFloat(selectedProduct.price).toFixed(2)}</p>
-                    </div>
-                  ) : (
-                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                      <p className="text-xs text-yellow-800">
-                        ⚠️ GCash number not set. Please set it in Payment Settings.
-                      </p>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex flex-col gap-2">
-                  <button
-                    onClick={() => {
-                      const qrUrl = `${window.location.origin}/published/${encodeURIComponent(store.domainName)}?product=${selectedProduct.id}&addToCart=true`;
-                      navigator.clipboard.writeText(qrUrl);
-                      alert('QR Code URL copied to clipboard!');
-                    }}
-                    className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                  >
-                    Copy Link
-                  </button>
+                  <p className="text-red-600 font-semibold mb-2">QR Code Generation Not Available</p>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Your store needs to have an approved QR API application to generate QR codes.
+                    Please apply for QR API access in the Dashboard.
+                  </p>
                   <button
                     onClick={() => {
                       setShowQRModal(false);
                       setSelectedProduct(null);
+                      navigate('/dashboard');
                     }}
-                    className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                    className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                   >
-                    Close
+                    Go to Dashboard
                   </button>
                 </div>
-              </>
+              ) : (
+                <>
+                  <div className="text-center mb-4">
+                    <p className="text-sm text-gray-600 mb-2">{selectedProduct.name}</p>
+                    <p className="text-lg font-semibold text-purple-600">₱{parseFloat(selectedProduct.price).toFixed(2)}</p>
+                  </div>
+                  
+                  <div className="flex justify-center mb-4 p-4 bg-white border-2 border-gray-200 rounded-lg">
+                    {(() => {
+                      const gcashNumber = store.content?.payment?.gcashNumber || '';
+                      const productUrl = `${window.location.origin}/published/${encodeURIComponent(store.domainName)}?product=${selectedProduct.id}&addToCart=true`;
+                      const productPrice = parseFloat(selectedProduct.price).toFixed(2);
+                      
+                      // Generate QR code value: Product URL (for store link) + GCash payment info
+                      // Format: URL with GCash info as query params
+                      const qrValue = gcashNumber 
+                        ? `${productUrl}&gcash=${encodeURIComponent(gcashNumber)}&amount=${productPrice}`
+                        : productUrl;
+                      
+                      return (
+                        <QRCodeSVG
+                          value={qrValue}
+                          size={256}
+                          level="H"
+                          includeMargin={true}
+                        />
+                      );
+                    })()}
+                  </div>
+                  
+                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                    <p className="text-xs text-gray-600 mb-2 font-medium">Scan this QR code to:</p>
+                    <ul className="text-xs text-gray-600 list-disc list-inside space-y-1">
+                      <li>Open product in your published store</li>
+                      <li>Automatically add to cart</li>
+                      <li>Checkout using GCash</li>
+                    </ul>
+                    {store.content?.payment?.gcashNumber ? (
+                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                        <p className="text-xs font-medium text-blue-800 mb-1">GCash Payment Info:</p>
+                        <p className="text-xs text-blue-700">Number: {store.content.payment.gcashNumber}</p>
+                        <p className="text-xs text-blue-700">Amount: ₱{parseFloat(selectedProduct.price).toFixed(2)}</p>
+                      </div>
+                    ) : (
+                      <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                        <p className="text-xs text-yellow-800">
+                          ⚠️ GCash number not set. Please set it in Payment Settings.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => {
+                        const qrUrl = `${window.location.origin}/published/${encodeURIComponent(store.domainName)}?product=${selectedProduct.id}&addToCart=true`;
+                        navigator.clipboard.writeText(qrUrl);
+                        alert('QR Code URL copied to clipboard!');
+                      }}
+                      className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    >
+                      Copy Link
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowQRModal(false);
+                        setSelectedProduct(null);
+                      }}
+                      className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </>
+              )
             ) : (
               <div className="text-center py-4">
                 <p className="text-red-600 mb-2">Store not published yet</p>
