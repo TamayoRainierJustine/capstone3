@@ -209,10 +209,16 @@ const Shipping = () => {
         googleMapsApiKey: useDistanceBased ? googleMapsApiKey : undefined
       };
 
+      // Log shipping rates before saving
+      console.log('💾 Saving shipping rates:', shippingRates);
+      console.log('💾 Updated content:', updatedContent);
+      
       // Save to backend via store content API
-      await apiClient.put(`/stores/${store.id}/content`, {
+      const response = await apiClient.put(`/stores/${store.id}/content`, {
         content: updatedContent
       });
+
+      console.log('✅ Store content saved:', response.data);
 
       // Update local store state
       setStore(prev => ({

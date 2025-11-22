@@ -810,14 +810,29 @@ const PublishedStore = () => {
     
     const storeShippingRates = storeContent?.shippingRates;
     
+    // Debug: Log shipping rates to see what we're working with
+    if (storeShippingRates) {
+      console.log('📦 Store shipping rates:', storeShippingRates);
+      console.log(`📦 Looking for rate: ${weightBand} -> ${destinationArea}`);
+      console.log(`📦 Rate exists?`, storeShippingRates[weightBand]?.[destinationArea] !== undefined);
+      console.log(`📦 Rate value:`, storeShippingRates[weightBand]?.[destinationArea]);
+    }
+    
     // If store has custom rates configured, use them (including 0 values)
-    if (storeShippingRates && storeShippingRates[weightBand] && storeShippingRates[weightBand].hasOwnProperty(destinationArea)) {
+    // Check if the rate exists (including 0) by checking if the property is defined
+    if (storeShippingRates && 
+        storeShippingRates[weightBand] && 
+        destinationArea in storeShippingRates[weightBand]) {
       const rate = storeShippingRates[weightBand][destinationArea];
+      console.log(`✅ Using custom rate: ${rate} for ${weightBand} -> ${destinationArea}`);
       // Return the rate even if it's 0 (0 is a valid shipping rate)
-      return typeof rate === 'number' ? rate : (defaultRates[weightBand]?.[destinationArea] || 0);
+      // Convert to number if it's a string
+      const numericRate = typeof rate === 'number' ? rate : parseFloat(rate);
+      return isNaN(numericRate) ? (defaultRates[weightBand]?.[destinationArea] || 0) : numericRate;
     }
 
     // Fallback to default rates if store rates not configured
+    console.log(`⚠️ Using default rate for ${weightBand} -> ${destinationArea}`);
     return defaultRates[weightBand]?.[destinationArea] || 0;
   };
 
@@ -1260,6 +1275,8 @@ const PublishedStore = () => {
         );
         
         console.log('✅ Store fetched:', response.data?.storeName, 'Domain:', response.data?.domainName);
+        console.log('📦 Store content:', response.data?.content);
+        console.log('📦 Store shipping rates:', response.data?.content?.shippingRates);
 
         setStore(response.data);
         
