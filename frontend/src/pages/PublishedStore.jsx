@@ -605,12 +605,13 @@ const PublishedStore = () => {
       }
 
       // Build store address (origin)
+      // Use regionsList from component state (which is initialized from imported regions)
       const storeAddress = buildAddressString({
         barangay: store?.barangay || '',
         municipality: store?.municipality || '',
         province: store?.province || '',
         region: store?.region || ''
-      }, regions);
+      }, regionsList);
 
       if (!storeAddress || storeAddress.trim() === '') {
         console.warn('Store address not configured for distance calculation');
@@ -618,7 +619,7 @@ const PublishedStore = () => {
       }
 
       // Build customer address (destination)
-      const customerAddressString = buildAddressString(customerAddress, regions);
+      const customerAddressString = buildAddressString(customerAddress, regionsList);
 
       if (!customerAddressString || customerAddressString.trim() === '') {
         console.warn('Customer address not complete for distance calculation');
