@@ -2483,7 +2483,6 @@ const PublishedStore = () => {
                     ` : ''}
                   </div>
                   <div style="display:flex;gap:0.75rem;margin-top:1.5rem;flex-wrap:wrap;">
-                    <button id="view-orders" style="flex:1;min-width:140px;background:#c9a961;color:#1a1a1a;border:none;border-radius:6px;padding:0.6rem;font-weight:600;cursor:pointer;">Track Orders</button>
                     <button id="logout-customer" style="flex:1;min-width:140px;background:transparent;color:#e0e0e0;border:1px solid #c9a961;border-radius:6px;padding:0.6rem;font-weight:600;cursor:pointer;">Sign Out</button>
                   </div>
                 `;
@@ -2496,19 +2495,6 @@ const PublishedStore = () => {
                 profileModal.onclick = (e) => {
                   if (e.target === profileModal) profileModal.remove();
                 };
-                const ordersBtn = profileModal.querySelector('#view-orders');
-                if (ordersBtn) {
-                  ordersBtn.onclick = async function(evt) {
-                    evt.preventDefault();
-                    evt.stopPropagation();
-                    // Fetch latest orders from backend then open order history modal
-                    if (customerData.email) {
-                      await fetchCustomerOrders(customerData.email);
-                    }
-                    setShowOrderHistoryModal(true);
-                    profileModal.remove();
-                  };
-                }
                 const logoutBtn = profileModal.querySelector('#logout-customer');
                 if (logoutBtn) {
                   logoutBtn.onclick = function(evt) {
