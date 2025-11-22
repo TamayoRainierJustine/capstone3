@@ -97,11 +97,26 @@ export const createProductReview = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    // For customer tokens, use Customer model. For user tokens, check if user is a customer
+    let actualCustomerId = customerId;
+    if (req.user && !req.customer) {
+      // User is logged in but not a customer - need to find/create customer record
+      // Check if this user has a customer account
+      const customer = await Customer.findOne({ where: { email: req.user.email } });
+      if (customer) {
+        actualCustomerId = customer.id;
+      } else {
+        // For now, allow users to review too - they'll use their user ID
+        // In the future, you might want to create a customer record or use a different approach
+        actualCustomerId = req.user.id;
+      }
+    }
+
     // Check if customer already reviewed this product
     const existingReview = await ProductReview.findOne({
       where: {
         productId,
-        customerId
+        customerId: actualCustomerId
       }
     });
 
@@ -115,7 +130,7 @@ export const createProductReview = async (req, res) => {
       const order = await Order.findOne({
         where: {
           id: orderId,
-          customerId
+          customerId: actualCustomerId
         },
         include: [
           {

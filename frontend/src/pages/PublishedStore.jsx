@@ -67,6 +67,18 @@ const PublishedStore = () => {
   const [reviewPage, setReviewPage] = useState(1);
   const [reviewFilter, setReviewFilter] = useState(null); // null or 1-5 for rating filter
   
+  // Review form state
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewForm, setReviewForm] = useState({
+    rating: 0,
+    comment: '',
+    images: []
+  });
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [userReview, setUserReview] = useState(null);
+  
   // Cart state - initialize from localStorage if available
   const [cartItems, setCartItems] = useState(() => {
     try {
@@ -489,6 +501,43 @@ const PublishedStore = () => {
     }
   };
 
+  // Check if current user has reviewed this product
+  const checkUserReview = async (productId) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setHasReviewed(false);
+        setUserReview(null);
+        return;
+      }
+
+      const response = await apiClient.get(`/products/${productId}/reviews`);
+      const reviews = response.data.reviews || [];
+      
+      // Get customer email from localStorage or context
+      const customerEmail = customerInfo?.email || localStorage.getItem('customerEmail');
+      if (!customerEmail) {
+        setHasReviewed(false);
+        setUserReview(null);
+        return;
+      }
+
+      // Find if current user has reviewed
+      const userRev = reviews.find(r => r.Customer?.email === customerEmail);
+      if (userRev) {
+        setHasReviewed(true);
+        setUserReview(userRev);
+      } else {
+        setHasReviewed(false);
+        setUserReview(null);
+      }
+    } catch (error) {
+      console.error('Error checking user review:', error);
+      setHasReviewed(false);
+      setUserReview(null);
+    }
+  };
+
   // Open product detail modal
   const openProductDetailModal = (product) => {
     if (!product) return;
@@ -496,7 +545,10 @@ const PublishedStore = () => {
     setShowProductDetailModal(true);
     setReviewPage(1);
     setReviewFilter(null);
+    setShowReviewForm(false);
+    setReviewForm({ rating: 0, comment: '', images: [] });
     fetchProductReviews(product.id, 1, null);
+    checkUserReview(product.id);
   };
 
   const fetchCustomerOrders = async (customerEmail) => {
@@ -5209,11 +5261,186 @@ const PublishedStore = () => {
                   </div>
                 </div>
 
+                {/* Write Review Button / Form */}
+                {(() => {
+                  const customerData = getCustomerData();
+                  const token = localStorage.getItem('token');
+                  const isLoggedIn = !!(token && customerData);
+                  
+                  return isLoggedIn && !hasReviewed && !showReviewForm && (
+                    <div className="mb-6">
+                      <button
+                        onClick={() => setShowReviewForm(true)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                      >
+                        Write a Review
+                      </button>
+                    </div>
+                  );
+                })()}
+
+                {/* Review Form */}
+                {showReviewForm && !hasReviewed && (
+                  <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Write a Review</h4>
+                    
+                    {/* Rating Selection */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Rating <span className="text-red-600">*</span>
+                      </label>
+                      <div className="flex gap-2">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
+                            className={`text-3xl transition-transform hover:scale-110 ${
+                              star <= reviewForm.rating ? 'text-yellow-400' : 'text-gray-300'
+                            }`}
+                          >
+                            ★
+                          </button>
+                        ))}
+                      </div>
+                      {reviewForm.rating > 0 && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          {reviewForm.rating === 5 && 'Excellent!'}
+                          {reviewForm.rating === 4 && 'Very Good!'}
+                          {reviewForm.rating === 3 && 'Good'}
+                          {reviewForm.rating === 2 && 'Fair'}
+                          {reviewForm.rating === 1 && 'Poor'}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Comment */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Your Review (Optional)
+                      </label>
+                      <textarea
+                        value={reviewForm.comment}
+                        onChange={(e) => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
+                        placeholder="Share your experience with this product..."
+                        rows="4"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    {/* Image Upload */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Upload Photos (Optional, Max 5)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleReviewImageUpload}
+                        className="w-full p-2 border border-gray-300 rounded-lg"
+                      />
+                      {reviewForm.images.length > 0 && (
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          {reviewForm.images.map((file, idx) => (
+                            <div key={idx} className="relative">
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={`Preview ${idx + 1}`}
+                                className="w-20 h-20 object-cover rounded border border-gray-300"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeReviewImage(idx)}
+                                className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Error Message */}
+                    {reviewError && (
+                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                        {reviewError}
+                      </div>
+                    )}
+
+                    {/* Form Actions */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={submitProductReview}
+                        disabled={submittingReview || !reviewForm.rating}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                      >
+                        {submittingReview ? 'Submitting...' : 'Submit Review'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowReviewForm(false);
+                          setReviewForm({ rating: 0, comment: '', images: [] });
+                          setReviewError('');
+                        }}
+                        className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* User's Existing Review */}
+                {hasReviewed && userReview && (
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-lg font-semibold text-gray-900">Your Review</h4>
+                      <span className="text-sm text-blue-600">You've already reviewed this product</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-yellow-400 mb-2">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <svg
+                          key={star}
+                          className={`w-5 h-5 ${star <= userReview.rating ? 'fill-current' : 'text-gray-300'}`}
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                        </svg>
+                      ))}
+                    </div>
+                    {userReview.comment && (
+                      <p className="text-gray-700 whitespace-pre-wrap">{userReview.comment}</p>
+                    )}
+                  </div>
+                )}
+
                 {/* Reviews List */}
                 {loadingReviews ? (
                   <div className="text-center py-8 text-gray-600">Loading reviews...</div>
                 ) : productReviews.length === 0 ? (
-                  <div className="text-center py-8 text-gray-600">No reviews yet. Be the first to review!</div>
+                  <div className="text-center py-8 text-gray-600">
+                    {(() => {
+                      const customerData = getCustomerData();
+                      const token = localStorage.getItem('token');
+                      const isLoggedIn = !!(token && customerData);
+                      
+                      return isLoggedIn && !hasReviewed ? (
+                        <div>
+                          <p className="mb-4">No reviews yet. Be the first to review!</p>
+                          <button
+                            onClick={() => setShowReviewForm(true)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                          >
+                            Write the First Review
+                          </button>
+                        </div>
+                      ) : (
+                        'No reviews yet. Be the first to review!'
+                      );
+                    })()}
+                  </div>
                 ) : (
                   <div className="space-y-6">
                     {productReviews.map((review) => (

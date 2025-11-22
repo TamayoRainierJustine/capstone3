@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
+import Customer from '../models/customer.js';
 
 export const authenticateToken = async (req, res, next) => {
     try {
@@ -11,14 +12,25 @@ export const authenticateToken = async (req, res, next) => {
 
         const verified = jwt.verify(token, process.env.JWT_SECRET);
         
-        // Find the user in the database
-        const user = await User.findByPk(verified.id);
-        if (!user) {
-            return res.status(401).json({ message: 'User not found' });
+        // Check if token is for a customer (has type: 'customer')
+        if (verified.type === 'customer') {
+            // Find the customer in the database
+            const customer = await Customer.findByPk(verified.id);
+            if (!customer) {
+                return res.status(401).json({ message: 'Customer not found' });
+            }
+            // Set customer object
+            req.customer = customer;
+        } else {
+            // Find the user in the database (store owner/admin/super_admin)
+            const user = await User.findByPk(verified.id);
+            if (!user) {
+                return res.status(401).json({ message: 'User not found' });
+            }
+            // Set the user object with the database user
+            req.user = user;
         }
-
-        // Set the user object with the database user
-        req.user = user;
+        
         next();
     } catch (err) {
         console.error('Auth error:', err);
