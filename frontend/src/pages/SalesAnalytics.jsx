@@ -57,21 +57,34 @@ const SalesAnalytics = () => {
   const formatChartData = () => {
     if (!analytics?.monthlySales) return [];
     
-    return analytics.monthlySales.map(item => ({
-      month: item.month,
-      sales: parseFloat(item.totalSales || 0),
-      orders: parseInt(item.orderCount || 0)
-    }));
+    return analytics.monthlySales.map(item => {
+      // Format month to be more readable (e.g., "2025-11" -> "Nov 2025")
+      const monthParts = item.month?.split('-');
+      let monthLabel = item.month;
+      if (monthParts && monthParts.length === 2) {
+        const year = monthParts[0];
+        const month = parseInt(monthParts[1]);
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        monthLabel = `${monthNames[month - 1]} ${year}`;
+      }
+      
+      return {
+        month: item.month, // Keep original for sorting
+        monthLabel: monthLabel, // Formatted for display
+        sales: parseFloat(item.totalSales || 0),
+        orders: parseInt(item.orderCount || 0)
+      };
+    }).sort((a, b) => a.month.localeCompare(b.month)); // Sort by month
   };
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-semibold mb-2">{label}</p>
+          <p className="font-semibold mb-2 text-gray-800">{label}</p>
           {payload.map((entry, index) => (
-            <p key={index} style={{ color: entry.color }} className="text-sm">
-              {entry.name}: {entry.dataKey === 'sales' ? formatCurrency(entry.value) : entry.value}
+            <p key={index} style={{ color: entry.color }} className="text-sm font-medium">
+              {entry.name}: {entry.dataKey === 'sales' ? formatCurrency(entry.value) : `${entry.value} ${entry.dataKey === 'orders' ? 'order(s)' : ''}`}
             </p>
           ))}
         </div>
@@ -162,13 +175,16 @@ const SalesAnalytics = () => {
           <p className="text-sm text-gray-600 mb-6">Combined view of sales revenue and order volume over time</p>
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={400}>
-              <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis 
-                  dataKey="month" 
+                  dataKey="monthLabel" 
                   stroke="#6b7280"
                   style={{ fontSize: '12px' }}
                   tick={{ fill: '#6b7280' }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
                 />
                 <YAxis 
                   yAxisId="sales"
@@ -176,7 +192,11 @@ const SalesAnalytics = () => {
                   stroke="#8b5cf6"
                   style={{ fontSize: '12px' }}
                   tick={{ fill: '#8b5cf6' }}
-                  tickFormatter={(value) => `₱${(value / 1000).toFixed(0)}k`}
+                  tickFormatter={(value) => {
+                    if (value >= 1000) return `₱${(value / 1000).toFixed(1)}k`;
+                    return `₱${value.toFixed(0)}`;
+                  }}
+                  domain={['auto', 'auto']}
                 />
                 <YAxis 
                   yAxisId="orders"
@@ -184,6 +204,8 @@ const SalesAnalytics = () => {
                   stroke="#6366f1"
                   style={{ fontSize: '12px' }}
                   tick={{ fill: '#6366f1' }}
+                  domain={[0, 'auto']}
+                  allowDecimals={false}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend 
@@ -225,26 +247,39 @@ const SalesAnalytics = () => {
             <p className="text-sm text-gray-600 mb-4">Monthly sales revenue trend</p>
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={350}>
-                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 80 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis 
-                    dataKey="month" 
+                    dataKey="monthLabel" 
                     stroke="#6b7280"
                     style={{ fontSize: '12px' }}
                     tick={{ fill: '#6b7280' }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
                   />
                   <YAxis 
                     stroke="#8b5cf6"
                     style={{ fontSize: '12px' }}
                     tick={{ fill: '#8b5cf6' }}
-                    tickFormatter={(value) => `₱${(value / 1000).toFixed(0)}k`}
+                    tickFormatter={(value) => {
+                      if (value >= 1000) return `₱${(value / 1000).toFixed(1)}k`;
+                      return `₱${value.toFixed(0)}`;
+                    }}
+                    domain={[0, 'auto']}
                   />
                   <Tooltip 
                     formatter={(value) => formatCurrency(value)}
+                    labelFormatter={(label) => {
+                      // Find the monthLabel for this data point
+                      const dataPoint = chartData.find(d => d.monthLabel === label || d.month === label);
+                      return dataPoint?.monthLabel || label;
+                    }}
                     contentStyle={{ 
                       backgroundColor: 'white', 
                       border: '1px solid #e5e7eb',
-                      borderRadius: '8px'
+                      borderRadius: '8px',
+                      padding: '10px'
                     }}
                   />
                   <Legend />
@@ -272,24 +307,35 @@ const SalesAnalytics = () => {
             <p className="text-sm text-gray-600 mb-4">Number of orders per month</p>
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 80 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis 
-                    dataKey="month" 
+                    dataKey="monthLabel" 
                     stroke="#6b7280"
                     style={{ fontSize: '12px' }}
                     tick={{ fill: '#6b7280' }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
                   />
                   <YAxis 
                     stroke="#6366f1"
                     style={{ fontSize: '12px' }}
                     tick={{ fill: '#6366f1' }}
+                    domain={[0, 'auto']}
+                    allowDecimals={false}
                   />
                   <Tooltip 
+                    formatter={(value) => `${value} order(s)`}
+                    labelFormatter={(label) => {
+                      const dataPoint = chartData.find(d => d.monthLabel === label || d.month === label);
+                      return dataPoint?.monthLabel || label;
+                    }}
                     contentStyle={{ 
                       backgroundColor: 'white', 
                       border: '1px solid #e5e7eb',
-                      borderRadius: '8px'
+                      borderRadius: '8px',
+                      padding: '10px'
                     }}
                   />
                   <Legend />
