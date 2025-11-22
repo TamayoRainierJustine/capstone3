@@ -4690,6 +4690,60 @@ const PublishedStore = () => {
         </div>
       )}
 
+      {/* Cancellation Request Modal */}
+      {cancellationModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setCancellationModal(null);
+            setCancellationReason('');
+          }}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b">
+              <h3 className="text-xl font-bold text-gray-900">Request Order Cancellation</h3>
+              <p className="text-sm text-gray-600 mt-1">Order: {cancellationModal}</p>
+            </div>
+            <div className="p-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reason for Cancellation (Optional)
+              </label>
+              <textarea
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                placeholder="Please provide a reason for cancellation..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                rows="4"
+              />
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={() => {
+                    setCancellationModal(null);
+                    setCancellationReason('');
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (cancellationModal) {
+                      requestOrderCancellation(cancellationModal, cancellationReason);
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  Submit Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div 
         className="w-full h-screen" 
         style={{ overflow: 'hidden', position: 'relative' }}
