@@ -797,10 +797,28 @@ const PublishedStore = () => {
     };
 
     // Get store's custom shipping rates if available
-    const storeShippingRates = store?.content?.shippingRates;
-    const rates = storeShippingRates || defaultRates;
+    // Parse content if it's a string (some stores might have content as JSON string)
+    let storeContent = store?.content;
+    if (typeof storeContent === 'string') {
+      try {
+        storeContent = JSON.parse(storeContent);
+      } catch (e) {
+        console.warn('Error parsing store content:', e);
+        storeContent = {};
+      }
+    }
+    
+    const storeShippingRates = storeContent?.shippingRates;
+    
+    // If store has custom rates configured, use them (including 0 values)
+    if (storeShippingRates && storeShippingRates[weightBand] && storeShippingRates[weightBand].hasOwnProperty(destinationArea)) {
+      const rate = storeShippingRates[weightBand][destinationArea];
+      // Return the rate even if it's 0 (0 is a valid shipping rate)
+      return typeof rate === 'number' ? rate : (defaultRates[weightBand]?.[destinationArea] || 0);
+    }
 
-    return rates[weightBand]?.[destinationArea] || defaultRates[weightBand]?.[destinationArea] || 0;
+    // Fallback to default rates if store rates not configured
+    return defaultRates[weightBand]?.[destinationArea] || 0;
   };
 
   // Helper: Calculate shipping rate based on distance (if distance-based shipping is enabled)
