@@ -1213,6 +1213,38 @@ const PublishedStore = () => {
     };
   }, []);
 
+  // Load customer info from localStorage on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const storedCustomerInfo = localStorage.getItem('customerInfo');
+        if (storedCustomerInfo) {
+          const parsed = JSON.parse(storedCustomerInfo);
+          setCustomerInfo(parsed);
+        }
+      } catch (err) {
+        console.warn('Unable to parse stored customer info:', err);
+      }
+    }
+  }, []);
+
+  // Load customer info from localStorage on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const storedCustomerInfo = localStorage.getItem('customerInfo');
+        if (storedCustomerInfo) {
+          const parsed = JSON.parse(storedCustomerInfo);
+          setCustomerInfo(parsed);
+        }
+      } catch (err) {
+        console.warn('Unable to parse stored customer info:', err);
+      }
+    }
+  }, []);
+
   // Show login modal immediately when page loads (if not logged in)
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -6086,16 +6118,40 @@ const PublishedStore = () => {
             {/* Floating Chat Button */}
             {!showChatBox && (
               <button
-                onClick={() => {
-                  const customerData = getCustomerData();
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
                   const token = localStorage.getItem('token');
-                  if (!customerData || !token) {
+                  if (!token) {
                     setShowLoginModal(true);
                     setModalMode('login');
-                  } else {
-                    setShowChatBox(true);
-                    fetchChatMessages();
+                    return;
                   }
+                  
+                  const customerData = getCustomerData();
+                  if (!customerData) {
+                    // Try to reload customer info from localStorage
+                    try {
+                      const stored = localStorage.getItem('customerInfo');
+                      if (stored) {
+                        const parsed = JSON.parse(stored);
+                        setCustomerInfo(parsed);
+                        setShowChatBox(true);
+                        setTimeout(() => fetchChatMessages(), 100);
+                        return;
+                      }
+                    } catch (err) {
+                      console.warn('Unable to parse stored customer info:', err);
+                    }
+                    
+                    setShowLoginModal(true);
+                    setModalMode('login');
+                    return;
+                  }
+                  
+                  setShowChatBox(true);
+                  setTimeout(() => fetchChatMessages(), 100);
                 }}
                 className="fixed bottom-6 right-6 bg-purple-600 text-white rounded-full p-4 shadow-lg hover:bg-purple-700 transition-colors z-50 flex items-center gap-2"
                 title="Chat with Store Owner"
