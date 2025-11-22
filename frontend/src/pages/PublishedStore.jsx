@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import { getImageUrl } from '../utils/imageUrl';
@@ -634,8 +634,15 @@ const PublishedStore = () => {
     checkUserReview(product.id);
   };
 
+  // Chat state (must be declared before functions that use them)
+  const [showChatBox, setShowChatBox] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newChatMessage, setNewChatMessage] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [sendingChatMessage, setSendingChatMessage] = useState(false);
+
   // Fetch chat messages
-  const fetchChatMessages = async () => {
+  const fetchChatMessages = useCallback(async () => {
     if (!store?.id || !customerInfo) return;
     
     try {
@@ -653,10 +660,10 @@ const PublishedStore = () => {
     } finally {
       setChatLoading(false);
     }
-  };
+  }, [store?.id, customerInfo]);
 
   // Send chat message
-  const sendChatMessage = async () => {
+  const sendChatMessage = useCallback(async () => {
     if (!newChatMessage.trim() || !store?.id || !customerInfo) return;
     
     try {
@@ -683,7 +690,7 @@ const PublishedStore = () => {
     } finally {
       setSendingChatMessage(false);
     }
-  };
+  }, [newChatMessage, store?.id, customerInfo, fetchChatMessages]);
 
   // Auto-refresh chat messages when chat box is open
   useEffect(() => {
@@ -695,7 +702,7 @@ const PublishedStore = () => {
       
       return () => clearInterval(interval);
     }
-  }, [showChatBox, store?.id, customerInfo]);
+  }, [showChatBox, store?.id, customerInfo, fetchChatMessages]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -781,13 +788,6 @@ const PublishedStore = () => {
   const [registerProvincesList, setRegisterProvincesList] = useState([]);
   const [registerMunicipalitiesList, setRegisterMunicipalitiesList] = useState([]);
   const [registerBarangaysList, setRegisterBarangaysList] = useState([]);
-  
-  // Chat state
-  const [showChatBox, setShowChatBox] = useState(false);
-  const [chatMessages, setChatMessages] = useState([]);
-  const [newChatMessage, setNewChatMessage] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
-  const [sendingChatMessage, setSendingChatMessage] = useState(false);
   
   // Update provinces when region changes in registration form
   useEffect(() => {
