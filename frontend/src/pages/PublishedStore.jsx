@@ -634,6 +634,79 @@ const PublishedStore = () => {
     checkUserReview(product.id);
   };
 
+  // Fetch chat messages
+  const fetchChatMessages = async () => {
+    if (!store?.id || !customerInfo) return;
+    
+    try {
+      setChatLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      const response = await apiClient.get(`/chat/customer/stores/${store.id}/conversations`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setChatMessages(response.data || []);
+    } catch (error) {
+      console.error('Error fetching chat messages:', error);
+      setChatMessages([]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  // Send chat message
+  const sendChatMessage = async () => {
+    if (!newChatMessage.trim() || !store?.id || !customerInfo) return;
+    
+    try {
+      setSendingChatMessage(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setShowLoginModal(true);
+        setModalMode('login');
+        return;
+      }
+      
+      await apiClient.post('/chat/customer/messages', {
+        storeId: store.id,
+        message: newChatMessage.trim()
+      }, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      setNewChatMessage('');
+      await fetchChatMessages();
+    } catch (error) {
+      console.error('Error sending chat message:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setSendingChatMessage(false);
+    }
+  };
+
+  // Auto-refresh chat messages when chat box is open
+  useEffect(() => {
+    if (showChatBox && store?.id && customerInfo) {
+      fetchChatMessages();
+      const interval = setInterval(() => {
+        fetchChatMessages();
+      }, 3000); // Refresh every 3 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [showChatBox, store?.id, customerInfo]);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (showChatBox && chatMessages.length > 0) {
+      const chatContainer = document.querySelector('.chat-messages-container');
+      if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    }
+  }, [chatMessages, showChatBox]);
+
   const fetchCustomerOrders = async (customerEmail) => {
     if (!customerEmail) return;
     
@@ -708,6 +781,13 @@ const PublishedStore = () => {
   const [registerProvincesList, setRegisterProvincesList] = useState([]);
   const [registerMunicipalitiesList, setRegisterMunicipalitiesList] = useState([]);
   const [registerBarangaysList, setRegisterBarangaysList] = useState([]);
+  
+  // Chat state
+  const [showChatBox, setShowChatBox] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newChatMessage, setNewChatMessage] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [sendingChatMessage, setSendingChatMessage] = useState(false);
   
   // Update provinces when region changes in registration form
   useEffect(() => {
@@ -5987,6 +6067,122 @@ const PublishedStore = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Chat Box - Floating Button and Modal */}
+        {store && (
+          <>
+            {/* Floating Chat Button */}
+            {!showChatBox && (
+              <button
+                onClick={() => {
+                  if (!customerInfo) {
+                    setShowLoginModal(true);
+                    setModalMode('login');
+                  } else {
+                    setShowChatBox(true);
+                    fetchChatMessages();
+                  }
+                }}
+                className="fixed bottom-6 right-6 bg-purple-600 text-white rounded-full p-4 shadow-lg hover:bg-purple-700 transition-colors z-50 flex items-center gap-2"
+                title="Chat with Store Owner"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                <span className="hidden sm:inline">Chat</span>
+              </button>
+            )}
+
+            {/* Chat Box Modal */}
+            {showChatBox && customerInfo && (
+              <div className="fixed bottom-6 right-6 w-96 max-w-[calc(100vw-3rem)] bg-white rounded-lg shadow-2xl z-50 flex flex-col" style={{ height: '500px', maxHeight: 'calc(100vh - 6rem)' }}>
+                {/* Chat Header */}
+                <div className="bg-purple-600 text-white p-4 rounded-t-lg flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold">Chat with {store.storeName}</h3>
+                    <p className="text-xs text-purple-100">Ask about products, shipping, etc.</p>
+                  </div>
+                  <button
+                    onClick={() => setShowChatBox(false)}
+                    className="text-white hover:text-purple-200 transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Chat Messages */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 chat-messages-container">
+                  {chatLoading && chatMessages.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">Loading messages...</div>
+                  ) : chatMessages.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                      <p className="mb-2">No messages yet.</p>
+                      <p className="text-sm">Start a conversation with the store owner!</p>
+                    </div>
+                  ) : (
+                    chatMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`flex ${msg.senderType === 'customer' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-[80%] rounded-lg p-3 ${
+                            msg.senderType === 'customer'
+                              ? 'bg-purple-600 text-white'
+                              : 'bg-white text-gray-800 border border-gray-200'
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                          <p className={`text-xs mt-1 ${msg.senderType === 'customer' ? 'text-purple-100' : 'text-gray-500'}`}>
+                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Chat Input */}
+                <div className="border-t border-gray-200 p-4 bg-white rounded-b-lg">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      sendChatMessage();
+                    }}
+                    className="flex gap-2"
+                  >
+                    <input
+                      type="text"
+                      value={newChatMessage}
+                      onChange={(e) => setNewChatMessage(e.target.value)}
+                      placeholder="Type your message..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      disabled={sendingChatMessage}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newChatMessage.trim() || sendingChatMessage}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {sendingChatMessage ? (
+                        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </>

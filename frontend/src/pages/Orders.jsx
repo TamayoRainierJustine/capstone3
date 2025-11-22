@@ -14,10 +14,103 @@ const Orders = () => {
   const [paymentTransactionId, setPaymentTransactionId] = useState('');
   const [verificationNotes, setVerificationNotes] = useState('');
   const [showReceiptModal, setShowReceiptModal] = useState(null);
+  
+  // Chat state
+  const [showChatSection, setShowChatSection] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newChatMessage, setNewChatMessage] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [sendingChatMessage, setSendingChatMessage] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     fetchOrders();
+    fetchUnreadCount();
   }, [selectedStatus]);
+
+  // Fetch chat conversations
+  const fetchConversations = async () => {
+    try {
+      setChatLoading(true);
+      const response = await apiClient.get('/chat/store/conversations');
+      setConversations(response.data || []);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  // Fetch messages for a specific customer
+  const fetchCustomerMessages = async (customerId) => {
+    try {
+      setChatLoading(true);
+      const response = await apiClient.get(`/chat/store/conversations/${customerId}/messages`);
+      setChatMessages(response.data || []);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  // Send message to customer
+  const sendStoreMessage = async () => {
+    if (!newChatMessage.trim() || !selectedConversation) return;
+    
+    try {
+      setSendingChatMessage(true);
+      await apiClient.post('/chat/store/messages', {
+        customerId: selectedConversation.customerId,
+        message: newChatMessage.trim()
+      });
+      
+      setNewChatMessage('');
+      await fetchCustomerMessages(selectedConversation.customerId);
+      await fetchConversations();
+      await fetchUnreadCount();
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setSendingChatMessage(false);
+    }
+  };
+
+  // Fetch unread count
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await apiClient.get('/chat/store/unread-count');
+      setUnreadCount(response.data.unreadCount || 0);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
+
+  // Auto-refresh chat when section is open
+  useEffect(() => {
+    if (showChatSection) {
+      fetchConversations();
+      const interval = setInterval(() => {
+        fetchConversations();
+        if (selectedConversation) {
+          fetchCustomerMessages(selectedConversation.customerId);
+        }
+        fetchUnreadCount();
+      }, 3000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [showChatSection, selectedConversation]);
+
+  // Load messages when conversation is selected
+  useEffect(() => {
+    if (selectedConversation) {
+      fetchCustomerMessages(selectedConversation.customerId);
+    }
+  }, [selectedConversation]);
 
   const fetchOrders = async () => {
     try {
@@ -172,19 +265,189 @@ const Orders = () => {
             <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
             <p className="text-gray-600 mt-1">Manage customer orders</p>
           </div>
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg"
-          >
-            <option value="all">All Orders</option>
-            <option value="pending">Pending</option>
-            <option value="processing">Preparing</option>
-            <option value="shipped">To Be Shipped</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+          <div className="flex gap-3 items-center">
+            <button
+              onClick={() => {
+                setShowChatSection(!showChatSection);
+                if (!showChatSection) {
+                  fetchConversations();
+                }
+              }}
+              className="relative px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              Customer Messages
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg"
+            >
+              <option value="all">All Orders</option>
+              <option value="pending">Pending</option>
+              <option value="processing">Preparing</option>
+              <option value="shipped">To Be Shipped</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
         </div>
+
+        {/* Chat Section */}
+        {showChatSection && (
+          <div className="mb-8 bg-white rounded-lg shadow-md">
+            <div className="p-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Customer Messages</h2>
+              <p className="text-sm text-gray-600 mt-1">Chat with your customers about products, orders, and shipping</p>
+            </div>
+            <div className="flex" style={{ height: '600px' }}>
+              {/* Conversations List */}
+              <div className="w-1/3 border-r border-gray-200 overflow-y-auto">
+                {chatLoading && conversations.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">Loading conversations...</div>
+                ) : conversations.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">
+                    <p>No conversations yet.</p>
+                    <p className="text-sm mt-2">Customers can start chatting from your store page.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    {conversations.map((conv) => (
+                      <button
+                        key={conv.customerId}
+                        onClick={() => setSelectedConversation(conv)}
+                        className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
+                          selectedConversation?.customerId === conv.customerId ? 'bg-purple-50 border-l-4 border-purple-600' : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="font-semibold text-gray-900">
+                            {conv.customer?.firstName} {conv.customer?.lastName}
+                          </div>
+                          {conv.unreadCount > 0 && (
+                            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                              {conv.unreadCount}
+                            </span>
+                          )}
+                        </div>
+                        {conv.lastMessage && (
+                          <div className="text-sm text-gray-600 truncate">
+                            {conv.lastMessage.message}
+                          </div>
+                        )}
+                        {conv.lastMessage && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            {new Date(conv.lastMessage.createdAt).toLocaleDateString()}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Messages Area */}
+              <div className="flex-1 flex flex-col">
+                {selectedConversation ? (
+                  <>
+                    {/* Chat Header */}
+                    <div className="p-4 border-b border-gray-200 bg-gray-50">
+                      <h3 className="font-semibold text-gray-900">
+                        {selectedConversation.customer?.firstName} {selectedConversation.customer?.lastName}
+                      </h3>
+                      <p className="text-sm text-gray-600">{selectedConversation.customer?.email}</p>
+                    </div>
+
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+                      {chatLoading && chatMessages.length === 0 ? (
+                        <div className="text-center text-gray-500 py-8">Loading messages...</div>
+                      ) : chatMessages.length === 0 ? (
+                        <div className="text-center text-gray-500 py-8">
+                          <p>No messages yet.</p>
+                          <p className="text-sm mt-2">Start the conversation!</p>
+                        </div>
+                      ) : (
+                        chatMessages.map((msg) => (
+                          <div
+                            key={msg.id}
+                            className={`flex ${msg.senderType === 'store_owner' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div
+                              className={`max-w-[70%] rounded-lg p-3 ${
+                                msg.senderType === 'store_owner'
+                                  ? 'bg-purple-600 text-white'
+                                  : 'bg-white text-gray-800 border border-gray-200'
+                              }`}
+                            >
+                              <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                              <p className={`text-xs mt-1 ${msg.senderType === 'store_owner' ? 'text-purple-100' : 'text-gray-500'}`}>
+                                {new Date(msg.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                      <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })} />
+                    </div>
+
+                    {/* Message Input */}
+                    <div className="p-4 border-t border-gray-200 bg-white">
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          sendStoreMessage();
+                        }}
+                        className="flex gap-2"
+                      >
+                        <input
+                          type="text"
+                          value={newChatMessage}
+                          onChange={(e) => setNewChatMessage(e.target.value)}
+                          placeholder="Type your message..."
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          disabled={sendingChatMessage}
+                        />
+                        <button
+                          type="submit"
+                          disabled={!newChatMessage.trim() || sendingChatMessage}
+                          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {sendingChatMessage ? (
+                            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                          )}
+                        </button>
+                      </form>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-gray-500">
+                    <div className="text-center">
+                      <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                      </svg>
+                      <p>Select a conversation to start chatting</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {orders.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow">

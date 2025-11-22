@@ -15,6 +15,7 @@ import supportRoutes from './routes/supportRoutes.js';
 import apiApplicationRoutes from './routes/apiApplicationRoutes.js';
 import adminSetupRoutes from './routes/adminSetupRoutes.js';
 import productReviewRoutes from './routes/productReviewRoutes.js';
+import storeChatRoutes from './routes/storeChatRoutes.js';
 import { servePublishedStoreHTML } from './controllers/publicStoreController.js';
 
 // Import models to ensure they are registered with Sequelize
@@ -29,6 +30,7 @@ import SupportTicket from './models/supportTicket.js';
 import SupportMessage from './models/supportMessage.js';
 import ApiApplication from './models/apiApplication.js';
 import ProductReview from './models/productReview.js';
+import StoreChat from './models/storeChat.js';
 
 // Set up model associations after all models are loaded
 Store.hasMany(Product, {
@@ -140,6 +142,9 @@ try {
 
   app.use('/api', productReviewRoutes);
   console.log('✅ Product Review routes registered at /api');
+  
+  app.use('/api/chat', storeChatRoutes);
+  console.log('✅ Store Chat routes registered at /api/chat');
 
   // Register test route directly (not via router)
   // Test route to verify server is running
@@ -452,5 +457,29 @@ process.on('SIGINT', () => shutdown('SIGINT'));
     console.log('✅ Products schema verified');
   } catch (prodSchemaErr) {
     console.warn('⚠️ Skipping Products schema ensure:', prodSchemaErr.message);
+  }
+
+  try {
+    console.log('🛠️ Ensuring StoreChats table is up to date...');
+    await sequelize.query(`
+      CREATE TABLE IF NOT EXISTS "StoreChats" (
+        id SERIAL PRIMARY KEY,
+        "storeId" INTEGER NOT NULL REFERENCES "Stores"(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        "customerId" INTEGER NOT NULL REFERENCES "Customers"(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        "senderType" VARCHAR(255) NOT NULL CHECK ("senderType" IN ('customer', 'store_owner')),
+        "senderId" INTEGER NOT NULL,
+        message TEXT NOT NULL,
+        "isRead" BOOLEAN DEFAULT FALSE,
+        "productId" INTEGER REFERENCES "Products"(id) ON DELETE SET NULL ON UPDATE CASCADE,
+        "orderId" INTEGER REFERENCES "Orders"(id) ON DELETE SET NULL ON UPDATE CASCADE,
+        "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL,
+        "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL
+      );
+    `);
+    await sequelize.query('CREATE INDEX IF NOT EXISTS "idx_storechats_store_customer" ON "StoreChats"("storeId", "customerId")');
+    await sequelize.query('CREATE INDEX IF NOT EXISTS "idx_storechats_store_unread" ON "StoreChats"("storeId", "isRead")');
+    console.log('✅ StoreChats table ensured');
+  } catch (chatErr) {
+    console.warn('⚠️ Skipping StoreChats table ensure:', chatErr.message);
   }
 })();
