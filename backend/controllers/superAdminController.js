@@ -12,9 +12,13 @@ export const getAllStores = async (req, res) => {
     const { status, search } = req.query;
     
     const whereClause = {};
-    if (status) {
-      whereClause.isPublished = status === 'published';
+    if (status === 'published') {
+      whereClause.isPublished = true;
+    } else if (status === 'unpublished') {
+      whereClause.isPublished = false;
     }
+    // If status is 'all' or not provided, don't filter by isPublished
+    
     if (search) {
       whereClause[Op.or] = [
         { storeName: { [Op.iLike]: `%${search}%` } },
@@ -27,15 +31,31 @@ export const getAllStores = async (req, res) => {
       include: [
         {
           model: User,
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+          required: false // LEFT JOIN so stores without users are still included
         }
       ],
       order: [['createdAt', 'DESC']]
     });
 
-    res.json(stores);
+    // Parse content if needed and format response
+    const formattedStores = stores.map(store => {
+      const storeData = store.toJSON();
+      // Parse content if it's a string
+      if (storeData.content && typeof storeData.content === 'string') {
+        try {
+          storeData.content = JSON.parse(storeData.content);
+        } catch (e) {
+          console.error('Error parsing store content:', e);
+        }
+      }
+      return storeData;
+    });
+
+    res.json(formattedStores);
   } catch (error) {
     console.error('Error fetching all stores:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ message: 'Error fetching stores', error: error.message });
   }
 };
@@ -47,9 +67,31 @@ export const getStoreStatistics = async (req, res) => {
     const publishedStores = await Store.count({ where: { isPublished: true } });
     const totalUsers = await User.count({ where: { role: 'admin' } });
     const totalOrders = await Order.count();
-    const totalRevenue = await Order.sum('total', {
-      where: { paymentStatus: 'completed' }
-    }) || 0;
+    
+    // Calculate revenue from orders with completed payment
+    let totalRevenue = 0;
+    try {
+      // Get all completed orders and calculate total manually
+      const completedOrders = await Order.findAll({
+        where: { paymentStatus: 'completed' },
+        attributes: ['subtotal', 'shipping', 'total'],
+        raw: true
+      });
+      
+      totalRevenue = completedOrders.reduce((sum, order) => {
+        // Try to use 'total' column first, otherwise calculate from subtotal + shipping
+        if (order.total !== null && order.total !== undefined) {
+          return sum + parseFloat(order.total || 0);
+        } else {
+          const subtotal = parseFloat(order.subtotal || 0);
+          const shipping = parseFloat(order.shipping || 0);
+          return sum + subtotal + shipping;
+        }
+      }, 0);
+    } catch (revenueError) {
+      console.error('Error calculating revenue:', revenueError);
+      totalRevenue = 0;
+    }
 
     res.json({
       totalStores,
@@ -61,6 +103,7 @@ export const getStoreStatistics = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching statistics:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ message: 'Error fetching statistics', error: error.message });
   }
 };
@@ -118,6 +161,26 @@ export const getStoreDetails = async (req, res) => {
   } catch (error) {
     console.error('Error fetching store details:', error);
     res.status(500).json({ message: 'Error fetching store details', error: error.message });
+  }
+};
+
+// Delete store (Super Admin only)
+export const deleteStore = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const store = await Store.findByPk(id);
+    if (!store) {
+      return res.status(404).json({ message: 'Store not found' });
+    }
+
+    // Delete the store (cascade will handle related products and orders)
+    await store.destroy();
+
+    res.json({ message: 'Store deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting store:', error);
+    res.status(500).json({ message: 'Error deleting store', error: error.message });
   }
 };
 

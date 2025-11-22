@@ -3,7 +3,8 @@ import {
   getAllStores,
   getStoreStatistics,
   updateStoreStatus,
-  getStoreDetails
+  getStoreDetails,
+  deleteStore
 } from '../controllers/superAdminController.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireSuperAdmin } from '../middleware/checkRole.js';
@@ -18,6 +19,7 @@ router.get('/stores', getAllStores);
 router.get('/statistics', getStoreStatistics);
 router.get('/stores/:id', getStoreDetails);
 router.put('/stores/:id/status', updateStoreStatus);
+router.delete('/stores/:id', deleteStore);
 
 export default router;
 

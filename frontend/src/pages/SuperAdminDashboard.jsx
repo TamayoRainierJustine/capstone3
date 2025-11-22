@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
-import { FaStore, FaUsers, FaShoppingCart, FaDollarSign, FaEye, FaToggleOn, FaToggleOff } from 'react-icons/fa';
+import { FaStore, FaUsers, FaShoppingCart, FaDollarSign, FaEye, FaToggleOn, FaToggleOff, FaTrash } from 'react-icons/fa';
 
 const SuperAdminDashboard = () => {
   const [stores, setStores] = useState([]);
@@ -56,6 +56,22 @@ const SuperAdminDashboard = () => {
     } catch (error) {
       console.error('Error updating store status:', error);
       alert('Failed to update store status');
+    }
+  };
+
+  const handleDeleteStore = async (storeId, storeName) => {
+    if (!confirm(`Sigurado ka bang gusto mong tanggalin ang "${storeName}"? Ang lahat ng products, orders, at data nito ay mabubura na.\n\nHindi ito pwedeng i-undo!`)) {
+      return;
+    }
+
+    try {
+      await apiClient.delete(`/admin/stores/${storeId}`);
+      alert('Store deleted successfully');
+      fetchStores();
+      fetchStatistics();
+    } catch (error) {
+      console.error('Error deleting store:', error);
+      alert(error.response?.data?.message || 'Failed to delete store');
     }
   };
 
@@ -240,16 +256,26 @@ const SuperAdminDashboard = () => {
                         {new Date(store.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => handleToggleStoreStatus(store.id, store.isPublished)}
-                          className={`px-3 py-1 rounded ${
-                            store.isPublished
-                              ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                              : 'bg-green-100 text-green-800 hover:bg-green-200'
-                          }`}
-                        >
-                          {store.isPublished ? 'Unpublish' : 'Publish'}
-                        </button>
+                        <div className="flex gap-2 items-center">
+                          <button
+                            onClick={() => handleToggleStoreStatus(store.id, store.isPublished)}
+                            className={`px-3 py-1 rounded ${
+                              store.isPublished
+                                ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                                : 'bg-green-100 text-green-800 hover:bg-green-200'
+                            }`}
+                          >
+                            {store.isPublished ? 'Unpublish' : 'Publish'}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStore(store.id, store.storeName)}
+                            className="px-3 py-1 rounded bg-red-100 text-red-800 hover:bg-red-200 flex items-center gap-1"
+                            title="Delete Store"
+                          >
+                            <FaTrash size={12} />
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
