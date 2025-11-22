@@ -777,7 +777,7 @@ const PublishedStore = () => {
       setModalMode('login');
       return;
     }
-    
+
     try {
       setSendingChatMessage(true);
       const token = localStorage.getItem('token');
@@ -787,18 +787,54 @@ const PublishedStore = () => {
         return;
       }
       
+      // Check if token is expired
+      try {
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          const currentTime = Date.now() / 1000;
+          if (payload.exp && payload.exp < currentTime) {
+            console.log('sendChatMessage: Token expired');
+            localStorage.removeItem('token');
+            localStorage.removeItem('customerInfo');
+            setCustomerInfo(null);
+            setShowLoginModal(true);
+            setModalMode('login');
+            return;
+          }
+        }
+      } catch (tokenCheckErr) {
+        console.warn('sendChatMessage: Error checking token:', tokenCheckErr);
+      }
+      
+      const config = {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      };
+      
       await apiClient.post('/chat/customer/messages', {
         storeId: store.id,
         message: newChatMessage.trim()
-      }, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      }, config);
       
       setNewChatMessage('');
       await fetchChatMessages();
     } catch (error) {
       console.error('Error sending chat message:', error);
-      alert('Failed to send message. Please try again.');
+      
+      // If 401, clear invalid token and show login
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('customerInfo');
+        setCustomerInfo(null);
+        setShowChatBox(false);
+        setShowLoginModal(true);
+        setModalMode('login');
+      } else {
+        alert('Failed to send message. Please try again.');
+      }
     } finally {
       setSendingChatMessage(false);
     }
