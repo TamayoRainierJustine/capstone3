@@ -34,20 +34,16 @@ apiClient.interceptors.response.use(
                             currentPath === '/services' ||
                             currentPath === '/contact';
       
-      // Only clear token, don't redirect on public routes
-      // Protected routes (using PrivateRoute component) will handle redirects themselves
+      // On public routes (especially published stores), don't redirect
+      // Let the user continue viewing the public content
+      // Published stores are viewable without authentication
       if (!isPublicRoute) {
+        // Only redirect to login on protected routes
         localStorage.removeItem('token');
         window.location.href = '/login';
-      } else {
-        // On public routes, just clear the token silently
-        // Don't redirect - let the user continue viewing the public content
-        const token = localStorage.getItem('token');
-        if (token) {
-          // Only clear token if it exists (avoid clearing customer tokens unnecessarily)
-          // For published stores, customers may have valid tokens that shouldn't be cleared
-        }
       }
+      // On public routes, just silently fail - don't redirect or clear tokens
+      // This allows published stores to work even if there are 401 errors
     }
     return Promise.reject(error);
   }
