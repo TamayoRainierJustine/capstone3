@@ -13,7 +13,14 @@ const Customer = sequelize.define('Customer', {
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
   password: { type: DataTypes.STRING, allowNull: false },
   isVerified: { type: DataTypes.BOOLEAN, defaultValue: false },
-  emailVerifiedAt: { type: DataTypes.DATE, allowNull: true }
+  emailVerifiedAt: { type: DataTypes.DATE, allowNull: true },
+  // Address fields
+  region: { type: DataTypes.STRING, allowNull: true },
+  province: { type: DataTypes.STRING, allowNull: true },
+  municipality: { type: DataTypes.STRING, allowNull: true },
+  barangay: { type: DataTypes.STRING, allowNull: true },
+  houseNumber: { type: DataTypes.STRING, allowNull: true },
+  street: { type: DataTypes.STRING, allowNull: true }
 }, {
   tableName: 'Customers',
   timestamps: true

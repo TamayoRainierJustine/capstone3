@@ -694,8 +694,58 @@ const PublishedStore = () => {
     lastName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    // Address fields
+    region: '',
+    province: '',
+    municipality: '',
+    barangay: '',
+    houseNumber: '',
+    street: ''
   });
+  
+  // Address dropdown lists for registration form
+  const [registerProvincesList, setRegisterProvincesList] = useState([]);
+  const [registerMunicipalitiesList, setRegisterMunicipalitiesList] = useState([]);
+  const [registerBarangaysList, setRegisterBarangaysList] = useState([]);
+  
+  // Update provinces when region changes in registration form
+  useEffect(() => {
+    if (registerForm.region) {
+      setRegisterProvincesList(getProvincesByRegion(registerForm.region));
+      setRegisterMunicipalitiesList([]);
+      setRegisterBarangaysList([]);
+    } else {
+      setRegisterProvincesList([]);
+      setRegisterMunicipalitiesList([]);
+      setRegisterBarangaysList([]);
+    }
+  }, [registerForm.region]);
+  
+  // Update municipalities when province changes in registration form
+  useEffect(() => {
+    if (registerForm.province) {
+      setRegisterMunicipalitiesList(getCityMunByProvince(registerForm.province));
+      setRegisterBarangaysList([]);
+    } else {
+      setRegisterMunicipalitiesList([]);
+      setRegisterBarangaysList([]);
+    }
+  }, [registerForm.province]);
+  
+  // Update barangays when municipality changes in registration form
+  useEffect(() => {
+    if (registerForm.municipality) {
+      const barangaysData = getBarangayByMun(registerForm.municipality);
+      const barangaysArray = barangaysData?.data || barangaysData || [];
+      setRegisterBarangaysList(Array.isArray(barangaysArray) ? barangaysArray.map(brgy => ({
+        brgy_code: brgy.brgy_code || brgy.code || brgy.brgyCode || '',
+        name: (brgy.name || brgy.brgy_name || brgy.brgyName || '').toUpperCase()
+      })) : []);
+    } else {
+      setRegisterBarangaysList([]);
+    }
+  }, [registerForm.municipality]);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [registerError, setRegisterError] = useState('');
@@ -1186,7 +1236,14 @@ const PublishedStore = () => {
         firstName: registerForm.firstName,
         lastName: registerForm.lastName,
         email: registerForm.email,
-        password: registerForm.password
+        password: registerForm.password,
+        // Address fields
+        region: registerForm.region || null,
+        province: registerForm.province || null,
+        municipality: registerForm.municipality || null,
+        barangay: registerForm.barangay || null,
+        houseNumber: registerForm.houseNumber || null,
+        street: registerForm.street || null
       });
 
       setRegisterError('');
@@ -1195,8 +1252,18 @@ const PublishedStore = () => {
         lastName: '',
         email: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        region: '',
+        province: '',
+        municipality: '',
+        barangay: '',
+        houseNumber: '',
+        street: ''
       });
+      // Reset address dropdowns
+      setRegisterProvincesList([]);
+      setRegisterMunicipalitiesList([]);
+      setRegisterBarangaysList([]);
 
       startCustomerVerification(
         registerForm.email,
@@ -4034,6 +4101,107 @@ const PublishedStore = () => {
                     >
                       {showConfirmPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
                     </button>
+                  </div>
+                  
+                  {/* Address Fields */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Delivery Address (Optional)</h3>
+                    <p className="text-xs text-gray-500 mb-3">Save your address to speed up future orders</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Region</label>
+                        <select
+                          value={registerForm.region}
+                          onChange={(e) => {
+                            setRegisterForm(prev => ({ ...prev, region: e.target.value, province: '', municipality: '', barangay: '' }));
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        >
+                          <option value="">Select Region</option>
+                          {regionsList.map((region) => (
+                            <option key={region.reg_code} value={region.reg_code}>
+                              {region.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Province</label>
+                        <select
+                          value={registerForm.province}
+                          onChange={(e) => {
+                            setRegisterForm(prev => ({ ...prev, province: e.target.value, municipality: '', barangay: '' }));
+                          }}
+                          disabled={!registerForm.region}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                        >
+                          <option value="">Select Province</option>
+                          {registerProvincesList.map((province) => (
+                            <option key={province.prov_code} value={province.prov_code}>
+                              {province.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Municipality</label>
+                        <select
+                          value={registerForm.municipality}
+                          onChange={(e) => {
+                            setRegisterForm(prev => ({ ...prev, municipality: e.target.value, barangay: '' }));
+                          }}
+                          disabled={!registerForm.province}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                        >
+                          <option value="">Select Municipality</option>
+                          {registerMunicipalitiesList.map((municipality) => (
+                            <option key={municipality.mun_code} value={municipality.mun_code}>
+                              {municipality.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Barangay</label>
+                        <select
+                          value={registerForm.barangay}
+                          onChange={(e) => {
+                            setRegisterForm(prev => ({ ...prev, barangay: e.target.value }));
+                          }}
+                          disabled={!registerForm.municipality}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                        >
+                          <option value="">Select Barangay</option>
+                          {registerBarangaysList.map((barangay) => (
+                            <option key={barangay.brgy_code || barangay.name} value={barangay.name}>
+                              {barangay.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">House Number / Building</label>
+                        <input
+                          type="text"
+                          value={registerForm.houseNumber}
+                          onChange={e => setRegisterForm(prev => ({ ...prev, houseNumber: e.target.value }))}
+                          placeholder="e.g., 123, Unit 5B, Building A"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">House number, unit, or building name</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Street Name</label>
+                        <input
+                          type="text"
+                          value={registerForm.street}
+                          onChange={e => setRegisterForm(prev => ({ ...prev, street: e.target.value }))}
+                          placeholder="e.g., Rizal Street, Main Avenue"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Street name or subdivision</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 {registerError && (

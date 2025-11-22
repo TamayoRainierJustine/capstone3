@@ -418,6 +418,13 @@ process.on('SIGINT', () => shutdown('SIGINT'));
     console.log('🛠️ Ensuring Customers verification schema is up to date...');
     await sequelize.query('ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "isVerified" BOOLEAN DEFAULT false');
     await sequelize.query('ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "emailVerifiedAt" TIMESTAMP WITH TIME ZONE');
+    // Add address fields for existing customers (optional fields)
+    await sequelize.query('ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "region" VARCHAR(255)');
+    await sequelize.query('ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "province" VARCHAR(255)');
+    await sequelize.query('ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "municipality" VARCHAR(255)');
+    await sequelize.query('ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "barangay" VARCHAR(255)');
+    await sequelize.query('ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "houseNumber" VARCHAR(255)');
+    await sequelize.query('ALTER TABLE "Customers" ADD COLUMN IF NOT EXISTS "street" VARCHAR(255)');
     await sequelize.query(`
       CREATE TABLE IF NOT EXISTS "CustomerVerificationTokens" (
         id SERIAL PRIMARY KEY,
@@ -431,7 +438,7 @@ process.on('SIGINT', () => shutdown('SIGINT'));
     `);
     await sequelize.query('CREATE INDEX IF NOT EXISTS "idx_customer_verification_email" ON "CustomerVerificationTokens"(email)');
     await sequelize.query('CREATE INDEX IF NOT EXISTS "idx_customer_verification_expires" ON "CustomerVerificationTokens"("expiresAt")');
-    console.log('✅ Customers verification schema verified');
+    console.log('✅ Customers verification and address schema verified');
   } catch (customerSchemaErr) {
     console.warn('⚠️ Skipping Customers verification schema ensure:', customerSchemaErr.message);
   }

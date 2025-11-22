@@ -532,7 +532,7 @@ export const resetPasswordWithCode = async (req, res) => {
 // Customer registration (for published store buyers)
 export const registerCustomer = async (req, res) => {
   const startTime = Date.now();
-  const { firstName, lastName, email, password } = req.body;
+  const { firstName, lastName, email, password, region, province, municipality, barangay, houseNumber, street } = req.body;
   
   try {
     // Validate input
@@ -576,13 +576,20 @@ export const registerCustomer = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create customer
+    // Create customer with address fields
     const customer = await Customer.create({
       firstName,
       lastName,
       email,
       password: hashedPassword,
-      isVerified: false
+      isVerified: false,
+      // Address fields (optional during registration)
+      region: region || null,
+      province: province || null,
+      municipality: municipality || null,
+      barangay: barangay || null,
+      houseNumber: houseNumber || null,
+      street: street || null
     });
 
     const verificationEmailSent = await sendCustomerVerificationEmail({
