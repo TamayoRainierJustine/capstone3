@@ -388,7 +388,95 @@ const PublishedStore = () => {
         price: parseFloat(item.price || 0)
       })) || getCheckoutItems()
     };
-    setOrderHistory(prev => [entry, ...prev].slice(0, 20));
+    setOrderHistory(prev => {
+      // Check if order already exists, update it; otherwise add it
+      const existingIndex = prev.findIndex(o => o.orderNumber === entry.orderNumber);
+      if (existingIndex >= 0) {
+        // Update existing order
+        const updated = [...prev];
+        updated[existingIndex] = entry;
+        return updated;
+      } else {
+        // Add new order
+        return [entry, ...prev].slice(0, 20);
+      }
+    });
+  };
+
+  // Helper function to format order status for display
+  const getStatusLabel = (status) => {
+    const labels = {
+      pending: 'Pending',
+      processing: 'Preparing',
+      preparing: 'Preparing',
+      shipped: 'To Be Shipped',
+      completed: 'Completed',
+      cancelled: 'Cancelled'
+    };
+    return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  // Helper function to format payment status for display
+  const getPaymentStatusLabel = (status) => {
+    const labels = {
+      pending: 'Pending',
+      processing: 'Processing',
+      completed: 'Completed',
+      failed: 'Failed',
+      refunded: 'Refunded'
+    };
+    return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  // Fetch customer orders from backend to sync with latest status
+  const fetchCustomerOrders = async (customerEmail) => {
+    if (!customerEmail) return;
+    
+    try {
+      setOrderHistoryLoading(true);
+      const response = await apiClient.get(`/orders/customer?email=${encodeURIComponent(customerEmail)}`);
+      const backendOrders = response.data || [];
+      
+      // Transform backend orders to match orderHistory format
+      const formattedOrders = backendOrders.map(order => ({
+        orderNumber: order.orderNumber,
+        status: order.status || 'pending',
+        paymentStatus: order.paymentStatus || 'pending',
+        subtotal: order.subtotal || 0,
+        shipping: order.shipping || 0,
+        total: order.total || 0,
+        placedAt: order.placedAt || order.createdAt || new Date().toISOString(),
+        items: order.items || []
+      }));
+      
+      // Merge with localStorage orders - backend orders take precedence (they have latest status)
+      setOrderHistory(prev => {
+        const merged = [];
+        const orderMap = new Map();
+        
+        // Add backend orders first (latest status)
+        formattedOrders.forEach(order => {
+          orderMap.set(order.orderNumber, order);
+        });
+        
+        // Add localStorage orders if they're not in backend (fallback)
+        prev.forEach(order => {
+          if (!orderMap.has(order.orderNumber)) {
+            orderMap.set(order.orderNumber, order);
+          }
+        });
+        
+        // Convert map to array and sort by date (newest first)
+        return Array.from(orderMap.values())
+          .sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt))
+          .slice(0, 50); // Keep top 50
+      });
+    } catch (error) {
+      console.error('Error fetching customer orders:', error);
+      // Don't show error to user - just use localStorage data as fallback
+    } finally {
+      setOrderHistoryLoading(false);
+    }
   };
 
   
@@ -431,6 +519,7 @@ const PublishedStore = () => {
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderReferenceNumber, setOrderReferenceNumber] = useState(null);
   const [showOrderHistoryModal, setShowOrderHistoryModal] = useState(false);
+  const [orderHistoryLoading, setOrderHistoryLoading] = useState(false);
 
   // Helper: classify destination area based on region/province
   const getDestinationArea = (regionCode, provinceCode) => {
@@ -2215,14 +2304,17 @@ const PublishedStore = () => {
           
           // Handle Track Orders icon
           if (iconType.includes('track-orders') || iconType === 'track-orders' || iconType.includes('track') || iconType.includes('orders')) {
-            icon.onclick = (e) => {
+            icon.onclick = async (e) => {
               e.preventDefault();
               e.stopPropagation();
               
               // Check if user is logged in
               const customerData = getCustomerData();
               if (customerData) {
-                // User is logged in, show order history directly
+                // User is logged in, fetch latest orders from backend then show modal
+                if (customerData.email) {
+                  await fetchCustomerOrders(customerData.email);
+                }
                 setShowOrderHistoryModal(true);
               } else {
                 // Not logged in, show login modal
@@ -2305,10 +2397,13 @@ const PublishedStore = () => {
                 };
                 const ordersBtn = profileModal.querySelector('#view-orders');
                 if (ordersBtn) {
-                  ordersBtn.onclick = function(evt) {
+                  ordersBtn.onclick = async function(evt) {
                     evt.preventDefault();
                     evt.stopPropagation();
-                    // Directly open order history modal
+                    // Fetch latest orders from backend then open order history modal
+                    if (customerData.email) {
+                      await fetchCustomerOrders(customerData.email);
+                    }
                     setShowOrderHistoryModal(true);
                     profileModal.remove();
                   };
@@ -4334,7 +4429,11 @@ const PublishedStore = () => {
                 ×
               </button>
             </div>
-            {orderHistory.length > 0 ? (
+            {orderHistoryLoading ? (
+              <div className="p-12 text-center text-gray-500">
+                <p>Loading your orders...</p>
+              </div>
+            ) : orderHistory.length > 0 ? (
               <div className="divide-y divide-gray-200">
                 {orderHistory.map(order => (
                   <div key={order.orderNumber} className="p-6 flex flex-col gap-2 bg-gray-50">
@@ -4344,8 +4443,8 @@ const PublishedStore = () => {
                         <p className="font-semibold text-gray-900">{order.orderNumber}</p>
                       </div>
                       <div className="flex gap-2 text-sm">
-                        <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-700 capitalize">{order.status}</span>
-                        <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 capitalize">{order.paymentStatus}</span>
+                        <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-700 capitalize">{getStatusLabel(order.status)}</span>
+                        <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 capitalize">{getPaymentStatusLabel(order.paymentStatus)}</span>
                       </div>
                     </div>
                     <div className="text-sm text-gray-600">

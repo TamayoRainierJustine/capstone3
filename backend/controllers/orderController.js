@@ -662,3 +662,59 @@ export const getSalesAnalytics = async (req, res) => {
   }
 };
 
+// Get customer orders by email (public route for customers to track their orders)
+export const getCustomerOrders = async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Find all orders for this customer email
+    const orders = await Order.findAll({
+      where: {
+        customerEmail: email
+      },
+      include: [
+        {
+          model: OrderItem,
+          include: [Product]
+        },
+        {
+          model: Store,
+          attributes: ['id', 'storeName', 'domainName']
+        }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: 50 // Limit to recent 50 orders
+    });
+
+    // Format orders for customer view
+    const formattedOrders = orders.map(order => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      paymentStatus: order.paymentStatus,
+      paymentMethod: order.paymentMethod,
+      subtotal: parseFloat(order.subtotal || 0),
+      shipping: parseFloat(order.shipping || 0),
+      total: parseFloat(order.total || 0),
+      placedAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      items: order.OrderItems?.map(item => ({
+        id: item.productId,
+        name: item.Product?.name || `Product ${item.productId}`,
+        quantity: item.quantity,
+        price: parseFloat(item.price || 0)
+      })) || [],
+      storeName: order.Store?.storeName || 'Store'
+    }));
+
+    res.json(formattedOrders);
+  } catch (error) {
+    console.error('Error fetching customer orders:', error);
+    res.status(500).json({ message: 'Error fetching customer orders', error: error.message });
+  }
+};
+

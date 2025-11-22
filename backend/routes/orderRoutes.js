@@ -6,14 +6,16 @@ import {
   updateOrderStatus,
   updatePaymentStatus,
   getSalesAnalytics,
-  deleteOrder
+  deleteOrder,
+  getCustomerOrders
 } from '../controllers/orderController.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Public route - no authentication required (for creating orders from published stores)
+// Public routes - no authentication required
 router.post('/', createOrder);
+router.get('/customer', getCustomerOrders); // GET /api/orders/customer?email=...
 
 // All routes below require authentication
 router.use(authenticateToken);
