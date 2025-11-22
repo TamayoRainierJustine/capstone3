@@ -814,12 +814,15 @@ const PublishedStore = () => {
         }
       };
       
-      await apiClient.post('/chat/customer/messages', {
+      const response = await apiClient.post('/chat/customer/messages', {
         storeId: store.id,
         message: newChatMessage.trim()
       }, config);
       
       setNewChatMessage('');
+      
+      // If there's an auto-reply from the backend, it will be included in the response
+      // Refresh messages to get both the sent message and any auto-reply
       await fetchChatMessages();
     } catch (error) {
       console.error('Error sending chat message:', error);

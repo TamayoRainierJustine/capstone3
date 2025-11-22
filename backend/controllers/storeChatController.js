@@ -250,6 +250,24 @@ export const sendCustomerMessage = async (req, res) => {
       return res.status(404).json({ message: 'Store not found' });
     }
 
+    // Check if this is the first message from this customer (no store owner has replied yet)
+    const existingMessages = await StoreChat.count({
+      where: {
+        storeId: parseInt(storeId),
+        customerId: customerId
+      }
+    });
+
+    // Check if store owner has already sent a message to this customer
+    const hasStoreOwnerMessage = await StoreChat.findOne({
+      where: {
+        storeId: parseInt(storeId),
+        customerId: customerId,
+        senderType: 'store_owner'
+      }
+    });
+
+    // Create the customer's message
     const chatMessage = await StoreChat.create({
       storeId: parseInt(storeId),
       customerId: customerId,
@@ -261,6 +279,41 @@ export const sendCustomerMessage = async (req, res) => {
       isRead: false
     });
 
+    // If this is the first conversation and store owner hasn't replied, send auto-reply
+    let autoReplyMessage = null;
+    if (!hasStoreOwnerMessage) {
+      // Get store owner (user) for the auto-reply
+      const storeOwner = await User.findByPk(store.userId);
+      
+      // Default auto-reply message (can be customized in store settings later)
+      const autoReplyText = `Hi! Thank you for reaching out to ${store.storeName}. We have received your message and will get back to you as soon as possible. In the meantime, feel free to ask any questions about our products or services.`;
+      
+      // Create auto-reply message
+      autoReplyMessage = await StoreChat.create({
+        storeId: parseInt(storeId),
+        customerId: customerId,
+        senderType: 'store_owner',
+        senderId: store.userId,
+        message: autoReplyText,
+        productId: null,
+        orderId: null,
+        isRead: true // Mark as read since it's automated
+      });
+
+      // Get the auto-reply with store details for response
+      const autoReplyWithDetails = await StoreChat.findByPk(autoReplyMessage.id, {
+        include: [
+          {
+            model: Store,
+            attributes: ['id', 'storeName', 'logo']
+          }
+        ]
+      });
+
+      // Store auto-reply in the response for the frontend
+      autoReplyMessage = autoReplyWithDetails;
+    }
+
     const messageWithDetails = await StoreChat.findByPk(chatMessage.id, {
       include: [
         {
@@ -270,7 +323,11 @@ export const sendCustomerMessage = async (req, res) => {
       ]
     });
 
-    res.status(201).json(messageWithDetails);
+    // Return both messages if auto-reply was sent
+    res.status(201).json({
+      customerMessage: messageWithDetails,
+      autoReply: autoReplyMessage
+    });
   } catch (error) {
     console.error('Error sending customer message:', error);
     res.status(500).json({ message: 'Error sending message', error: error.message });
