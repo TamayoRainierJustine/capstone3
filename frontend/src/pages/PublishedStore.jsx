@@ -7,6 +7,7 @@ import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun }
 import { useAuth } from '../context/AuthContext';
 import { FaUserCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { QRCodeSVG } from 'qrcode.react';
+import { calculateDistance, buildAddressString } from '../utils/distanceCalculator';
 
 // Template mapping
 const templateFileMap = {
@@ -592,6 +593,74 @@ const PublishedStore = () => {
 
     return rates[weightBand]?.[destinationArea] || defaultRates[weightBand]?.[destinationArea] || 0;
   };
+
+  // Helper: Calculate shipping rate based on distance (if distance-based shipping is enabled)
+  const calculateShippingByDistance = async (customerAddress) => {
+    try {
+      const useDistanceBased = store?.content?.shippingDistanceBased;
+      const googleMapsApiKey = store?.content?.googleMapsApiKey;
+      
+      if (!useDistanceBased || !googleMapsApiKey) {
+        return null; // Distance-based shipping not enabled or no API key
+      }
+
+      // Build store address (origin)
+      const storeAddress = buildAddressString({
+        barangay: store?.barangay || '',
+        municipality: store?.municipality || '',
+        province: store?.province || '',
+        region: store?.region || ''
+      }, regions);
+
+      if (!storeAddress || storeAddress.trim() === '') {
+        console.warn('Store address not configured for distance calculation');
+        return null;
+      }
+
+      // Build customer address (destination)
+      const customerAddressString = buildAddressString(customerAddress, regions);
+
+      if (!customerAddressString || customerAddressString.trim() === '') {
+        console.warn('Customer address not complete for distance calculation');
+        return null;
+      }
+
+      // Calculate distance using Google Maps Distance Matrix API
+      const distanceResult = await calculateDistance(storeAddress, customerAddressString, googleMapsApiKey);
+      
+      if (!distanceResult || !distanceResult.distance) {
+        return null;
+      }
+
+      const distanceInKm = distanceResult.distance;
+      
+      // Get destination area for rate lookup
+      const destinationArea = getDestinationArea(customerAddress.region, customerAddress.province);
+      
+      // Get base rate and per kilometer rate for destination area
+      const distanceRates = store?.content?.shippingDistanceRates;
+      const areaRates = distanceRates?.[destinationArea];
+      
+      if (!areaRates) {
+        console.warn(`No distance rates configured for ${destinationArea}`);
+        return null;
+      }
+
+      // Calculate shipping fee: Base Rate + (Distance × Per Kilometer Rate)
+      const baseRate = parseFloat(areaRates.baseRate || 0);
+      const perKilometer = parseFloat(areaRates.perKilometer || 0);
+      const shippingFee = baseRate + (distanceInKm * perKilometer);
+
+      return {
+        shippingFee: Math.round(shippingFee * 100) / 100, // Round to 2 decimal places
+        distance: distanceInKm,
+        distanceText: distanceResult.distanceText
+      };
+    } catch (error) {
+      console.error('Error calculating distance-based shipping:', error);
+      return null; // Fallback to fixed rates
+    }
+  };
   
   // Ref to store callback function for order button clicks
   const orderButtonCallbackRef = React.useRef(null);
@@ -659,39 +728,65 @@ const PublishedStore = () => {
 
   // Automatically calculate shipping fee when address or product weight changes
   useEffect(() => {
-    try {
-      const productWeight = getProductWeight();
-      if (!orderData.region || !productWeight || productWeight <= 0) {
-        return;
+    const calculateShipping = async () => {
+      try {
+        const productWeight = getProductWeight();
+        if (!orderData.region || !productWeight || productWeight <= 0) {
+          return;
+        }
+        
+        // Auto-determine weight band from product weight
+        const autoWeightBand = getWeightBandFromWeight(productWeight);
+        if (!autoWeightBand) {
+          return;
+        }
+        
+        // Update weight band in orderData automatically
+        if (orderData.weightBand !== autoWeightBand) {
+          setOrderData(prev => ({
+            ...prev,
+            weightBand: autoWeightBand
+          }));
+        }
+        
+        // Check if distance-based shipping is enabled
+        const useDistanceBased = store?.content?.shippingDistanceBased;
+        const googleMapsApiKey = store?.content?.googleMapsApiKey;
+        
+        if (useDistanceBased && googleMapsApiKey && orderData.municipality && orderData.barangay) {
+          // Try distance-based calculation first
+          const distanceShipping = await calculateShippingByDistance({
+            region: orderData.region,
+            province: orderData.province,
+            municipality: orderData.municipality,
+            barangay: orderData.barangay
+          });
+          
+          if (distanceShipping && distanceShipping.shippingFee) {
+            setOrderData(prev => ({
+              ...prev,
+              shipping: distanceShipping.shippingFee
+            }));
+            return; // Successfully calculated using distance
+          }
+        }
+        
+        // Fallback to fixed rates
+        const destinationArea = getDestinationArea(orderData.region, orderData.province);
+        const rate = getShippingRate(autoWeightBand, destinationArea);
+        if (rate && !Number.isNaN(rate)) {
+          setOrderData(prev => ({
+            ...prev,
+            shipping: rate
+          }));
+        }
+      } catch (err) {
+        console.error('Error calculating shipping rate:', err);
       }
-      
-      // Auto-determine weight band from product weight
-      const autoWeightBand = getWeightBandFromWeight(productWeight);
-      if (!autoWeightBand) {
-        return;
-      }
-      
-      // Update weight band in orderData automatically
-      if (orderData.weightBand !== autoWeightBand) {
-        setOrderData(prev => ({
-          ...prev,
-          weightBand: autoWeightBand
-        }));
-      }
-      
-      // Calculate shipping fee
-      const destinationArea = getDestinationArea(orderData.region, orderData.province);
-      const rate = getShippingRate(autoWeightBand, destinationArea);
-      if (rate && !Number.isNaN(rate)) {
-        setOrderData(prev => ({
-          ...prev,
-          shipping: rate
-        }));
-      }
-    } catch (err) {
-      console.error('Error calculating shipping rate:', err);
-    }
-  }, [orderData.region, orderData.province, orderData.weightBand, checkoutItems, selectedProduct, orderData.quantity]);
+    };
+
+    calculateShipping();
+  }, [orderData.region, orderData.province, orderData.municipality, orderData.barangay, orderData.weightBand, checkoutItems, selectedProduct, orderData.quantity, store]);
   
   // Create a global function that the iframe can call
   useEffect(() => {

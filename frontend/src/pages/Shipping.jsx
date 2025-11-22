@@ -59,6 +59,17 @@ const Shipping = () => {
 
   // Distance-based configuration (optional)
   const [useDistanceBased, setUseDistanceBased] = useState(false);
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
+  const [regionsList] = useState(regions);
+  const [provincesList, setProvincesList] = useState([]);
+  const [municipalitiesList, setMunicipalitiesList] = useState([]);
+  const [barangaysList, setBarangaysList] = useState([]);
+  const [storeAddress, setStoreAddress] = useState({
+    region: '',
+    province: '',
+    municipality: '',
+    barangay: ''
+  });
   const [baseDistanceRates, setBaseDistanceRates] = useState(() => {
     const rates = {};
     destinationAreas.forEach(area => {
@@ -107,6 +118,35 @@ const Shipping = () => {
         }
         if (storeData.content?.shippingDistanceRates) {
           setBaseDistanceRates(storeData.content.shippingDistanceRates);
+        }
+        if (storeData.content?.googleMapsApiKey) {
+          setGoogleMapsApiKey(storeData.content.googleMapsApiKey);
+        }
+        // Load store address for distance calculation
+        if (storeData.region || storeData.province || storeData.municipality) {
+          setStoreAddress({
+            region: storeData.region || '',
+            province: storeData.province || '',
+            municipality: storeData.municipality || '',
+            barangay: storeData.barangay || ''
+          });
+          
+          // Load provinces, municipalities, barangays based on store address
+          if (storeData.region) {
+            const provinces = getProvincesByRegion(storeData.region);
+            setProvincesList(provinces);
+            
+            if (storeData.province) {
+              const municipalities = getCityMunByProvince(storeData.province);
+              setMunicipalitiesList(municipalities);
+              
+              if (storeData.municipality) {
+                const barangaysData = getBarangayByMun(storeData.municipality);
+                const barangaysArray = barangaysData?.data || barangaysData || [];
+                setBarangaysList(Array.isArray(barangaysArray) ? barangaysArray : []);
+              }
+            }
+          }
         }
       }
     } catch (error) {
@@ -164,7 +204,8 @@ const Shipping = () => {
         ...currentContent,
         shippingRates: shippingRates,
         shippingDistanceBased: useDistanceBased,
-        shippingDistanceRates: useDistanceBased ? baseDistanceRates : undefined
+        shippingDistanceRates: useDistanceBased ? baseDistanceRates : undefined,
+        googleMapsApiKey: useDistanceBased ? googleMapsApiKey : undefined
       };
 
       // Save to backend via store content API
@@ -327,11 +368,49 @@ const Shipping = () => {
               {/* Distance-Based Rates Configuration */}
               {useDistanceBased && (
                 <div>
-                  <h2 className="text-xl font-semibold mb-4">Distance-Based Shipping Rates</h2>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Configure base rates and per-kilometer rates for each destination area.
-                    Shipping cost = Base Rate + (Distance in km × Per Kilometer Rate)
-                  </p>
+                  <h2 className="text-xl font-semibold mb-4">Distance-Based Shipping Configuration</h2>
+                  
+                  {/* Google Maps API Key Configuration */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <h3 className="font-semibold text-gray-900 mb-2">Google Maps API Configuration</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Enter your Google Maps API key to enable distance-based shipping calculation.
+                      Get your API key from{' '}
+                      <a 
+                        href="https://console.cloud.google.com/google/maps-apis" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        Google Cloud Console
+                      </a>
+                      {' '}(requires Distance Matrix API enabled).
+                    </p>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Google Maps API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={googleMapsApiKey}
+                        onChange={(e) => setGoogleMapsApiKey(e.target.value)}
+                        placeholder="Enter your Google Maps API key"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Your API key will be securely stored in your store settings.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Distance-Based Rates */}
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold mb-2">Distance-Based Shipping Rates</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Configure base rates and per-kilometer rates for each destination area.
+                      Shipping cost = Base Rate + (Distance in km × Per Kilometer Rate)
+                    </p>
+                  </div>
                   
                   <div className="space-y-4">
                     {destinationAreas.map(area => (
@@ -368,6 +447,38 @@ const Shipping = () => {
                       </div>
                     ))}
                   </div>
+
+                  {/* Store Address Configuration (Optional - for distance calculation origin) */}
+                  {googleMapsApiKey && (
+                    <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-900 mb-2">Store Address (Origin for Distance Calculation)</h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Your store address will be used as the origin point for calculating distance to customer addresses.
+                        Update this in{' '}
+                        <a 
+                          href="/dashboard/store-settings" 
+                          className="text-blue-600 hover:underline"
+                        >
+                          Store Settings
+                        </a>
+                        {' '}if needed.
+                      </p>
+                      {storeAddress.region || storeAddress.province ? (
+                        <div className="text-sm text-gray-700">
+                          <p><strong>Current Store Address:</strong></p>
+                          <p>
+                            {[storeAddress.barangay, storeAddress.municipality, storeAddress.province, storeAddress.region]
+                              .filter(Boolean)
+                              .join(', ')}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-yellow-600">
+                          ⚠️ Store address not configured. Please configure it in Store Settings.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
