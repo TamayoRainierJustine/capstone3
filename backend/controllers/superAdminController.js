@@ -113,7 +113,18 @@ export const getStoreStatistics = async (req, res) => {
     
     const totalStores = await Store.count();
     const publishedStores = await Store.count({ where: { status: 'published' } });
-    const totalUsers = await User.count({ where: { role: 'admin' } });
+    
+    // Count unique store owners (users who have at least one store)
+    // Use distinct userId from stores table instead of counting all admin users
+    const uniqueStoreOwners = await Store.count({
+      distinct: true,
+      col: 'userId',
+      where: {
+        userId: { [Op.ne]: null } // Exclude stores with null userId
+      }
+    });
+    
+    const totalUsers = uniqueStoreOwners; // Use the count of unique store owners
     const totalOrders = await Order.count();
     
     // Calculate revenue from orders with completed payment
