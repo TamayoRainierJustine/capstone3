@@ -629,6 +629,10 @@ export default function SiteBuilder() {
     }));
   };
   const removePreset = (kind, index) => {
+    const presetName = textStylePresets[kind]?.[index]?.name || 'this preset';
+    if (!window.confirm(`Are you sure you want to delete "${presetName}"? This action cannot be undone.`)) {
+      return;
+    }
     setTextStylePresets(prev => {
       const arr = [...prev[kind]];
       arr.splice(index, 1);
