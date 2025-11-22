@@ -4569,26 +4569,57 @@ const PublishedStore = () => {
                       
                       {/* GCash QR Code */}
                       {orderData.paymentMethod === 'gcash' && (() => {
-                        // Check if store has approved QR API
-                        if (!hasQrApi) {
+                        const gcashNumber = store?.content?.payment?.gcashNumber || store?.phone || '';
+                        const totalAmount = calculateTotal().toFixed(2);
+                        const hasGcashNumber = gcashNumber && gcashNumber.trim() !== '';
+                        
+                        // If no QR API but has GCash number, show manual payment instructions
+                        if (!hasQrApi && hasGcashNumber) {
                           return (
-                            <div className="mt-4 p-4 bg-yellow-50 rounded-lg border-2 border-yellow-500">
+                            <div className="mt-4 p-4 bg-green-50 rounded-lg border-2 border-green-500">
+                              <div className="text-center mb-3">
+                                <h4 className="font-semibold text-gray-800 mb-1">GCash Payment</h4>
+                                <p className="text-sm text-gray-600">Send payment to store's GCash number</p>
+                              </div>
+                              <div className="bg-white p-4 rounded-lg border border-green-300 mb-3">
+                                <p className="text-xs text-gray-600 mb-1">GCash Number:</p>
+                                <p className="text-2xl font-bold text-green-600 font-mono">{gcashNumber}</p>
+                              </div>
+                              <div className="bg-white p-4 rounded-lg border border-green-300 mb-3">
+                                <p className="text-xs text-gray-600 mb-1">Amount to Pay:</p>
+                                <p className="text-2xl font-bold text-gray-800">₱{totalAmount}</p>
+                              </div>
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                                <p className="text-sm font-semibold text-blue-800 mb-2">Paano magbayad:</p>
+                                <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
+                                  <li>Buksan ang GCash app</li>
+                                  <li>Pumunta sa "Send Money"</li>
+                                  <li>I-enter ang GCash number: <span className="font-mono font-semibold">{gcashNumber}</span></li>
+                                  <li>I-enter ang amount: <span className="font-semibold">₱{totalAmount}</span></li>
+                                  <li>I-tap ang "Send" at kumpletuhin ang transaction</li>
+                                  <li>Kopyahin ang Reference Number mula sa GCash app</li>
+                                  <li>I-paste ang Reference Number sa form sa ibaba</li>
+                                </ol>
+                              </div>
+                              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2">
+                                <p className="text-xs text-yellow-800">
+                                  <strong>Tip:</strong> Maaari mo ring i-scan ang QR code sa GCash app ng store owner kung may available na QR code.
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        // If no GCash number at all, show message to contact store
+                        if (!hasGcashNumber) {
+                          return (
+                            <div className="mt-4 p-4 bg-gray-50 rounded-lg border-2 border-gray-300">
                               <div className="text-center">
-                                <div className="mb-3">
-                                  <svg className="mx-auto h-12 w-12 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                  </svg>
-                                </div>
-                                <h4 className="font-semibold text-gray-800 mb-2">QR Code Payment Not Available</h4>
-                                <p className="text-sm text-gray-600 mb-3">
-                                  This store has not yet been approved for QR code payment API access. 
-                                  Please contact the store owner or use an alternative payment method.
+                                <p className="text-sm text-gray-600 mb-2">
+                                  GCash number is not yet configured. Please contact the store owner for payment instructions.
                                 </p>
                                 <div className="bg-white p-3 rounded border border-gray-300">
-                                  <p className="text-sm font-semibold text-gray-800 mb-1">Amount to Pay: ₱{calculateTotal().toFixed(2)}</p>
-                                  <p className="text-xs text-gray-600">
-                                    Store owner needs to apply for QR API access to enable QR code payments.
-                                  </p>
+                                  <p className="text-sm font-semibold text-gray-800 mb-1">Amount to Pay: ₱{totalAmount}</p>
                                 </div>
                               </div>
                             </div>
