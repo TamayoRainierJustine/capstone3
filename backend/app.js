@@ -74,6 +74,17 @@ console.log('========================================');
 console.log('Registering routes...');
 console.log('========================================');
 
+// Register health check FIRST (outside try-catch) so Railway can always reach it
+// Health check endpoint - simple for Railway (must be first)
+// Railway just needs a 200 response, don't require DB connection
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
+});
+console.log('✅ Health check route registered at /api/health');
+
 try {
   console.log('productRoutes loaded:', !!productRoutes);
   console.log('productRoutes type:', typeof productRoutes);
@@ -114,41 +125,19 @@ try {
   app.use('/api/admin-setup', adminSetupRoutes);
   console.log('✅ Admin Setup routes registered at /api/admin-setup');
 
-  // Register health and test routes directly (not via router)
+  // Register test route directly (not via router)
   // Test route to verify server is running
   app.get('/api/test', (req, res) => {
     res.json({ message: 'Server is running', routes: ['/api/auth', '/api/stores', '/api/products', '/api/orders', '/api/payments', '/api/health'] });
   });
   console.log('✅ Test route registered at /api/test');
 
-  // Health check endpoint with database status
-  app.get('/api/health', async (req, res) => {
-    try {
-      // Test database connection
-      await sequelize.authenticate();
-      res.json({ 
-        status: 'healthy', 
-        database: 'connected',
-        timestamp: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('Health check failed:', error.message);
-      res.status(503).json({ 
-        status: 'unhealthy', 
-        database: 'disconnected',
-        error: error.message,
-        timestamp: new Date().toISOString()
-      });
-    }
-  });
-  console.log('✅ Health check route registered at /api/health');
-
   // Debug: List all registered routes
   app.get('/api/debug/routes', (req, res) => {
     const routes = [];
     const storeRoutes = [];
     
-    app._router.stack.forEach(function(middleware){
+    app._router.stack.forEach(function(middleware) {
       if(middleware.route){
         routes.push({
           path: middleware.route.path,
