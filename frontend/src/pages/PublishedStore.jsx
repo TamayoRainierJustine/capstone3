@@ -875,6 +875,7 @@ const PublishedStore = () => {
       const backendOrders = response.data || [];
       
       // Transform backend orders to match orderHistory format
+      // Include storeName so customers can see which store each order is from
       const formattedOrders = backendOrders.map(order => ({
         orderNumber: order.orderNumber,
         status: order.status || 'pending',
@@ -885,7 +886,8 @@ const PublishedStore = () => {
         shipping: order.shipping || 0,
         total: order.total || 0,
         placedAt: order.placedAt || order.createdAt || new Date().toISOString(),
-        items: order.items || []
+        items: order.items || [],
+        storeName: order.storeName || 'Store' // Include store name for multi-store orders
       }));
       
       // Replace order history with backend orders (don't merge with localStorage for different customer)
