@@ -708,19 +708,59 @@ const PublishedStore = () => {
     if (!store?.id) return;
     
     const customerData = getCustomerData();
-    if (!customerData) return;
+    if (!customerData) {
+      console.log('fetchChatMessages: No customer data found');
+      return;
+    }
     
     try {
       setChatLoading(true);
       const token = localStorage.getItem('token');
-      if (!token) return;
+      if (!token) {
+        console.log('fetchChatMessages: No token found');
+        return;
+      }
       
-      const response = await apiClient.get(`/chat/customer/stores/${store.id}/conversations`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      // Verify token is not expired by checking its payload
+      try {
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          const currentTime = Date.now() / 1000;
+          if (payload.exp && payload.exp < currentTime) {
+            console.log('fetchChatMessages: Token expired');
+            localStorage.removeItem('token');
+            localStorage.removeItem('customerInfo');
+            setCustomerInfo(null);
+            return;
+          }
+        }
+      } catch (tokenCheckErr) {
+        console.warn('fetchChatMessages: Error checking token:', tokenCheckErr);
+      }
+      
+      // Make sure token is sent in request
+      const config = {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      };
+      
+      const response = await apiClient.get(`/chat/customer/stores/${store.id}/conversations`, config);
       setChatMessages(response.data || []);
     } catch (error) {
       console.error('Error fetching chat messages:', error);
+      
+      // If 401, clear invalid token and customer info
+      if (error.response?.status === 401) {
+        console.log('fetchChatMessages: 401 Unauthorized - clearing token');
+        localStorage.removeItem('token');
+        localStorage.removeItem('customerInfo');
+        setCustomerInfo(null);
+        setShowChatBox(false);
+      }
+      
       setChatMessages([]);
     } finally {
       setChatLoading(false);
