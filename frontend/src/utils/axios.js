@@ -39,6 +39,10 @@ apiClient.interceptors.response.use(
       const isCustomerEndpoint = requestUrl.includes('/chat/customer/') || 
                                   requestUrl.includes('/auth/customer/');
       
+      // Check if this is a request from AuthContext (fetching user data on mount)
+      const isAuthContextRequest = requestUrl.includes('/stores') || 
+                                    requestUrl.includes('/auth/me');
+      
       // On public routes (especially published stores), don't redirect
       // Let the user continue viewing the public content
       // Published stores are viewable without authentication
@@ -49,16 +53,36 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
       
+      // For AuthContext requests, don't redirect immediately - let the component handle it
+      // The PrivateRoute will check authentication and redirect if needed
+      if (isAuthContextRequest) {
+        // Just clear the token and let the auth context handle it
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        return Promise.reject(error);
+      }
+      
       // Only redirect to login on protected routes (dashboard, my-stores, etc.)
       // But check if we're already on the login page to avoid redirect loops
       if (currentPath !== '/login') {
-        // Clear token and redirect to login
+        // Clear token first
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        // Use setTimeout to avoid redirect during render
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 100);
+        
+        // Only redirect if we're definitely on a protected route
+        const isProtectedRoute = currentPath.startsWith('/dashboard') ||
+                                  currentPath.startsWith('/my-stores') ||
+                                  currentPath.startsWith('/store-') ||
+                                  currentPath.startsWith('/site-builder') ||
+                                  currentPath.startsWith('/publish') ||
+                                  currentPath.startsWith('/super-admin');
+        
+        if (isProtectedRoute) {
+          // Use setTimeout to avoid redirect during render
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 100);
+        }
       }
     }
     return Promise.reject(error);

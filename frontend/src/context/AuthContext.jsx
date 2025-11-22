@@ -46,26 +46,54 @@ export const AuthProvider = ({ children }) => {
       // We'll use a simple endpoint that returns user info (like /stores which requires auth)
       const response = await apiClient.get('/stores');
       
-      // If we can't get user from stores endpoint, decode from token
+      // If stores endpoint works, decode token to get user info
       // For now, try to decode token to get user ID and basic info
       // But better to have a /auth/me endpoint
-      const tokenData = JSON.parse(atob(token.split('.')[1]));
-      
-      // Store minimal user info (will be updated on next login)
-      const userData = {
-        id: tokenData.id,
-        email: tokenData.email,
-        role: tokenData.role || 'admin'
-      };
-      
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
+      try {
+        const tokenData = JSON.parse(atob(token.split('.')[1]));
+        
+        // Store minimal user info (will be updated on next login)
+        const userData = {
+          id: tokenData.id,
+          email: tokenData.email,
+          role: tokenData.role || 'admin'
+        };
+        
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+      } catch (tokenError) {
+        console.warn('Failed to decode token:', tokenError);
+        // If we can't decode token but stores request worked, token might be valid
+        // Just keep authentication state
+      }
     } catch (error) {
       console.error('Failed to fetch user data:', error);
-      // If token is invalid, clear everything
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setIsAuthenticated(false);
+      
+      // Only clear authentication if we get a 401 error
+      if (error.response?.status === 401) {
+        // Token is invalid - clear everything
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setIsAuthenticated(false);
+      } else {
+        // Other errors (network, 500, etc.) - try to use token anyway
+        // Decode token to get basic user info
+        try {
+          const tokenData = JSON.parse(atob(token.split('.')[1]));
+          const userData = {
+            id: tokenData.id,
+            email: tokenData.email,
+            role: tokenData.role || 'admin'
+          };
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
+        } catch (tokenError) {
+          // Can't decode token either - clear auth
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setIsAuthenticated(false);
+        }
+      }
     } finally {
       setLoading(false);
     }
