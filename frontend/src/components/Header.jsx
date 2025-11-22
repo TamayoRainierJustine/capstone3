@@ -1,9 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import apiClient from '../utils/axios';
 
 const Header = () => {
   const { isAuthenticated, hasStore, logout, user } = useAuth();
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+
+  // Fetch unread chat count for store owners
+  useEffect(() => {
+    if (isAuthenticated && hasStore && user?.role !== 'super_admin') {
+      const fetchUnreadCount = async () => {
+        try {
+          const response = await apiClient.get('/chat/store/unread-count');
+          setUnreadChatCount(response.data.unreadCount || 0);
+        } catch (error) {
+          console.error('Error fetching unread chat count:', error);
+        }
+      };
+
+      fetchUnreadCount();
+      // Refresh every 30 seconds
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, hasStore, user]);
 
   return (
     <header className="relative z-50">
@@ -38,6 +59,25 @@ const Header = () => {
                 </svg>
                 My Stores
               </Link>
+              {hasStore && user?.role !== 'super_admin' && (
+                <Link 
+                  to="/dashboard/orders"
+                  state={{ openChat: true }}
+                  className="relative inline-flex items-center text-white hover:text-yellow-200"
+                  style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)' }}
+                  title="Customer Messages"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                  Messages
+                  {unreadChatCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                      {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                    </span>
+                  )}
+                </Link>
+              )}
               <Link 
                 to="/dashboard/help-chat"
                 className="inline-flex items-center text-white hover:text-yellow-200"
