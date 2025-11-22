@@ -643,7 +643,10 @@ const PublishedStore = () => {
 
   // Fetch chat messages
   const fetchChatMessages = useCallback(async () => {
-    if (!store?.id || !customerInfo) return;
+    if (!store?.id) return;
+    
+    const customerData = getCustomerData();
+    if (!customerData) return;
     
     try {
       setChatLoading(true);
@@ -660,11 +663,18 @@ const PublishedStore = () => {
     } finally {
       setChatLoading(false);
     }
-  }, [store?.id, customerInfo]);
+  }, [store?.id]);
 
   // Send chat message
   const sendChatMessage = useCallback(async () => {
-    if (!newChatMessage.trim() || !store?.id || !customerInfo) return;
+    if (!newChatMessage.trim() || !store?.id) return;
+    
+    const customerData = getCustomerData();
+    if (!customerData) {
+      setShowLoginModal(true);
+      setModalMode('login');
+      return;
+    }
     
     try {
       setSendingChatMessage(true);
@@ -690,11 +700,12 @@ const PublishedStore = () => {
     } finally {
       setSendingChatMessage(false);
     }
-  }, [newChatMessage, store?.id, customerInfo, fetchChatMessages]);
+  }, [newChatMessage, store?.id, fetchChatMessages]);
 
   // Auto-refresh chat messages when chat box is open
   useEffect(() => {
-    if (showChatBox && store?.id && customerInfo) {
+    const customerData = getCustomerData();
+    if (showChatBox && store?.id && customerData) {
       fetchChatMessages();
       const interval = setInterval(() => {
         fetchChatMessages();
@@ -6076,7 +6087,9 @@ const PublishedStore = () => {
             {!showChatBox && (
               <button
                 onClick={() => {
-                  if (!customerInfo) {
+                  const customerData = getCustomerData();
+                  const token = localStorage.getItem('token');
+                  if (!customerData || !token) {
                     setShowLoginModal(true);
                     setModalMode('login');
                   } else {
@@ -6095,7 +6108,7 @@ const PublishedStore = () => {
             )}
 
             {/* Chat Box Modal */}
-            {showChatBox && customerInfo && (
+            {showChatBox && getCustomerData() && (
               <div className="fixed bottom-6 right-6 w-96 max-w-[calc(100vw-3rem)] bg-white rounded-lg shadow-2xl z-50 flex flex-col" style={{ height: '500px', maxHeight: 'calc(100vh - 6rem)' }}>
                 {/* Chat Header */}
                 <div className="bg-purple-600 text-white p-4 rounded-t-lg flex items-center justify-between">
