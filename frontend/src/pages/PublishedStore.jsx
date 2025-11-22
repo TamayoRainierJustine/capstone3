@@ -445,10 +445,10 @@ const PublishedStore = () => {
   // Helper function to format payment status for display
   const getPaymentStatusLabel = (status) => {
     const labels = {
-      pending: 'Pending',
+      pending: 'Pending Verification',
       processing: 'Processing',
-      completed: 'Completed',
-      failed: 'Failed',
+      completed: 'Payment Verified ✓',
+      failed: 'Payment Failed',
       refunded: 'Refunded'
     };
     return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
@@ -4929,7 +4929,17 @@ const PublishedStore = () => {
                       </div>
                       <div className="flex gap-2 text-sm flex-wrap">
                         <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-700 capitalize">{getStatusLabel(order.status)}</span>
-                        <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 capitalize">{getPaymentStatusLabel(order.paymentStatus)}</span>
+                        <span className={`px-3 py-1 rounded-full capitalize font-medium ${
+                          order.paymentStatus === 'completed' 
+                            ? 'bg-green-100 text-green-700 border-2 border-green-500' 
+                            : order.paymentStatus === 'pending' 
+                            ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-500' 
+                            : order.paymentStatus === 'processing'
+                            ? 'bg-blue-100 text-blue-700 border-2 border-blue-500'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {getPaymentStatusLabel(order.paymentStatus)}
+                        </span>
                         {order.cancellationRequest === 'requested' && (
                           <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700">Cancellation Requested</span>
                         )}
@@ -4944,6 +4954,31 @@ const PublishedStore = () => {
                     <div className="text-sm text-gray-600">
                       <p>Placed on {new Date(order.placedAt).toLocaleString()}</p>
                     </div>
+                    {/* Payment Status Message */}
+                    {order.paymentStatus === 'pending' && (
+                      <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-3 mt-2">
+                        <p className="text-sm font-semibold text-yellow-800 mb-1">⚠️ Payment Verification Pending</p>
+                        <p className="text-xs text-yellow-700">
+                          Your payment is being verified by the store owner. Once verified, your order will be processed.
+                        </p>
+                      </div>
+                    )}
+                    {order.paymentStatus === 'processing' && (
+                      <div className="bg-blue-50 border-2 border-blue-400 rounded-lg p-3 mt-2">
+                        <p className="text-sm font-semibold text-blue-800 mb-1">🔄 Payment Processing</p>
+                        <p className="text-xs text-blue-700">
+                          Your payment is being processed. The store owner will update your order status soon.
+                        </p>
+                      </div>
+                    )}
+                    {order.paymentStatus === 'completed' && (
+                      <div className="bg-green-50 border-2 border-green-400 rounded-lg p-3 mt-2">
+                        <p className="text-sm font-semibold text-green-800 mb-1">✅ Payment Verified</p>
+                        <p className="text-xs text-green-700">
+                          Your payment has been verified by the store owner. Your order is now being prepared!
+                        </p>
+                      </div>
+                    )}
                     {/* Cancellation Request Reason */}
                     {order.cancellationReason && (
                       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
