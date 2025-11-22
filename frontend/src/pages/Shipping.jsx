@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
+import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
 
 const Shipping = () => {
   const [store, setStore] = useState(null);
