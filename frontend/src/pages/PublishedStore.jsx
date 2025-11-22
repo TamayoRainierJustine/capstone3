@@ -4569,12 +4569,12 @@ const PublishedStore = () => {
                       
                       {/* GCash QR Code */}
                       {orderData.paymentMethod === 'gcash' && (() => {
-                        const gcashNumber = store?.content?.payment?.gcashNumber || store?.phone || '';
-                        const totalAmount = calculateTotal().toFixed(2);
-                        const hasGcashNumber = gcashNumber && gcashNumber.trim() !== '';
+                        const gcashNum = store?.content?.payment?.gcashNumber || store?.phone || '';
+                        const totalAmt = calculateTotal().toFixed(2);
+                        const hasGcashNum = gcashNum && gcashNum.trim() !== '';
                         
                         // If no QR API but has GCash number, show manual payment instructions
-                        if (!hasQrApi && hasGcashNumber) {
+                        if (!hasQrApi && hasGcashNum) {
                           return (
                             <div className="mt-4 p-4 bg-green-50 rounded-lg border-2 border-green-500">
                               <div className="text-center mb-3">
@@ -4583,19 +4583,19 @@ const PublishedStore = () => {
                               </div>
                               <div className="bg-white p-4 rounded-lg border border-green-300 mb-3">
                                 <p className="text-xs text-gray-600 mb-1">GCash Number:</p>
-                                <p className="text-2xl font-bold text-green-600 font-mono">{gcashNumber}</p>
+                                <p className="text-2xl font-bold text-green-600 font-mono">{gcashNum}</p>
                               </div>
                               <div className="bg-white p-4 rounded-lg border border-green-300 mb-3">
                                 <p className="text-xs text-gray-600 mb-1">Amount to Pay:</p>
-                                <p className="text-2xl font-bold text-gray-800">₱{totalAmount}</p>
+                                <p className="text-2xl font-bold text-gray-800">₱{totalAmt}</p>
                               </div>
                               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
                                 <p className="text-sm font-semibold text-blue-800 mb-2">Paano magbayad:</p>
                                 <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
                                   <li>Buksan ang GCash app</li>
                                   <li>Pumunta sa "Send Money"</li>
-                                  <li>I-enter ang GCash number: <span className="font-mono font-semibold">{gcashNumber}</span></li>
-                                  <li>I-enter ang amount: <span className="font-semibold">₱{totalAmount}</span></li>
+                                  <li>I-enter ang GCash number: <span className="font-mono font-semibold">{gcashNum}</span></li>
+                                  <li>I-enter ang amount: <span className="font-semibold">₱{totalAmt}</span></li>
                                   <li>I-tap ang "Send" at kumpletuhin ang transaction</li>
                                   <li>Kopyahin ang Reference Number mula sa GCash app</li>
                                   <li>I-paste ang Reference Number sa form sa ibaba</li>
@@ -4611,7 +4611,7 @@ const PublishedStore = () => {
                         }
                         
                         // If no GCash number at all, show message to contact store
-                        if (!hasGcashNumber) {
+                        if (!hasGcashNum) {
                           return (
                             <div className="mt-4 p-4 bg-gray-50 rounded-lg border-2 border-gray-300">
                               <div className="text-center">
@@ -4619,22 +4619,20 @@ const PublishedStore = () => {
                                   GCash number is not yet configured. Please contact the store owner for payment instructions.
                                 </p>
                                 <div className="bg-white p-3 rounded border border-gray-300">
-                                  <p className="text-sm font-semibold text-gray-800 mb-1">Amount to Pay: ₱{totalAmount}</p>
+                                  <p className="text-sm font-semibold text-gray-800 mb-1">Amount to Pay: ₱{totalAmt}</p>
                                 </div>
                               </div>
                             </div>
                           );
                         }
-
-                        const gcashNumber = store?.content?.payment?.gcashNumber || store?.phone || '';
-                        const totalAmount = calculateTotal().toFixed(2);
-                        const hasGcashNumber = gcashNumber && gcashNumber.trim() !== '';
+                        
+                        // If QR API is approved, show QR code (using variables from top)
                         
                         // Generate QR code value in GCash QRPH format: {phone}|{amount}|{description}
                         // Note: Dynamic QR codes with amount work for personal accounts but require manual verification
                         // Format: {gcash_number}|{amount}|{description}
-                        const qrValue = hasGcashNumber 
-                          ? `${gcashNumber.replace(/[^\d]/g, '')}|${totalAmount}|${store?.storeName || 'Order'}`
+                        const qrValue = hasGcashNum 
+                          ? `${gcashNum.replace(/[^\d]/g, '')}|${totalAmt}|${store?.storeName || 'Order'}`
                           : '';
                         
                         return (
@@ -4645,7 +4643,7 @@ const PublishedStore = () => {
                             </div>
                             <div className="flex justify-center mb-3">
                               <div className="bg-white p-4 rounded-lg shadow-sm">
-                                {hasGcashNumber ? (
+                                {hasGcashNum ? (
                                   <QRCodeSVG
                                     value={qrValue}
                                     size={280}
@@ -4686,22 +4684,22 @@ const PublishedStore = () => {
                             <div className="text-center text-sm text-gray-700 mb-4">
                               <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 mb-3">
                                 <p className="text-xl font-bold text-green-600 mb-2">
-                                  <strong>Amount to Pay: ₱{totalAmount}</strong>
+                                  <strong>Amount to Pay: ₱{totalAmt}</strong>
                                 </p>
-                                {hasGcashNumber && (
+                                {hasGcashNum && (
                                   <p className="text-sm text-gray-800 font-semibold mb-1">
                                     ✅ QR code includes amount - verify before paying
                                   </p>
                                 )}
                                 <p className="text-xs text-gray-600">
-                                  {hasGcashNumber 
-                                    ? `I-verify ang amount na ₱${totalAmount} sa GCash app`
-                                    : `I-enter ang amount na ₱${totalAmount} sa GCash app pagkatapos mag-scan`
+                                  {hasGcashNum 
+                                    ? `I-verify ang amount na ₱${totalAmt} sa GCash app`
+                                    : `I-enter ang amount na ₱${totalAmt} sa GCash app pagkatapos mag-scan`
                                   }
                                 </p>
                               </div>
-                              {hasGcashNumber && (
-                                <p className="mt-1 text-sm"><strong>GCash Number:</strong> {gcashNumber}</p>
+                              {hasGcashNum && (
+                                <p className="mt-1 text-sm"><strong>GCash Number:</strong> {gcashNum}</p>
                               )}
                               <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
                                 <p className="text-xs text-gray-700 text-left">
@@ -4710,9 +4708,9 @@ const PublishedStore = () => {
                                   <br />
                                   1. <strong>I-scan ang QR code</strong> gamit ang GCash app
                                   <br />
-                                  2. {hasGcashNumber 
-                                    ? `I-verify ang amount na ₱${totalAmount} (nakalagay na sa QR code)`
-                                    : `Ilagay ang amount: ₱${totalAmount} (manual entry)`
+                                  2. {hasGcashNum 
+                                    ? `I-verify ang amount na ₱${totalAmt} (nakalagay na sa QR code)`
+                                    : `Ilagay ang amount: ₱${totalAmt} (manual entry)`
                                   }
                                   <br />
                                   3. I-verify ang recipient details (pangalan at mobile number)
