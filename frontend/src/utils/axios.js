@@ -53,12 +53,11 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
       
-      // For AuthContext requests, don't redirect immediately - let the component handle it
-      // The PrivateRoute will check authentication and redirect if needed
+      // For AuthContext requests, don't redirect or clear tokens - let the component handle it
+      // The AuthContext will check if token is expired and handle accordingly
       if (isAuthContextRequest) {
-        // Just clear the token and let the auth context handle it
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        // Don't clear token here - AuthContext will validate it properly
+        // Just reject the error and let AuthContext handle validation
         return Promise.reject(error);
       }
       

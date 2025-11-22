@@ -42,57 +42,100 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserData = async (token) => {
     try {
-      // Try to get user data from backend by making an authenticated request
-      // We'll use a simple endpoint that returns user info (like /stores which requires auth)
-      const response = await apiClient.get('/stores');
-      
-      // If stores endpoint works, decode token to get user info
-      // For now, try to decode token to get user ID and basic info
-      // But better to have a /auth/me endpoint
+      // First, try to decode token to determine user type
+      let tokenData;
       try {
-        const tokenData = JSON.parse(atob(token.split('.')[1]));
-        
-        // Store minimal user info (will be updated on next login)
-        const userData = {
-          id: tokenData.id,
-          email: tokenData.email,
-          role: tokenData.role || 'admin'
-        };
-        
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
+        tokenData = JSON.parse(atob(token.split('.')[1]));
       } catch (tokenError) {
         console.warn('Failed to decode token:', tokenError);
-        // If we can't decode token but stores request worked, token might be valid
-        // Just keep authentication state
+        // If we can't decode token, it's invalid
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+      
+      // Check if token is expired
+      const currentTime = Date.now() / 1000;
+      if (tokenData.exp && tokenData.exp < currentTime) {
+        console.log('Token expired');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+      
+      // Determine if this is a customer token or store owner token
+      const isCustomerToken = tokenData.type === 'customer';
+      
+      // Store minimal user info from token (will be updated on next login)
+      const userData = {
+        id: tokenData.id,
+        email: tokenData.email,
+        role: tokenData.role || (isCustomerToken ? 'customer' : 'admin'),
+        type: tokenData.type || (isCustomerToken ? 'customer' : 'user')
+      };
+      
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      // If customer token, don't try to fetch stores (they don't have access)
+      if (isCustomerToken) {
+        setLoading(false);
+        return;
+      }
+      
+      // For store owner tokens, try to validate by fetching stores
+      // This is optional - we already validated the token by decoding it
+      try {
+        const response = await apiClient.get('/stores');
+        // If stores fetch succeeds, token is valid
+        // We already have user data from token, so we're good
+      } catch (storeError) {
+        // If stores fetch fails, but token is valid (not expired), keep auth
+        // The token might still be valid even if stores endpoint fails
+        if (storeError.response?.status === 401) {
+          // 401 means token is invalid for stores - might be expired or invalid
+          // But we already checked expiration, so this might be a different issue
+          console.warn('Token validation failed:', storeError);
+          // Keep authentication if token is not expired
+          // The user can still use the app, and will be redirected if truly invalid
+        } else {
+          // Network errors, etc. - token might still be valid
+          console.warn('Store fetch failed but token might be valid:', storeError);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch user data:', error);
       
-      // Only clear authentication if we get a 401 error
-      if (error.response?.status === 401) {
-        // Token is invalid - clear everything
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setIsAuthenticated(false);
-      } else {
-        // Other errors (network, 500, etc.) - try to use token anyway
-        // Decode token to get basic user info
-        try {
-          const tokenData = JSON.parse(atob(token.split('.')[1]));
-          const userData = {
-            id: tokenData.id,
-            email: tokenData.email,
-            role: tokenData.role || 'admin'
-          };
-          setUser(userData);
-          localStorage.setItem('user', JSON.stringify(userData));
-        } catch (tokenError) {
-          // Can't decode token either - clear auth
+      // Try to decode token as fallback
+      try {
+        const tokenData = JSON.parse(atob(token.split('.')[1]));
+        const currentTime = Date.now() / 1000;
+        
+        // Check if token is expired
+        if (tokenData.exp && tokenData.exp < currentTime) {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setIsAuthenticated(false);
+        } else {
+          // Token not expired - keep authentication
+          const userData = {
+            id: tokenData.id,
+            email: tokenData.email,
+            role: tokenData.role || 'admin',
+            type: tokenData.type || 'user'
+          };
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
         }
+      } catch (tokenError) {
+        // Can't decode token - clear auth
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setIsAuthenticated(false);
       }
     } finally {
       setLoading(false);
