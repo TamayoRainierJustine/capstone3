@@ -90,6 +90,8 @@ export const getAllStores = async (req, res) => {
 // Get store statistics
 export const getStoreStatistics = async (req, res) => {
   try {
+    console.log('📊 getStoreStatistics called by user:', req.user?.email, 'role:', req.user?.role);
+    
     const totalStores = await Store.count();
     const publishedStores = await Store.count({ where: { status: 'published' } });
     const totalUsers = await User.count({ where: { role: 'admin' } });
@@ -120,18 +122,25 @@ export const getStoreStatistics = async (req, res) => {
       totalRevenue = 0;
     }
 
-    res.json({
+    const stats = {
       totalStores,
       publishedStores,
       unpublishedStores: totalStores - publishedStores,
       totalUsers,
       totalOrders,
       totalRevenue: parseFloat(totalRevenue)
-    });
+    };
+    
+    console.log('✅ Statistics:', stats);
+    res.json(stats);
   } catch (error) {
-    console.error('Error fetching statistics:', error);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ message: 'Error fetching statistics', error: error.message });
+    console.error('❌ Error fetching statistics:', error);
+    console.error('❌ Error stack:', error.stack);
+    res.status(500).json({ 
+      message: 'Error fetching statistics', 
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
