@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
 import { useAuth } from '../context/AuthContext';
-import { FaPaperPlane, FaSpinner, FaFilter } from 'react-icons/fa';
+import { FaPaperPlane, FaSpinner, FaFilter, FaHome } from 'react-icons/fa';
 
 const SuperAdminTickets = () => {
   const { user } = useAuth();
@@ -140,9 +141,18 @@ const SuperAdminTickets = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <div className="container mx-auto px-4 py-8 mt-16">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Support Tickets</h1>
-          <p className="text-gray-600 mt-1">View and manage all support tickets from store owners</p>
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Support Tickets</h1>
+            <p className="text-gray-600 mt-1">View and manage all support tickets from store owners</p>
+          </div>
+          <Link
+            to="/super-admin"
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
+          >
+            <FaHome />
+            Back to Dashboard
+          </Link>
         </div>
 
         {/* Filters */}

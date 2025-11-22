@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
-import { FaCheckCircle, FaTimesCircle, FaEye, FaDownload, FaSpinner } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaEye, FaDownload, FaSpinner, FaHome } from 'react-icons/fa';
 import { getImageUrl } from '../utils/imageUrl';
 
 const SuperAdminApplications = () => {
@@ -111,9 +112,18 @@ const SuperAdminApplications = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <div className="container mx-auto px-4 py-8 mt-16">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">API Applications Review</h1>
-          <p className="text-gray-600 mt-1">Review and approve/reject API access applications</p>
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">API Applications Review</h1>
+            <p className="text-gray-600 mt-1">Review and approve/reject API access applications</p>
+          </div>
+          <Link
+            to="/super-admin"
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
+          >
+            <FaHome />
+            Back to Dashboard
+          </Link>
         </div>
 
         {/* Filters */}

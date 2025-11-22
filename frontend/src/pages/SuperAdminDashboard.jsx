@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
 import { FaStore, FaUsers, FaShoppingCart, FaDollarSign, FaEye, FaToggleOn, FaToggleOff } from 'react-icons/fa';
@@ -68,18 +69,18 @@ const SuperAdminDashboard = () => {
             <p className="text-gray-600 mt-2">Manage all stores and system administration</p>
           </div>
           <div className="flex gap-3">
-            <a
-              href="/super-admin/tickets"
+            <Link
+              to="/super-admin/tickets"
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
             >
               📧 Support Tickets
-            </a>
-            <a
-              href="/super-admin/applications"
+            </Link>
+            <Link
+              to="/super-admin/applications"
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
             >
               📋 API Applications
-            </a>
+            </Link>
           </div>
         </div>
 
