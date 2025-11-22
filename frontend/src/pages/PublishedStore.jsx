@@ -180,6 +180,8 @@ const PublishedStore = () => {
       province: customerData?.province || '',
       municipality: customerData?.municipality || '',
       barangay: customerData?.barangay || '',
+      houseNumber: customerData?.houseNumber || '',
+      street: customerData?.street || '',
       weightBand: defaultWeightBand,
       shipping: initialShipping,
       paymentReference: ''
@@ -3582,8 +3584,8 @@ const PublishedStore = () => {
         setOrderData(prev => ({ ...prev, paymentReference: '' }));
       }
 
-      if (!orderData.region || !orderData.province || !orderData.municipality || !orderData.barangay) {
-        setOrderError('Please select complete shipping address');
+      if (!orderData.region || !orderData.province || !orderData.municipality || !orderData.barangay || !orderData.houseNumber || !orderData.street) {
+        setOrderError('Please provide complete shipping address including house number and street');
         return;
       }
 
@@ -3601,7 +3603,9 @@ const PublishedStore = () => {
         municipality: orderData.municipality,
         municipalityName: municipalityName,
         barangay: orderData.barangay,
-        barangayName: barangayName
+        barangayName: barangayName,
+        houseNumber: orderData.houseNumber || '',
+        street: orderData.street || ''
       };
 
       // Create order
@@ -4484,6 +4488,32 @@ const PublishedStore = () => {
                         </select>
                       </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-3 mt-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">House Number / Building *</label>
+                        <input
+                          type="text"
+                          required
+                          value={orderData.houseNumber}
+                          onChange={(e) => handleOrderChange('houseNumber', e.target.value)}
+                          placeholder="e.g., 123, Unit 5B, Building A"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">House number, unit, or building name</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Street Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={orderData.street}
+                          onChange={(e) => handleOrderChange('street', e.target.value)}
+                          placeholder="e.g., Rizal Street, Main Avenue"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">Street name or subdivision</p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Shipping Fee - Domestic rates by weight and destination */}
@@ -4601,11 +4631,6 @@ const PublishedStore = () => {
                                   <li>I-paste ang Reference Number sa form sa ibaba</li>
                                 </ol>
                               </div>
-                              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2">
-                                <p className="text-xs text-yellow-800">
-                                  <strong>Tip:</strong> Maaari mo ring i-scan ang QR code sa GCash app ng store owner kung may available na QR code.
-                                </p>
-                              </div>
                             </div>
                           );
                         }
@@ -4719,10 +4744,6 @@ const PublishedStore = () => {
                                   <br />
                                   5. <strong>Kopyahin ang Reference Number</strong> mula sa GCash app at i-paste sa form sa ibaba
                                   <br />
-                                <br />
-                                {hasGcashNumber && (
-                                  <span className="text-blue-700 font-semibold">💡 Tip: Maaari mo ring i-send sa GCash number {gcashNumber} at ilagay ang amount na ₱{totalAmount}</span>
-                                )}
                               </p>
                               </div>
                             </div>

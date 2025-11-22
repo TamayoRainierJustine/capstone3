@@ -119,9 +119,10 @@ export const createOrder = async (req, res) => {
     }
 
     if (!shippingAddress || !shippingAddress.region || !shippingAddress.province || 
-        !shippingAddress.municipality || !shippingAddress.barangay) {
+        !shippingAddress.municipality || !shippingAddress.barangay ||
+        !shippingAddress.houseNumber || !shippingAddress.street) {
       console.error('Validation failed: Shipping address incomplete');
-      return res.status(400).json({ message: 'Complete shipping address is required' });
+      return res.status(400).json({ message: 'Complete shipping address is required (including house number and street)' });
     }
 
     // Test database connection before proceeding
