@@ -98,8 +98,11 @@ const Dashboard = () => {
           console.error('   Error details:', JSON.stringify(error.response.data, null, 2));
         }
         if (error.response?.status === 401) {
+          // Token is invalid - let axios interceptor handle the redirect
+          // Don't redirect here as it might cause double redirects
+          setError('Your session has expired. Please log in again.');
           localStorage.removeItem('token');
-          window.location.href = '/login';
+          localStorage.removeItem('user');
         } else {
           setError('Failed to fetch store information. Please try again.');
           setStoreName('Your Store');

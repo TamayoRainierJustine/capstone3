@@ -34,16 +34,32 @@ apiClient.interceptors.response.use(
                             currentPath === '/services' ||
                             currentPath === '/contact';
       
+      // Check if the request was for a customer endpoint (don't redirect for customer auth errors on public routes)
+      const requestUrl = error.config?.url || '';
+      const isCustomerEndpoint = requestUrl.includes('/chat/customer/') || 
+                                  requestUrl.includes('/auth/customer/');
+      
       // On public routes (especially published stores), don't redirect
       // Let the user continue viewing the public content
       // Published stores are viewable without authentication
-      if (!isPublicRoute) {
-        // Only redirect to login on protected routes
-        localStorage.removeItem('token');
-        window.location.href = '/login';
+      if (isPublicRoute || isCustomerEndpoint) {
+        // On public routes or customer endpoints, just reject the error without redirecting
+        // This allows published stores to work even if there are 401 errors
+        // The components will handle these errors gracefully
+        return Promise.reject(error);
       }
-      // On public routes, just silently fail - don't redirect or clear tokens
-      // This allows published stores to work even if there are 401 errors
+      
+      // Only redirect to login on protected routes (dashboard, my-stores, etc.)
+      // But check if we're already on the login page to avoid redirect loops
+      if (currentPath !== '/login') {
+        // Clear token and redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // Use setTimeout to avoid redirect during render
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 100);
+      }
     }
     return Promise.reject(error);
   }
