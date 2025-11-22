@@ -2176,6 +2176,11 @@ const PublishedStore = () => {
                 <path d="M10 2a8 8 0 105.3 14.3l4.7 4.7 1.4-1.4-4.7-4.7A8 8 0 0010 2zm0 2a6 6 0 110 12 6 6 0 010-12z"/>
               </svg>
             </button>
+            <button type="button" class="nav-icon" data-icon="track-orders" aria-label="Track Orders">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+              </svg>
+            </button>
             <button type="button" class="nav-icon" data-icon="account" aria-label="Account">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.4-8 5.3V21h16v-1.7c0-2.9-3.6-5.3-8-5.3z"/>
@@ -2203,6 +2208,27 @@ const PublishedStore = () => {
               e.preventDefault();
               e.stopPropagation();
               setShowCartModal(true);
+            };
+            icon.style.cursor = 'pointer';
+            return;
+          }
+          
+          // Handle Track Orders icon
+          if (iconType.includes('track-orders') || iconType === 'track-orders' || iconType.includes('track') || iconType.includes('orders')) {
+            icon.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              
+              // Check if user is logged in
+              const customerData = getCustomerData();
+              if (customerData) {
+                // User is logged in, show order history directly
+                setShowOrderHistoryModal(true);
+              } else {
+                // Not logged in, show login modal
+                setShowLoginModal(true);
+                setModalMode('login');
+              }
             };
             icon.style.cursor = 'pointer';
             return;
@@ -2281,9 +2307,9 @@ const PublishedStore = () => {
                 if (ordersBtn) {
                   ordersBtn.onclick = function(evt) {
                     evt.preventDefault();
-                    if (window.parent && window.parent !== window) {
-                      window.parent.postMessage({ type: 'SHOW_ORDER_HISTORY' }, '*');
-                    }
+                    evt.stopPropagation();
+                    // Directly open order history modal
+                    setShowOrderHistoryModal(true);
                     profileModal.remove();
                   };
                 }
