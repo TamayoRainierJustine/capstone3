@@ -1245,21 +1245,8 @@ const PublishedStore = () => {
     }
   }, []);
 
-  // Show login modal immediately when page loads (if not logged in)
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token && !loading) {
-      if (!customerInfo) {
-        const timer = setTimeout(() => {
-          setShowInitialLoginModal(true);
-          setModalMode('login');
-        }, 500);
-        return () => clearTimeout(timer);
-      }
-    } else if (token && customerInfo) {
-      setShowInitialLoginModal(false);
-    }
-  }, [loading, customerInfo]);
+  // Show login modal only when user explicitly tries to order (not on page load)
+  // Removed auto-show on page load - published store should be viewable without login
   
   const startCustomerVerification = (email, message) => {
     if (!email) {
