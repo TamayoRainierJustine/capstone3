@@ -26,17 +26,44 @@ export const getAllStores = async (req, res) => {
       ];
     }
 
-    const stores = await Store.findAll({
-      where: whereClause,
-      include: [
-        {
-          model: User,
-          attributes: ['id', 'firstName', 'lastName', 'email'],
-          required: false // LEFT JOIN so stores without users are still included
+    // Use raw query with JOIN to avoid association issues
+    let stores;
+    try {
+      stores = await Store.findAll({
+        where: whereClause,
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+            required: false // LEFT JOIN
+          }
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+    } catch (includeError) {
+      console.error('Error with include, trying without:', includeError);
+      // Fallback: query stores without User include
+      stores = await Store.findAll({
+        where: whereClause,
+        order: [['createdAt', 'DESC']]
+      });
+      
+      // Manually fetch user data for each store
+      for (const store of stores) {
+        if (store.userId) {
+          try {
+            const user = await User.findByPk(store.userId, {
+              attributes: ['id', 'firstName', 'lastName', 'email']
+            });
+            if (user) {
+              store.dataValues.User = user;
+            }
+          } catch (userError) {
+            console.error(`Error fetching user for store ${store.id}:`, userError);
+          }
         }
-      ],
-      order: [['createdAt', 'DESC']]
-    });
+      }
+    }
 
     // Parse content if needed and format response
     const formattedStores = stores.map(store => {
