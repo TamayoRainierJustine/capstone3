@@ -170,99 +170,145 @@ const Payment = () => {
                   </div>
                   <div className="border-t pt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      GCash QR Code Image (Optional - Legacy)
+                      GCash QR Code Image *
                     </label>
-                    <p className="text-xs text-gray-500 mb-2">
-                      If you prefer to upload a static QR code image instead, you can upload it here. However, using GCash number above is recommended.
+                    <p className="text-xs text-gray-500 mb-4">
+                      Upload your GCash QR code image. This is the QR code that customers will scan when they choose GCash as payment method.
                     </p>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        
-                        // Validate file type
-                        if (!file.type.startsWith('image/')) {
-                          setMessage('Please upload an image file (PNG, JPG, etc.)');
-                          return;
-                        }
-                        
-                        // Validate file size (max 5MB)
-                        if (file.size > 5 * 1024 * 1024) {
-                          setMessage('Image file is too large. Maximum size is 5MB.');
-                          return;
-                        }
-                        
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          const result = event.target?.result;
-                          if (typeof result === 'string') {
-                            // Verify the image loaded correctly
-                            const img = new Image();
-                            img.onload = () => {
-                              // Check minimum dimensions (QR codes should be at least 200x200)
-                              if (img.width < 200 || img.height < 200) {
-                                setMessage('QR code image is too small. Please use an image that is at least 200x200 pixels.');
-                                return;
-                              }
-                              setConfig((prev) => ({ ...prev, gcashQrImage: result }));
-                              setMessage('');
-                            };
-                            img.onerror = () => {
-                              setMessage('Invalid image file. Please try again with a valid PNG or JPG image.');
-                            };
-                            img.src = result;
-                          }
-                        };
-                        reader.readAsDataURL(file);
-                      }}
-                      className="w-full text-sm text-gray-700"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      Upload the GCash QR code you want your customers to scan when they choose GCash.
-                      <br />
-                      <strong>Tips for a valid QR code:</strong>
-                      <br />
-                      • Use high-resolution image (at least 500x500px recommended)
-                      <br />
-                      • Ensure the QR code has white padding/margin around it
-                      <br />
-                      • Use PNG format for best quality (or high-quality JPG)
-                      <br />
-                      • Make sure the QR code is clear and not blurry
-                    </p>
-                  </div>
-                  {config.gcashQrImage && (
-                    <div className="mt-3">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Preview</p>
-                      <div className="inline-block border rounded-lg p-3 bg-white">
-                        <img
-                          src={config.gcashQrImage}
-                          alt="GCash QR Code Preview"
-                          style={{ 
-                            width: '250px', 
-                            height: '250px', 
-                            minWidth: '250px',
-                            minHeight: '250px',
-                            objectFit: 'contain',
-                            display: 'block'
-                          }}
-                          onError={(e) => {
-                            console.error('Error loading QR code preview');
-                            e.target.style.display = 'none';
-                          }}
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setConfig((prev) => ({ ...prev, gcashQrImage: '' }))}
-                        className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-100"
+                    
+                    {/* File Upload Area */}
+                    <div className="mb-4">
+                      <label 
+                        htmlFor="gcash-qr-upload"
+                        className="block mb-2 cursor-pointer"
                       >
-                        Remove QR Code
-                      </button>
+                        <div className="flex items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-purple-400 transition-colors">
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg className="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <p className="mb-2 text-sm text-gray-500">
+                              <span className="font-semibold">Click to upload</span> or drag and drop
+                            </p>
+                            <p className="text-xs text-gray-500">PNG, JPG (Max 5MB, Min 500x500px)</p>
+                          </div>
+                        </div>
+                        <input
+                          id="gcash-qr-upload"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            
+                            // Validate file type
+                            if (!file.type.startsWith('image/')) {
+                              setMessage('Please upload an image file (PNG, JPG, etc.)');
+                              setTimeout(() => setMessage(''), 5000);
+                              return;
+                            }
+                            
+                            // Validate file size (max 5MB)
+                            if (file.size > 5 * 1024 * 1024) {
+                              setMessage('Image file is too large. Maximum size is 5MB.');
+                              setTimeout(() => setMessage(''), 5000);
+                              return;
+                            }
+                            
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              const result = event.target?.result;
+                              if (typeof result === 'string') {
+                                // Verify the image loaded correctly
+                                const img = new Image();
+                                img.onload = () => {
+                                  // Check minimum dimensions (QR codes should be at least 500x500)
+                                  if (img.width < 500 || img.height < 500) {
+                                    setMessage('QR code image is too small. Please use an image that is at least 500x500 pixels.');
+                                    setTimeout(() => setMessage(''), 5000);
+                                    return;
+                                  }
+                                  setConfig((prev) => ({ ...prev, gcashQrImage: result }));
+                                  setMessage('');
+                                };
+                                img.onerror = () => {
+                                  setMessage('Invalid image file. Please try again with a valid PNG or JPG image.');
+                                  setTimeout(() => setMessage(''), 5000);
+                                };
+                                img.src = result;
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                          className="hidden"
+                        />
+                      </label>
                     </div>
-                  )}
+
+                    {/* QR Code Preview */}
+                    <div className="mt-4">
+                      {config.gcashQrImage ? (
+                        <div className="bg-white border-2 border-purple-300 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-sm font-semibold text-gray-700">QR Code Preview</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setConfig((prev) => ({ ...prev, gcashQrImage: '' }));
+                                // Clear file input
+                                const fileInput = document.querySelector('input[type="file"]');
+                                if (fileInput) fileInput.value = '';
+                              }}
+                              className="text-xs text-red-600 hover:text-red-700 font-medium"
+                            >
+                              Remove Image
+                            </button>
+                          </div>
+                          <div className="flex justify-center bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <img
+                              src={config.gcashQrImage}
+                              alt="GCash QR Code Preview"
+                              className="max-w-full h-auto rounded-lg shadow-md"
+                              style={{ 
+                                maxWidth: '400px',
+                                maxHeight: '400px',
+                                width: 'auto',
+                                height: 'auto',
+                                objectFit: 'contain'
+                              }}
+                              onError={(e) => {
+                                console.error('Error loading QR code preview');
+                                e.target.style.display = 'none';
+                                setMessage('Error loading QR code image. Please try uploading again.');
+                              }}
+                            />
+                          </div>
+                          <p className="mt-3 text-xs text-green-600 font-medium text-center">
+                            ✓ QR code image uploaded successfully
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+                          <p className="text-sm text-yellow-800 font-medium mb-2">⚠️ No QR code image uploaded</p>
+                          <p className="text-xs text-yellow-700">
+                            Please upload your GCash QR code image. Customers will need this to make payments.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Tips Section */}
+                    <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-xs font-semibold text-blue-800 mb-2">📋 Tips for a valid QR code:</p>
+                      <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
+                        <li>Use high-resolution image (at least 500x500px recommended)</li>
+                        <li>Ensure the QR code has white padding/margin around it</li>
+                        <li>Use PNG format for best quality (or high-quality JPG)</li>
+                        <li>Make sure the QR code is clear and not blurry</li>
+                        <li>The QR code should be square-shaped for best results</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
