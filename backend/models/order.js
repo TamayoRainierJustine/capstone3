@@ -37,7 +37,7 @@ const Order = sequelize.define('Order', {
   //   unique: true,
   //   comment: 'Unique payment verification code for easier payment matching (e.g., ORD-12345-A7B9)'
   // },
-  // Note: uniqueOrderCode temporarily disabled - column doesn't exist in database yet
+  // Temporarily disabled - column doesn't exist in database yet. Enable after running migration.
   status: {
     type: DataTypes.ENUM('pending', 'processing', 'shipped', 'completed', 'cancelled'),
     defaultValue: 'pending'
