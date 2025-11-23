@@ -324,15 +324,16 @@ export const createOrder = async (req, res) => {
     }
 
     try {
-      // Generate order number and unique code for payment verification
+      // Generate order number
       const orderNumber = generateOrderNumber();
-      const uniqueOrderCode = generateUniqueOrderCode(orderNumber);
+      // Note: uniqueOrderCode removed temporarily - column doesn't exist in database yet
+      // const uniqueOrderCode = generateUniqueOrderCode(orderNumber);
       
       // Create order within transaction
       const order = await Order.create({
         storeId,
         orderNumber: orderNumber,
-        uniqueOrderCode: uniqueOrderCode,
+        // uniqueOrderCode: uniqueOrderCode, // Temporarily disabled - needs database migration
         status: 'pending',
         paymentMethod: paymentMethod || 'gcash',
         paymentStatus: 'pending',
@@ -382,7 +383,7 @@ export const createOrder = async (req, res) => {
         id: order.id,
         storeId: order.storeId,
         orderNumber: order.orderNumber,
-        uniqueOrderCode: order.uniqueOrderCode,
+        // uniqueOrderCode: order.uniqueOrderCode, // Temporarily disabled
         status: order.status,
         paymentMethod: order.paymentMethod,
         paymentStatus: order.paymentStatus,
@@ -444,7 +445,6 @@ export const createOrder = async (req, res) => {
                 <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
                   <h3 style="margin-top: 0;">Order Details:</h3>
                   <p><strong>Order Number:</strong> ${order.orderNumber}</p>
-                  <p><strong>Unique Order Code:</strong> <code style="background: white; padding: 4px 8px; border-radius: 4px;">${order.uniqueOrderCode}</code></p>
                   <p><strong>Customer:</strong> ${order.customerName}</p>
                   <p><strong>Email:</strong> ${order.customerEmail}</p>
                   <p><strong>Total Amount:</strong> ₱${parseFloat(order.total).toFixed(2)}</p>

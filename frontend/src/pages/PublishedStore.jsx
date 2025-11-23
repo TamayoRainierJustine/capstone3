@@ -6,7 +6,6 @@ import { PASSWORD_REQUIREMENTS_TEXT, passwordMeetsRequirements } from '../utils/
 import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
 import { useAuth } from '../context/AuthContext';
 import { FaUserCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { QRCodeSVG } from 'qrcode.react';
 import { calculateDistance, buildAddressString } from '../utils/distanceCalculator';
 
 // Template mapping
@@ -4113,10 +4112,7 @@ const PublishedStore = () => {
             if (response.data?.orderNumber) {
               setOrderReferenceNumber(response.data.orderNumber);
             }
-            // Store unique order code for display
-            if (response.data?.uniqueOrderCode) {
-              setOrderReferenceNumber(response.data.uniqueOrderCode);
-            }
+            // Note: uniqueOrderCode temporarily disabled - using orderNumber instead
 
             recordOrderHistory(response.data);
             clearCart();
@@ -4895,9 +4891,9 @@ const PublishedStore = () => {
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Order Placed Successfully!</h3>
                   {orderReferenceNumber && (
                     <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4 mb-4">
-                      <p className="text-sm font-medium text-purple-800 mb-1">Your Unique Order Code:</p>
+                      <p className="text-sm font-medium text-purple-800 mb-1">Your Order Number:</p>
                       <p className="text-2xl font-bold text-purple-900 font-mono">{orderReferenceNumber}</p>
-                      <p className="text-xs text-purple-700 mt-2">Include this code when making payment via GCash for faster verification</p>
+                      <p className="text-xs text-purple-700 mt-2">Include this order number when making payment via GCash for faster verification</p>
                     </div>
                   )}
                   <p className="text-gray-600">Thank you for your order. The store owner will contact you soon.</p>
@@ -5197,14 +5193,8 @@ const PublishedStore = () => {
                           );
                         }
                         
-                        // If QR API is approved, show QR code (using variables from top)
-                        
-                        // Generate QR code value in GCash QRPH format: {phone}|{amount}|{description}
-                        // Note: Dynamic QR codes with amount work for personal accounts but require manual verification
-                        // Format: {gcash_number}|{amount}|{description}
-                        const qrValue = hasGcashNum 
-                          ? `${gcashNum.replace(/[^\d]/g, '')}|${totalAmt}|${store?.storeName || 'Order'}`
-                          : '';
+                        // Show uploaded QR code image from store owner
+                        const gcashQrImage = store?.content?.payment?.gcashQrImage || store?.content?.gcashQrImage;
                         
                         return (
                           <div className="mt-4 p-4 bg-gray-50 rounded-lg border-2 border-green-500">
@@ -5214,41 +5204,29 @@ const PublishedStore = () => {
                             </div>
                             <div className="flex justify-center mb-3">
                               <div className="bg-white p-4 rounded-lg shadow-sm">
-                                {hasGcashNum ? (
-                                  <QRCodeSVG
-                                    value={qrValue}
-                                    size={280}
-                                    level="H"
-                                    includeMargin={true}
+                                {gcashQrImage ? (
+                                  <img
+                                    src={gcashQrImage}
+                                    alt="GCash QR Code"
+                                    className="mx-auto"
+                                    style={{ 
+                                      width: '280px', 
+                                      height: '280px', 
+                                      minWidth: '280px',
+                                      minHeight: '280px',
+                                      maxWidth: '280px',
+                                      maxHeight: '280px',
+                                      objectFit: 'contain'
+                                    }}
+                                    onError={(e) => {
+                                      console.error('Error loading QR code image');
+                                      e.target.style.display = 'none';
+                                    }}
                                   />
                                 ) : (
-                                  <>
-                                    {/* Fallback to uploaded QR image if no GCash number */}
-                                    {store?.content?.payment?.gcashQrImage || store?.content?.gcashQrImage ? (
-                                      <img
-                                        src={store.content.payment?.gcashQrImage || store.content.gcashQrImage}
-                                        alt="GCash QR Code"
-                                        className="mx-auto"
-                                        style={{ 
-                                          width: '280px', 
-                                          height: '280px', 
-                                          minWidth: '280px',
-                                          minHeight: '280px',
-                                          maxWidth: '280px',
-                                          maxHeight: '280px',
-                                          objectFit: 'contain'
-                                        }}
-                                        onError={(e) => {
-                                          console.error('Error loading QR code image');
-                                          e.target.style.display = 'none';
-                                        }}
-                                      />
-                                    ) : (
-                                      <div className="w-48 h-48 flex items-center justify-center text-gray-500 text-sm text-center p-4">
-                                        <p>Please set your GCash number in Payment Settings</p>
-                                      </div>
-                                    )}
-                                  </>
+                                  <div className="w-70 h-70 flex items-center justify-center text-gray-500 text-sm text-center p-4">
+                                    <p>QR code image not available. Please contact the store owner.</p>
+                                  </div>
                                 )}
                               </div>
                             </div>
