@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
 import { FaCopy, FaCheck, FaEye, FaTimes, FaClock, FaSpinner, FaCheckCircle, FaTimesCircle, FaUndo } from 'react-icons/fa';
@@ -24,6 +24,7 @@ const Orders = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const [sendingChatMessage, setSendingChatMessage] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     fetchOrders();
@@ -71,6 +72,11 @@ const Orders = () => {
       await fetchCustomerMessages(selectedConversation.customerId);
       await fetchConversations();
       await fetchUnreadCount();
+      
+      // Auto-scroll to bottom only when sending a new message
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     } catch (error) {
       console.error('Error sending message:', error);
       alert('Failed to send message. Please try again.');
@@ -428,7 +434,7 @@ const Orders = () => {
                           </div>
                         ))
                       )}
-                      <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })} />
+                      <div ref={messagesEndRef} />
                     </div>
 
                     {/* Message Input */}
