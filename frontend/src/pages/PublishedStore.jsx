@@ -3988,10 +3988,18 @@ const PublishedStore = () => {
       }
 
       // Validate payment reference for GCash (not required for COD)
-      if (orderData.paymentMethod === 'gcash' && !orderData.paymentReference) {
-        setOrderError('Please enter the payment reference number from your GCash payment');
-        setOrderLoading(false);
-        return;
+      if (orderData.paymentMethod === 'gcash') {
+        if (!orderData.paymentReference) {
+          setOrderError('Please enter the payment reference number from your GCash payment');
+          setOrderLoading(false);
+          return;
+        }
+        // Validate reference format (7-12 digits)
+        if (orderData.paymentReference.length < 7 || orderData.paymentReference.length > 12) {
+          setOrderError('Payment reference must be 7-12 digits');
+          setOrderLoading(false);
+          return;
+        }
       }
       
       // For COD, clear payment reference (not needed)
@@ -4086,6 +4094,10 @@ const PublishedStore = () => {
 
             if (response.data?.orderNumber) {
               setOrderReferenceNumber(response.data.orderNumber);
+            }
+            // Store unique order code for display
+            if (response.data?.uniqueOrderCode) {
+              setOrderReferenceNumber(response.data.uniqueOrderCode);
             }
 
             recordOrderHistory(response.data);
@@ -4865,9 +4877,9 @@ const PublishedStore = () => {
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Order Placed Successfully!</h3>
                   {orderReferenceNumber && (
                     <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4 mb-4">
-                      <p className="text-sm font-medium text-purple-800 mb-1">Transaction Reference Number:</p>
+                      <p className="text-sm font-medium text-purple-800 mb-1">Your Unique Order Code:</p>
                       <p className="text-2xl font-bold text-purple-900 font-mono">{orderReferenceNumber}</p>
-                      <p className="text-xs text-purple-700 mt-2">Please provide this reference number when making payment</p>
+                      <p className="text-xs text-purple-700 mt-2">Include this code when making payment via GCash for faster verification</p>
                     </div>
                   )}
                   <p className="text-gray-600">Thank you for your order. The store owner will contact you soon.</p>
@@ -5292,13 +5304,26 @@ const PublishedStore = () => {
                               type="text"
                               required
                               value={orderData.paymentReference}
-                              onChange={(e) => handleOrderChange('paymentReference', e.target.value)}
-                              placeholder="Enter the reference number from your GCash payment"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              onChange={(e) => {
+                                // Validate: only digits, 7-12 characters
+                                const value = e.target.value.replace(/[^\d]/g, '').slice(0, 12);
+                                handleOrderChange('paymentReference', value);
+                              }}
+                              placeholder="Enter GCash reference (7-12 digits)"
+                              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                                orderData.paymentReference && (orderData.paymentReference.length < 7 || orderData.paymentReference.length > 12)
+                                  ? 'border-red-300 focus:ring-red-500'
+                                  : 'border-gray-300 focus:ring-purple-500'
+                              }`}
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                              Enter the reference number shown in your GCash app after payment
+                              Enter the reference number shown in your GCash app after payment (7-12 digits)
                             </p>
+                            {orderData.paymentReference && (orderData.paymentReference.length < 7 || orderData.paymentReference.length > 12) && (
+                              <p className="text-xs text-red-600 mt-1">
+                                ⚠️ Reference number must be 7-12 digits
+                              </p>
+                            )}
                           </div>
                           
                           {/* Payment Receipt Upload - Optional but recommended */}

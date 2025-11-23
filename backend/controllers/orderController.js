@@ -2,15 +2,23 @@ import Order from '../models/order.js';
 import OrderItem from '../models/orderItem.js';
 import Product from '../models/product.js';
 import Store from '../models/store.js';
+import User from '../models/user.js';
 import sequelize from '../config/db.js';
 import { Op } from 'sequelize';
 import multer from 'multer';
 import path from 'path';
 import { uploadToSupabase } from '../utils/supabaseStorage.js';
+import { sendEmail } from '../utils/email.js';
 
 // Generate unique order number
 const generateOrderNumber = () => {
   return `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+};
+
+// Generate unique order code for payment verification
+const generateUniqueOrderCode = (orderNumber) => {
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `${orderNumber}-${random}`;
 };
 
 // Get all orders for a store
@@ -316,10 +324,15 @@ export const createOrder = async (req, res) => {
     }
 
     try {
+      // Generate order number and unique code for payment verification
+      const orderNumber = generateOrderNumber();
+      const uniqueOrderCode = generateUniqueOrderCode(orderNumber);
+      
       // Create order within transaction
       const order = await Order.create({
         storeId,
-        orderNumber: generateOrderNumber(),
+        orderNumber: orderNumber,
+        uniqueOrderCode: uniqueOrderCode,
         status: 'pending',
         paymentMethod: paymentMethod || 'gcash',
         paymentStatus: 'pending',
@@ -369,6 +382,7 @@ export const createOrder = async (req, res) => {
         id: order.id,
         storeId: order.storeId,
         orderNumber: order.orderNumber,
+        uniqueOrderCode: order.uniqueOrderCode,
         status: order.status,
         paymentMethod: order.paymentMethod,
         paymentStatus: order.paymentStatus,
@@ -403,6 +417,74 @@ export const createOrder = async (req, res) => {
       console.log(`✅ Order created successfully in ${duration}ms`);
       if (duration > 3000) {
         console.warn(`⚠️ Slow order creation: took ${duration}ms`);
+      }
+
+      // Send email notification to store owner if payment proof is provided
+      if (paymentReference || paymentReceiptPath) {
+        try {
+          const store = await Store.findByPk(storeId);
+          if (store && store.userId) {
+            const storeOwner = await User.findByPk(store.userId);
+            
+            if (storeOwner && storeOwner.email) {
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            const ordersPageUrl = `${frontendUrl}/dashboard/orders`;
+            
+            const receiptUrl = paymentReceiptPath 
+              ? `${process.env.SUPABASE_URL || 'https://your-supabase-url.supabase.co'}/storage/v1/object/public/products/${paymentReceiptPath.replace('products/', '')}`
+              : null;
+            
+            const emailSubject = `💰 New Payment Received - Order ${order.orderNumber}`;
+            const emailHtml = `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #6d28d9;">💰 New Payment Received</h2>
+                <p>Hello ${storeOwner.firstName || 'Store Owner'},</p>
+                <p>A customer has submitted payment proof for an order:</p>
+                
+                <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <h3 style="margin-top: 0;">Order Details:</h3>
+                  <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+                  <p><strong>Unique Order Code:</strong> <code style="background: white; padding: 4px 8px; border-radius: 4px;">${order.uniqueOrderCode}</code></p>
+                  <p><strong>Customer:</strong> ${order.customerName}</p>
+                  <p><strong>Email:</strong> ${order.customerEmail}</p>
+                  <p><strong>Total Amount:</strong> ₱${parseFloat(order.total).toFixed(2)}</p>
+                  <p><strong>Payment Method:</strong> ${order.paymentMethod.toUpperCase()}</p>
+                  ${paymentReference ? `<p><strong>Payment Reference:</strong> ${paymentReference}</p>` : ''}
+                </div>
+                
+                ${receiptUrl ? `
+                  <div style="margin: 20px 0;">
+                    <p><strong>Payment Receipt:</strong></p>
+                    <img src="${receiptUrl}" alt="Payment Receipt" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px;" />
+                  </div>
+                ` : ''}
+                
+                <div style="margin: 30px 0;">
+                  <a href="${ordersPageUrl}" style="background: #6d28d9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                    View & Verify Order
+                  </a>
+                </div>
+                
+                <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                  Please verify the payment and update the order status accordingly.
+                </p>
+              </div>
+            `;
+            
+            await sendEmail({
+              to: storeOwner.email,
+              subject: emailSubject,
+              html: emailHtml,
+              text: `New payment received for Order ${order.orderNumber}. Amount: ₱${parseFloat(order.total).toFixed(2)}. View at: ${ordersPageUrl}`
+            });
+            
+            console.log(`✅ Payment notification email sent to store owner: ${storeOwner.email}`);
+            }
+          }
+        } catch (emailError) {
+          // Don't fail order creation if email fails
+          console.error('❌ Failed to send payment notification email:', emailError.message);
+        }
       }
 
       return res.status(201).json(orderResponse);

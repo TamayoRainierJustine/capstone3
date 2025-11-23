@@ -134,8 +134,9 @@ try {
   app.use('/api/support', supportRoutes);
   console.log('✅ Support routes registered at /api/support');
 
-  app.use('/api/api-applications', apiApplicationRoutes);
-  console.log('✅ API Application routes registered at /api/api-applications');
+  // API Application routes disabled - removed to simplify system
+  // app.use('/api/api-applications', apiApplicationRoutes);
+  // console.log('✅ API Application routes registered at /api/api-applications');
 
   app.use('/api/admin-setup', adminSetupRoutes);
   console.log('✅ Admin Setup routes registered at /api/admin-setup');
