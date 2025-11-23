@@ -2,18 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
-import { FaStore, FaUsers, FaShoppingCart, FaDollarSign, FaEye, FaToggleOn, FaToggleOff, FaTrash } from 'react-icons/fa';
+import { FaStore, FaUsers, FaShoppingCart, FaDollarSign, FaEye, FaToggleOn, FaToggleOff, FaTrash, FaChartLine } from 'react-icons/fa';
 
 const SuperAdminDashboard = () => {
   const [stores, setStores] = useState([]);
   const [statistics, setStatistics] = useState(null);
+  const [storePerformance, setStorePerformance] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [performanceLoading, setPerformanceLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // all, published, unpublished
 
   useEffect(() => {
     fetchStatistics();
     fetchStores();
+    fetchStorePerformance();
   }, [statusFilter, searchTerm]);
 
   const fetchStatistics = async () => {
@@ -22,6 +25,18 @@ const SuperAdminDashboard = () => {
       setStatistics(response.data);
     } catch (error) {
       console.error('Error fetching statistics:', error);
+    }
+  };
+
+  const fetchStorePerformance = async () => {
+    try {
+      setPerformanceLoading(true);
+      const response = await apiClient.get('/admin/store-performance');
+      setStorePerformance(response.data || []);
+    } catch (error) {
+      console.error('Error fetching store performance:', error);
+    } finally {
+      setPerformanceLoading(false);
     }
   };
 
@@ -86,6 +101,13 @@ const SuperAdminDashboard = () => {
           </div>
           <div className="flex gap-3">
             <Link
+              to="/super-admin/orders"
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2"
+            >
+              <FaShoppingCart className="w-4 h-4" />
+              All Orders
+            </Link>
+            <Link
               to="/super-admin/tickets"
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
             >
@@ -96,7 +118,7 @@ const SuperAdminDashboard = () => {
 
         {/* Statistics Cards */}
         {statistics && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -140,6 +162,16 @@ const SuperAdminDashboard = () => {
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between">
                 <div>
+                  <p className="text-sm text-gray-600">Total Orders</p>
+                  <p className="text-2xl font-bold text-orange-600">{statistics.totalOrders || 0}</p>
+                </div>
+                <FaShoppingCart className="text-3xl text-orange-500" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center justify-between">
+                <div>
                   <p className="text-sm text-gray-600">Total Revenue</p>
                   <p className="text-2xl font-bold text-green-600">₱{statistics.totalRevenue.toFixed(2)}</p>
                 </div>
@@ -148,6 +180,79 @@ const SuperAdminDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Store Performance Table */}
+        <div className="bg-white rounded-lg shadow mb-6">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Store Performance</h2>
+              <p className="text-sm text-gray-600 mt-1">Top stores by revenue and orders</p>
+            </div>
+            <FaChartLine className="text-2xl text-purple-500" />
+          </div>
+          
+          {performanceLoading ? (
+            <div className="p-12 text-center text-gray-500">
+              <p>Loading store performance...</p>
+            </div>
+          ) : storePerformance.length === 0 ? (
+            <div className="p-12 text-center text-gray-500">
+              <p>No store performance data available</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Store Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Orders</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Revenue</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {storePerformance.map((store, index) => (
+                    <tr key={store.id} className={index < 3 ? 'bg-yellow-50' : ''}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {index === 0 && <span className="text-2xl mr-2">🥇</span>}
+                          {index === 1 && <span className="text-2xl mr-2">🥈</span>}
+                          {index === 2 && <span className="text-2xl mr-2">🥉</span>}
+                          <span className="text-sm font-medium text-gray-900">#{index + 1}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{store.storeName}</div>
+                        <div className="text-sm text-gray-500">{store.domainName}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{store.ownerName || 'N/A'}</div>
+                        <div className="text-sm text-gray-500">{store.ownerEmail || ''}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-gray-900">{store.totalOrders || 0}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-green-600">₱{parseFloat(store.totalRevenue || 0).toFixed(2)}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          store.status === 'published'
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {store.status === 'published' ? 'Published' : 'Unpublished'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">

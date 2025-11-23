@@ -4,7 +4,9 @@ import {
   getStoreStatistics,
   updateStoreStatus,
   getStoreDetails,
-  deleteStore
+  deleteStore,
+  getStorePerformance,
+  getAllOrders
 } from '../controllers/superAdminController.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireSuperAdmin } from '../middleware/checkRole.js';
@@ -17,6 +19,8 @@ router.use(requireSuperAdmin);
 
 router.get('/stores', getAllStores);
 router.get('/statistics', getStoreStatistics);
+router.get('/store-performance', getStorePerformance);
+router.get('/orders', getAllOrders);
 router.get('/stores/:id', getStoreDetails);
 router.put('/stores/:id/status', updateStoreStatus);
 router.delete('/stores/:id', deleteStore);

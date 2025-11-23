@@ -257,6 +257,154 @@ export const getStoreDetails = async (req, res) => {
   }
 };
 
+// Get store performance (top stores by revenue and orders)
+export const getStorePerformance = async (req, res) => {
+  try {
+    console.log('📊 getStorePerformance called by user:', req.user?.email);
+    
+    // Get all stores
+    const stores = await Store.findAll({
+      attributes: ['id', 'storeName', 'domainName', 'status', 'userId']
+    });
+
+    // Fetch user data separately (consistent with getAllStores)
+    const userIds = [...new Set(stores.map(s => s.userId).filter(id => id !== null && id !== undefined))];
+    let userMap = new Map();
+    
+    if (userIds.length > 0) {
+      try {
+        const users = await User.findAll({
+          where: { id: { [Op.in]: userIds } },
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+          raw: true
+        });
+        userMap = new Map(users.map(u => [u.id, u]));
+      } catch (userError) {
+        console.error('⚠️ Error fetching users:', userError);
+      }
+    }
+
+    // Calculate performance metrics for each store
+    const performanceData = await Promise.all(
+      stores.map(async (store) => {
+        const storeData = store.toJSON();
+        const user = storeData.userId ? userMap.get(storeData.userId) : null;
+
+        const orderCount = await Order.count({
+          where: { storeId: store.id }
+        });
+
+        const completedOrders = await Order.findAll({
+          where: {
+            storeId: store.id,
+            paymentStatus: 'completed'
+          },
+          attributes: ['total', 'subtotal', 'shipping'],
+          raw: true
+        });
+
+        const totalRevenue = completedOrders.reduce((sum, order) => {
+          if (order.total !== null && order.total !== undefined) {
+            return sum + parseFloat(order.total || 0);
+          } else {
+            const subtotal = parseFloat(order.subtotal || 0);
+            const shipping = parseFloat(order.shipping || 0);
+            return sum + subtotal + shipping;
+          }
+        }, 0);
+
+        return {
+          id: store.id,
+          storeName: store.storeName,
+          domainName: store.domainName,
+          status: store.status,
+          ownerName: user ? `${user.firstName} ${user.lastName}` : 'N/A',
+          ownerEmail: user?.email || '',
+          totalOrders: orderCount,
+          totalRevenue: parseFloat(totalRevenue)
+        };
+      })
+    );
+
+    // Sort by revenue (descending), then by orders (descending)
+    performanceData.sort((a, b) => {
+      if (b.totalRevenue !== a.totalRevenue) {
+        return b.totalRevenue - a.totalRevenue;
+      }
+      return b.totalOrders - a.totalOrders;
+    });
+
+    // Return top 10 stores
+    const topStores = performanceData.slice(0, 10);
+
+    console.log('✅ Store performance data:', topStores.length, 'stores');
+    res.json(topStores);
+  } catch (error) {
+    console.error('❌ Error fetching store performance:', error);
+    res.status(500).json({
+      message: 'Error fetching store performance',
+      error: error.message
+    });
+  }
+};
+
+// Get all orders across all stores (Super Admin only)
+export const getAllOrders = async (req, res) => {
+  try {
+    console.log('📊 getAllOrders called by user:', req.user?.email);
+    
+    const { status, paymentStatus, storeId, search } = req.query;
+    
+    const whereClause = {};
+    
+    if (status && status !== 'all') {
+      whereClause.status = status;
+    }
+    
+    if (paymentStatus && paymentStatus !== 'all') {
+      whereClause.paymentStatus = paymentStatus;
+    }
+    
+    if (storeId && storeId !== 'all') {
+      whereClause.storeId = storeId;
+    }
+    
+    if (search) {
+      whereClause[Op.or] = [
+        { orderNumber: { [Op.iLike]: `%${search}%` } },
+        { customerName: { [Op.iLike]: `%${search}%` } },
+        { customerEmail: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    const orders = await Order.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Store,
+          attributes: ['id', 'storeName', 'domainName', 'status']
+        }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: 500 // Limit to prevent large queries
+    });
+
+    const formattedOrders = orders.map(order => {
+      const orderData = order.toJSON();
+      return orderData;
+    });
+
+    console.log('✅ Returning', formattedOrders.length, 'orders');
+    res.json(formattedOrders);
+  } catch (error) {
+    console.error('❌ Error in getAllOrders:', error);
+    res.status(500).json({
+      message: 'Error fetching orders',
+      error: error.message
+    });
+  }
+};
+
 // Delete store (Super Admin only)
 export const deleteStore = async (req, res) => {
   try {
