@@ -511,11 +511,29 @@ const PublishedStore = () => {
     const labels = {
       pending: 'Pending Verification',
       processing: 'Processing',
-      completed: 'Payment Verified ✓',
+      completed: 'Payment Verified',
       failed: 'Payment Failed',
       refunded: 'Refunded'
     };
     return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  // Payment status icon component
+  const PaymentStatusIcon = ({ status }) => {
+    switch (status) {
+      case 'pending':
+        return <span className="mr-1">⏳</span>;
+      case 'processing':
+        return <span className="mr-1 animate-spin">🔄</span>;
+      case 'completed':
+        return <span className="mr-1">✅</span>;
+      case 'failed':
+        return <span className="mr-1">❌</span>;
+      case 'refunded':
+        return <span className="mr-1">↩️</span>;
+      default:
+        return null;
+    }
   };
 
   // Request order cancellation
@@ -5542,15 +5560,18 @@ const PublishedStore = () => {
                       </div>
                       <div className="flex gap-2 text-sm flex-wrap">
                         <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-700 capitalize">{getStatusLabel(order.status)}</span>
-                        <span className={`px-3 py-1 rounded-full capitalize font-medium ${
+                        <span className={`px-3 py-1.5 rounded-full font-medium border-2 flex items-center gap-1 ${
                           order.paymentStatus === 'completed' 
-                            ? 'bg-green-100 text-green-700 border-2 border-green-500' 
+                            ? 'bg-green-100 text-green-700 border-green-500' 
                             : order.paymentStatus === 'pending' 
-                            ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-500' 
+                            ? 'bg-yellow-100 text-yellow-700 border-yellow-500' 
                             : order.paymentStatus === 'processing'
-                            ? 'bg-blue-100 text-blue-700 border-2 border-blue-500'
-                            : 'bg-gray-100 text-gray-700'
+                            ? 'bg-blue-100 text-blue-700 border-blue-500'
+                            : order.paymentStatus === 'failed'
+                            ? 'bg-red-100 text-red-700 border-red-500'
+                            : 'bg-gray-100 text-gray-700 border-gray-300'
                         }`}>
+                          <PaymentStatusIcon status={order.paymentStatus} />
                           {getPaymentStatusLabel(order.paymentStatus)}
                         </span>
                         {order.cancellationRequest === 'requested' && (

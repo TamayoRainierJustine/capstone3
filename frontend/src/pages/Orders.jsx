@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
-import { FaCopy, FaCheck, FaEye, FaTimes } from 'react-icons/fa';
+import { FaCopy, FaCheck, FaEye, FaTimes, FaClock, FaSpinner, FaCheckCircle, FaTimesCircle, FaUndo } from 'react-icons/fa';
 import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
 import { getImageUrl } from '../utils/imageUrl';
 
@@ -215,13 +215,41 @@ const Orders = () => {
 
   const getPaymentStatusColor = (status) => {
     const colors = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      processing: 'bg-blue-100 text-blue-800',
-      completed: 'bg-green-100 text-green-800',
-      failed: 'bg-red-100 text-red-800',
-      refunded: 'bg-gray-100 text-gray-800'
+      pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      processing: 'bg-blue-100 text-blue-800 border-blue-300',
+      completed: 'bg-green-100 text-green-800 border-green-300',
+      failed: 'bg-red-100 text-red-800 border-red-300',
+      refunded: 'bg-gray-100 text-gray-800 border-gray-300'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-gray-100 text-gray-800 border-gray-300';
+  };
+
+  const getPaymentStatusIcon = (status) => {
+    switch (status) {
+      case 'pending':
+        return <FaClock className="inline mr-1" size={12} />;
+      case 'processing':
+        return <FaSpinner className="inline mr-1 animate-spin" size={12} />;
+      case 'completed':
+        return <FaCheckCircle className="inline mr-1" size={12} />;
+      case 'failed':
+        return <FaTimesCircle className="inline mr-1" size={12} />;
+      case 'refunded':
+        return <FaUndo className="inline mr-1" size={12} />;
+      default:
+        return null;
+    }
+  };
+
+  const getPaymentStatusLabel = (status) => {
+    const labels = {
+      pending: 'Pending Payment',
+      processing: 'Processing Payment',
+      completed: 'Payment Verified',
+      failed: 'Payment Failed',
+      refunded: 'Refunded'
+    };
+    return labels[status] || status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   const deleteOrder = async (orderId) => {
@@ -459,7 +487,13 @@ const Orders = () => {
               <div key={order.id} className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold">Order #{order.orderNumber}</h3>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-semibold">Order #{order.orderNumber}</h3>
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium border-2 flex items-center gap-1 ${getPaymentStatusColor(order.paymentStatus)}`}>
+                        {getPaymentStatusIcon(order.paymentStatus)}
+                        <span>{getPaymentStatusLabel(order.paymentStatus)}</span>
+                      </div>
+                    </div>
                     {order.paymentReference && (
                       <div className="mt-2 bg-purple-50 border-2 border-purple-300 rounded-lg px-4 py-3 inline-block">
                         <p className="text-xs font-medium text-purple-700 mb-1">Transaction Reference Number:</p>
@@ -635,9 +669,10 @@ const Orders = () => {
                         </div>
                       ) : (
                         <div>
-                          <p className={`px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusColor(order.paymentStatus)} mb-1`}>
-                            {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
-                          </p>
+                          <div className={`px-3 py-1.5 rounded-full text-sm font-medium border-2 ${getPaymentStatusColor(order.paymentStatus)} mb-1 flex items-center justify-center gap-1`}>
+                          {getPaymentStatusIcon(order.paymentStatus)}
+                          <span>{getPaymentStatusLabel(order.paymentStatus)}</span>
+                        </div>
                           {order.paymentStatus === 'pending' && (
                             <button
                               onClick={() => {

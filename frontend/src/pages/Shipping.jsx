@@ -8,7 +8,6 @@ const Shipping = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState('rates'); // 'rates' or 'carriers'
 
   // Weight bands configuration
   const weightBands = ['0-0.5', '0.5-1', '1-3', '5-6'];
@@ -265,31 +264,8 @@ const Shipping = () => {
             </div>
           )}
 
-          {/* Tabs */}
-          <div className="flex space-x-4 mb-6 border-b">
-            <button
-              className={`px-4 py-2 font-semibold focus:outline-none ${
-                activeTab === 'rates'
-                  ? 'border-b-2 border-purple-600 text-purple-600'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-              onClick={() => setActiveTab('rates')}
-            >
-              Shipping Rates
-            </button>
-            <button
-              className={`px-4 py-2 font-semibold focus:outline-none ${
-                activeTab === 'carriers'
-                  ? 'border-b-2 border-purple-600 text-purple-600'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-              onClick={() => setActiveTab('carriers')}
-            >
-              Carrier Setup
-            </button>
-          </div>
-
-          {activeTab === 'rates' && (
+          {/* Shipping Rates Section */}
+          <div>
             <div className="space-y-6">
               {/* Distance-based option */}
               <div className="bg-gray-50 p-4 rounded-lg">
@@ -500,23 +476,7 @@ const Shipping = () => {
                 </button>
               </div>
             </div>
-          )}
-
-          {activeTab === 'carriers' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold mb-4">Shipping Carrier Setup</h2>
-              <p className="text-gray-600 mb-6">
-                Configure shipping carrier accounts for automated rate calculation and tracking.
-                (This feature will be available in future updates)
-              </p>
-              
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-yellow-800">
-                  <strong>Note:</strong> Carrier API integration is coming soon. For now, you can manually set shipping rates using the "Shipping Rates" tab above.
-                </p>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
