@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
-import { FaPaperPlane, FaPlus, FaSpinner } from 'react-icons/fa';
+import { FaPaperPlane, FaPlus, FaSpinner, FaBolt } from 'react-icons/fa';
 
 const HelpChat = () => {
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -138,6 +140,30 @@ const HelpChat = () => {
             <FaPlus />
             New Ticket
           </button>
+        </div>
+
+        {/* API Applications Section */}
+        <div className="mb-6 bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="bg-cyan-100 p-3 rounded-full">
+                <FaBolt className="w-6 h-6 text-cyan-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">API Applications</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Apply for QR API and Shipping API access. Submit an application to use QR payment APIs and distance-based shipping APIs. Requires BIR documents for approval.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/dashboard/api-application')}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+            >
+              <FaBolt />
+              Manage Applications
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
