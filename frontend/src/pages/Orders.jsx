@@ -315,8 +315,13 @@ const Orders = () => {
             </button>
             <select
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg"
+              onChange={(e) => {
+                e.stopPropagation();
+                setSelectedStatus(e.target.value);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="all">All Orders</option>
               <option value="pending">Pending</option>
@@ -594,7 +599,12 @@ const Orders = () => {
                       <label className="block text-xs font-medium text-gray-700 mb-1">Order Status</label>
                       <select
                         value={order.status}
-                        onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          updateOrderStatus(order.id, e.target.value);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 ${getStatusColor(order.status)} cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 hover:opacity-90 transition-opacity`}
                       >
                         <option value="pending">Pending</option>
@@ -611,6 +621,7 @@ const Orders = () => {
                           <select
                             value={order.paymentStatus}
                             onChange={(e) => {
+                              e.stopPropagation();
                               const newStatus = e.target.value;
                               if (newStatus === 'completed') {
                                 // If marking as completed, use the transaction ID if provided
@@ -619,6 +630,8 @@ const Orders = () => {
                                 updatePaymentStatus(order.id, newStatus, null, verificationNotes || order.verificationNotes || '');
                               }
                             }}
+                            onClick={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
                             className={`px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 ${getPaymentStatusColor(order.paymentStatus)} cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500`}
                           >
                             <option value="pending">Pending</option>
