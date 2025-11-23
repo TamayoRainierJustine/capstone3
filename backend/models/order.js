@@ -31,12 +31,13 @@ const Order = sequelize.define('Order', {
     allowNull: false,
     unique: true
   },
-  uniqueOrderCode: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    unique: true,
-    comment: 'Unique payment verification code for easier payment matching (e.g., ORD-12345-A7B9)'
-  },
+  // uniqueOrderCode: {
+  //   type: DataTypes.STRING,
+  //   allowNull: true,
+  //   unique: true,
+  //   comment: 'Unique payment verification code for easier payment matching (e.g., ORD-12345-A7B9)'
+  // },
+  // Note: uniqueOrderCode temporarily disabled - column doesn't exist in database yet
   status: {
     type: DataTypes.ENUM('pending', 'processing', 'shipped', 'completed', 'cancelled'),
     defaultValue: 'pending'
