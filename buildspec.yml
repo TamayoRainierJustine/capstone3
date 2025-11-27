@@ -1,0 +1,23 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Installing dependencies..."
+      - cd frontend
+      - npm ci
+  build:
+    commands:
+      - echo "Building React app..."
+      - npm run build
+      - echo "Build completed successfully"
+  post_build:
+    commands:
+      - echo "Build artifacts ready in frontend/dist"
+      - ls -la dist/
+artifacts:
+  files:
+    - '**/*'
+  base-directory: frontend/dist
+  name: react-build-$(date +%Y-%m-%d)
+
