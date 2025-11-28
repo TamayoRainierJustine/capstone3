@@ -29,18 +29,28 @@ router.use((req, res, next) => {
   next();
 });
 
-// Configure multer for file uploads
+// Configure multer for file uploads (images and 3D models)
 const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 20 * 1024 * 1024 // 20MB limit (for 3D models)
   },
   fileFilter: (req, file, cb) => {
+    // Allow images
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
+    }
+    // Allow 3D model files (GLB/GLTF)
+    else if (
+      file.mimetype === 'model/gltf-binary' ||
+      file.mimetype === 'model/gltf+json' ||
+      file.originalname.toLowerCase().endsWith('.glb') ||
+      file.originalname.toLowerCase().endsWith('.gltf')
+    ) {
+      cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'), false);
+      cb(new Error('Only image files (JPG, PNG) and 3D model files (GLB, GLTF) are allowed'), false);
     }
   }
 });
@@ -57,13 +67,16 @@ router.get('/', getProducts);
 router.get('/categories/list', getCategories);
 
 // POST route for creating products
-router.post('/', upload.single('image'), (req, res, next) => {
+router.post('/', upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'model3d', maxCount: 1 }
+]), (req, res, next) => {
   console.log('========================================');
   console.log('POST /api/products - Route matched!');
   console.log('Request method:', req.method);
   console.log('Request path:', req.path);
   console.log('Request body keys:', Object.keys(req.body || {}));
-  console.log('Request file:', req.file ? `File: ${req.file.originalname}` : 'No file');
+  console.log('Request files:', req.files ? JSON.stringify(Object.keys(req.files)) : 'No files');
   console.log('User:', req.user ? `ID: ${req.user.id}` : 'No user');
   console.log('========================================');
   createProduct(req, res, next);
@@ -71,7 +84,10 @@ router.post('/', upload.single('image'), (req, res, next) => {
 
 // Dynamic routes last
 router.get('/:id', getProductById);
-router.put('/:id', upload.single('image'), updateProduct);
+router.put('/:id', upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'model3d', maxCount: 1 }
+]), updateProduct);
 router.delete('/:id', deleteProduct);
 
 export default router;

@@ -33,6 +33,11 @@ const Product = sequelize.define('Product', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  model3dUrl: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'URL/path to 3D model file (GLB/GLTF format)'
+  },
   stock: {
     type: DataTypes.INTEGER,
     allowNull: false,

@@ -134,19 +134,21 @@ export const createProduct = async (req, res) => {
     }
 
     let imagePath = null;
+    let model3dPath = null;
 
-    // Handle file upload to Supabase Storage with timeout
-    if (req.file) {
+    // Handle image file upload to Supabase Storage with timeout
+    if (req.files && req.files.image && req.files.image[0]) {
       try {
-        const fileExtension = path.extname(req.file.originalname);
+        const file = req.files.image[0];
+        const fileExtension = path.extname(file.originalname);
         const fileName = `product_${Date.now()}${fileExtension}`;
         
         const uploadResult = await Promise.race([
           uploadToSupabase(
-            req.file.buffer,
+            file.buffer,
             'products',
             fileName,
-            req.file.mimetype
+            file.mimetype
           ),
           new Promise((_, reject) => 
             setTimeout(() => reject(new Error('File upload timeout')), 15000)
@@ -155,8 +157,7 @@ export const createProduct = async (req, res) => {
         
         imagePath = uploadResult.path;
       } catch (fileError) {
-        console.error('Error uploading file:', fileError.message);
-        // If it's a timeout or connection error, provide helpful message
+        console.error('Error uploading image:', fileError.message);
         if (fileError.message && (fileError.message.includes('timeout') || fileError.message.includes('acquire'))) {
           return res.status(503).json({ 
             message: 'Upload timeout - please try again. The connection is being established.', 
@@ -166,6 +167,52 @@ export const createProduct = async (req, res) => {
         }
         return res.status(500).json({ 
           message: 'Error uploading product image', 
+          error: fileError.message 
+        });
+      }
+    }
+
+    // Handle 3D model file upload to Supabase Storage with timeout
+    if (req.files && req.files.model3d && req.files.model3d[0]) {
+      try {
+        const file = req.files.model3d[0];
+        const fileExtension = path.extname(file.originalname);
+        const fileName = `product_3d_${Date.now()}${fileExtension}`;
+        
+        // Determine MIME type for 3D models
+        let mimeType = file.mimetype;
+        if (!mimeType || mimeType === 'application/octet-stream') {
+          if (fileExtension.toLowerCase() === '.glb') {
+            mimeType = 'model/gltf-binary';
+          } else if (fileExtension.toLowerCase() === '.gltf') {
+            mimeType = 'model/gltf+json';
+          }
+        }
+        
+        const uploadResult = await Promise.race([
+          uploadToSupabase(
+            file.buffer,
+            'products',
+            fileName,
+            mimeType
+          ),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('3D model upload timeout')), 30000)
+          )
+        ]);
+        
+        model3dPath = uploadResult.path;
+      } catch (fileError) {
+        console.error('Error uploading 3D model:', fileError.message);
+        if (fileError.message && (fileError.message.includes('timeout') || fileError.message.includes('acquire'))) {
+          return res.status(503).json({ 
+            message: '3D model upload timeout - please try again.', 
+            error: fileError.message,
+            retry: true
+          });
+        }
+        return res.status(500).json({ 
+          message: 'Error uploading 3D model', 
           error: fileError.message 
         });
       }
@@ -181,6 +228,7 @@ export const createProduct = async (req, res) => {
         stock: parseInt(stock) || 0,
         weight: weight !== undefined && weight !== null && weight !== '' ? parseFloat(weight) : 0,
         image: imagePath,
+        model3dUrl: model3dPath,
         category: category || null,
         isActive: isActive !== undefined ? isActive : true
       }),
@@ -255,9 +303,10 @@ export const updateProduct = async (req, res) => {
 
     const { name, description, price, stock, isActive, weight, category } = req.body;
     let imagePath = product.image;
+    let model3dPath = product.model3dUrl;
 
-    // Handle file upload if new image provided (with timeout)
-    if (req.file) {
+    // Handle image file upload if new image provided (with timeout)
+    if (req.files && req.files.image && req.files.image[0]) {
       try {
         // Delete old image from Supabase Storage if exists (non-blocking)
         if (product.image && (product.image.startsWith('products/') || product.image.startsWith('backgrounds/'))) {
@@ -267,15 +316,16 @@ export const updateProduct = async (req, res) => {
         }
 
         // Upload new image to Supabase Storage with timeout
-        const fileExtension = path.extname(req.file.originalname);
+        const file = req.files.image[0];
+        const fileExtension = path.extname(file.originalname);
         const fileName = `product_${Date.now()}${fileExtension}`;
         
         const uploadResult = await Promise.race([
           uploadToSupabase(
-            req.file.buffer,
+            file.buffer,
             'products',
             fileName,
-            req.file.mimetype
+            file.mimetype
           ),
           new Promise((_, reject) => 
             setTimeout(() => reject(new Error('File upload timeout')), 15000)
@@ -284,9 +334,56 @@ export const updateProduct = async (req, res) => {
         
         imagePath = uploadResult.path;
       } catch (fileError) {
-        console.error('Error uploading file:', fileError.message);
+        console.error('Error uploading image:', fileError.message);
         return res.status(500).json({ 
           message: 'Error uploading product image', 
+          error: fileError.message 
+        });
+      }
+    }
+
+    // Handle 3D model file upload if new model provided (with timeout)
+    if (req.files && req.files.model3d && req.files.model3d[0]) {
+      try {
+        // Delete old 3D model from Supabase Storage if exists (non-blocking)
+        if (product.model3dUrl && product.model3dUrl.startsWith('products/')) {
+          deleteFromSupabase('products', product.model3dUrl).catch(err => {
+            console.warn('Error deleting old 3D model:', err.message);
+          });
+        }
+
+        // Upload new 3D model to Supabase Storage with timeout
+        const file = req.files.model3d[0];
+        const fileExtension = path.extname(file.originalname);
+        const fileName = `product_3d_${Date.now()}${fileExtension}`;
+        
+        // Determine MIME type for 3D models
+        let mimeType = file.mimetype;
+        if (!mimeType || mimeType === 'application/octet-stream') {
+          if (fileExtension.toLowerCase() === '.glb') {
+            mimeType = 'model/gltf-binary';
+          } else if (fileExtension.toLowerCase() === '.gltf') {
+            mimeType = 'model/gltf+json';
+          }
+        }
+        
+        const uploadResult = await Promise.race([
+          uploadToSupabase(
+            file.buffer,
+            'products',
+            fileName,
+            mimeType
+          ),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('3D model upload timeout')), 30000)
+          )
+        ]);
+        
+        model3dPath = uploadResult.path;
+      } catch (fileError) {
+        console.error('Error uploading 3D model:', fileError.message);
+        return res.status(500).json({ 
+          message: 'Error uploading 3D model', 
           error: fileError.message 
         });
       }
@@ -301,6 +398,7 @@ export const updateProduct = async (req, res) => {
         stock: stock !== undefined ? parseInt(stock) : product.stock,
         weight: weight !== undefined && weight !== null && weight !== '' ? parseFloat(weight) : (product.weight || 0),
         image: imagePath,
+        model3dUrl: model3dPath !== undefined ? model3dPath : product.model3dUrl,
         category: category !== undefined ? category : product.category,
         isActive: isActive !== undefined ? isActive : product.isActive
       }),
