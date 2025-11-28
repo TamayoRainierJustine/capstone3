@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import apiClient from '../utils/axios';
-import Header from '../components/Header';
 import LanguageToggle from '../components/LanguageToggle';
 import { FaPaperPlane, FaPlus, FaSpinner } from 'react-icons/fa';
 
@@ -147,8 +146,7 @@ const HelpChat = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-      <div className="container mx-auto px-4 py-8 mt-16">
+      <div className="container mx-auto px-4 py-8">
         <div className="mb-6 flex justify-between items-center relative z-10">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{t('ticketing.title')}</h1>

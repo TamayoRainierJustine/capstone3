@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import { getImageUrl } from '../utils/imageUrl';
-import Header from '../components/Header';
 import '../styles/AddProduct.css';
 
 const EditProduct = () => {
@@ -165,7 +164,6 @@ const EditProduct = () => {
   if (loading) {
     return (
       <div className="add-product-page">
-        <Header />
         <div className="add-product-content">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">

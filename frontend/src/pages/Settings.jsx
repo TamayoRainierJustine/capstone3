@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import apiClient from '../utils/axios';
 import { useNavigate } from 'react-router-dom';
 import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
-import Header from '../components/Header';
 import '../styles/StoreSetup.css';
 
 const Settings = () => {
@@ -150,7 +149,6 @@ const Settings = () => {
 
   return (
     <div className="store-setup-page">
-      <Header />
       <div className="store-setup-content">
         <div className="setup-header">
           <h1>Edit Store Information</h1>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axios';
 import { getImageUrl } from '../utils/imageUrl';
-import Header from '../components/Header';
 import { QRCodeSVG } from 'qrcode.react';
 
 const Products = () => {
@@ -182,7 +181,6 @@ const Products = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
@@ -195,7 +193,6 @@ const Products = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <div className="flex max-w-7xl mx-auto px-4 py-8 gap-6">
         {/* Sidebar with Category Filter */}
         <div className="w-64 flex-shrink-0">

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axios';
-import Header from '../components/Header';
 import '../styles/AddProduct.css';
 
 const AddProduct = () => {
@@ -121,7 +120,6 @@ const AddProduct = () => {
 
   return (
     <div className="add-product-page">
-      <Header />
       <div className="add-product-content">
         <div className="product-header">
           <h1>Add New Product</h1>
