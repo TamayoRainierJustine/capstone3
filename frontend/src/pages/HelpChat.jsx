@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
+import LanguageToggle from '../components/LanguageToggle';
 import { FaPaperPlane, FaPlus, FaSpinner } from 'react-icons/fa';
 
 const HelpChat = () => {
+  const { t } = useTranslation();
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -19,6 +22,26 @@ const HelpChat = () => {
     storeId: ''
   });
   const messagesEndRef = useRef(null);
+
+  const translateStatus = (status) => {
+    const statusMap = {
+      'open': t('ticketing.status.open'),
+      'in_progress': t('ticketing.status.inProgress'),
+      'resolved': t('ticketing.status.resolved'),
+      'closed': t('ticketing.status.closed')
+    };
+    return statusMap[status] || status;
+  };
+
+  const translatePriority = (priority) => {
+    const priorityMap = {
+      'low': t('ticketing.priorityOptions.low'),
+      'medium': t('ticketing.priorityOptions.medium'),
+      'high': t('ticketing.priorityOptions.high'),
+      'urgent': t('ticketing.priorityOptions.urgent')
+    };
+    return priorityMap[priority] || priority;
+  };
 
   useEffect(() => {
     fetchTickets();
@@ -73,7 +96,7 @@ const HelpChat = () => {
       await fetchTickets(); // Refresh ticket list to update lastRepliedAt
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Failed to send message');
+      alert(t('ticketing.failedToSend'));
     } finally {
       setSending(false);
     }
@@ -81,7 +104,7 @@ const HelpChat = () => {
 
   const handleCreateTicket = async () => {
     if (!newTicket.subject || !newTicket.message) {
-      alert('Please fill in subject and message');
+      alert(t('ticketing.pleaseFill'));
       return;
     }
 
@@ -98,7 +121,7 @@ const HelpChat = () => {
       await fetchTickets();
     } catch (error) {
       console.error('Error creating ticket:', error);
-      alert('Failed to create ticket');
+      alert(t('ticketing.failedToCreate'));
     }
   };
 
@@ -128,16 +151,19 @@ const HelpChat = () => {
       <div className="container mx-auto px-4 py-8 mt-16">
         <div className="mb-6 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Help & Support</h1>
-            <p className="text-gray-600 mt-1">Get help with your store or contact support</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('ticketing.title')}</h1>
+            <p className="text-gray-600 mt-1">{t('ticketing.subtitle')}</p>
           </div>
-          <button
-            onClick={() => setShowNewTicketModal(true)}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
-          >
-            <FaPlus />
-            New Ticket
-          </button>
+          <div className="flex items-center gap-4">
+            <LanguageToggle />
+            <button
+              onClick={() => setShowNewTicketModal(true)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+            >
+              <FaPlus />
+              {t('ticketing.newTicket')}
+            </button>
+          </div>
         </div>
 
 
@@ -145,17 +171,17 @@ const HelpChat = () => {
           {/* Tickets List */}
           <div className="lg:col-span-1 bg-white rounded-lg shadow">
             <div className="p-4 border-b border-gray-200">
-              <h2 className="font-semibold text-gray-900">My Tickets</h2>
+              <h2 className="font-semibold text-gray-900">{t('ticketing.myTickets')}</h2>
             </div>
             <div className="overflow-y-auto max-h-[600px]">
               {loading ? (
                 <div className="p-8 text-center text-gray-500">
                   <FaSpinner className="animate-spin mx-auto mb-2" />
-                  <p>Loading tickets...</p>
+                  <p>{t('ticketing.loadingTickets')}</p>
                 </div>
               ) : tickets.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
-                  <p>No tickets yet. Create one to get started!</p>
+                  <p>{t('ticketing.noTickets')}</p>
                 </div>
               ) : (
                 tickets.map((ticket) => (
@@ -169,13 +195,13 @@ const HelpChat = () => {
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-semibold text-gray-900 text-sm">{ticket.subject}</h3>
                       <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(ticket.status)}`}>
-                        {ticket.status.replace('_', ' ')}
+                        {translateStatus(ticket.status)}
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mb-2">{ticket.message.substring(0, 60)}...</p>
                     <div className="flex items-center gap-2 text-xs text-gray-500">
                       <span className={`px-2 py-0.5 rounded ${getPriorityColor(ticket.priority)}`}>
-                        {ticket.priority}
+                        {translatePriority(ticket.priority)}
                       </span>
                       <span>•</span>
                       <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
@@ -196,13 +222,13 @@ const HelpChat = () => {
                       <h2 className="text-xl font-semibold text-gray-900">{selectedTicket.subject}</h2>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(selectedTicket.status)}`}>
-                          {selectedTicket.status.replace('_', ' ')}
+                          {translateStatus(selectedTicket.status)}
                         </span>
                         <span className={`px-2 py-1 text-xs rounded-full ${getPriorityColor(selectedTicket.priority)}`}>
-                          {selectedTicket.priority}
+                          {translatePriority(selectedTicket.priority)}
                         </span>
                         <span className="text-xs text-gray-500">
-                          Created: {new Date(selectedTicket.createdAt).toLocaleString()}
+                          {t('ticketing.created')}: {new Date(selectedTicket.createdAt).toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -224,7 +250,7 @@ const HelpChat = () => {
                       >
                         <div className="text-xs font-semibold mb-1">
                           {message.User.firstName} {message.User.lastName}
-                          {message.isInternal && ' (Internal Note)'}
+                          {message.isInternal && ` (${t('ticketing.internalNote')})`}
                         </div>
                         <div className="text-sm whitespace-pre-wrap">{message.message}</div>
                         <div className={`text-xs mt-1 ${
@@ -250,7 +276,7 @@ const HelpChat = () => {
                           handleSendMessage();
                         }
                       }}
-                      placeholder="Type your message..."
+                      placeholder={t('ticketing.typeMessage')}
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                     <button
@@ -259,7 +285,7 @@ const HelpChat = () => {
                       className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       {sending ? <FaSpinner className="animate-spin" /> : <FaPaperPlane />}
-                      Send
+                      {t('ticketing.send')}
                     </button>
                   </div>
                 </div>
@@ -267,8 +293,8 @@ const HelpChat = () => {
             ) : (
               <div className="flex-1 flex items-center justify-center text-gray-500">
                 <div className="text-center">
-                  <p className="text-lg mb-2">Select a ticket to view messages</p>
-                  <p className="text-sm">or create a new ticket to get help</p>
+                  <p className="text-lg mb-2">{t('ticketing.selectTicket')}</p>
+                  <p className="text-sm">{t('ticketing.orCreateNew')}</p>
                 </div>
               </div>
             )}
@@ -281,57 +307,57 @@ const HelpChat = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b">
-              <h2 className="text-2xl font-bold text-gray-900">Create New Support Ticket</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{t('ticketing.createNewTicket')}</h2>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('ticketing.subject')} *</label>
                 <input
                   type="text"
                   value={newTicket.subject}
                   onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Brief description of your issue"
+                  placeholder={t('ticketing.subjectPlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('ticketing.category')}</label>
                 <select
                   value={newTicket.category}
                   onChange={(e) => setNewTicket({ ...newTicket, category: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
-                  <option value="general">General</option>
-                  <option value="technical">Technical Issue</option>
-                  <option value="billing">Billing</option>
-                  <option value="api_application">API Application</option>
-                  <option value="other">Other</option>
+                  <option value="general">{t('ticketing.categoryOptions.general')}</option>
+                  <option value="technical">{t('ticketing.categoryOptions.technical')}</option>
+                  <option value="billing">{t('ticketing.categoryOptions.billing')}</option>
+                  <option value="api_application">{t('ticketing.categoryOptions.apiApplication')}</option>
+                  <option value="other">{t('ticketing.categoryOptions.other')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('ticketing.priority')}</label>
                 <select
                   value={newTicket.priority}
                   onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
+                  <option value="low">{t('ticketing.priorityOptions.low')}</option>
+                  <option value="medium">{t('ticketing.priorityOptions.medium')}</option>
+                  <option value="high">{t('ticketing.priorityOptions.high')}</option>
+                  <option value="urgent">{t('ticketing.priorityOptions.urgent')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('ticketing.message')} *</label>
                 <textarea
                   value={newTicket.message}
                   onChange={(e) => setNewTicket({ ...newTicket, message: e.target.value })}
                   rows="6"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Describe your issue or question in detail..."
+                  placeholder={t('ticketing.messagePlaceholder')}
                 />
               </div>
 
@@ -340,13 +366,13 @@ const HelpChat = () => {
                   onClick={() => setShowNewTicketModal(false)}
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                 >
-                  Cancel
+                  {t('ticketing.cancel')}
                 </button>
                 <button
                   onClick={handleCreateTicket}
                   className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                 >
-                  Create Ticket
+                  {t('ticketing.createTicket')}
                 </button>
               </div>
             </div>

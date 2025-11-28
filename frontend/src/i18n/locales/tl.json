@@ -1,0 +1,75 @@
+{
+  "ticketing": {
+    "title": "Tulong at Suporta",
+    "subtitle": "Kumuha ng tulong sa iyong tindahan o makipag-ugnayan sa suporta",
+    "newTicket": "Bagong Ticket",
+    "myTickets": "Aking mga Ticket",
+    "allTickets": "Lahat ng Ticket",
+    "supportTickets": "Mga Support Ticket",
+    "supportTicketsSubtitle": "Tingnan at pamahalaan ang lahat ng support ticket mula sa mga may-ari ng tindahan",
+    "backToDashboard": "Bumalik sa Dashboard",
+    "loadingTickets": "Naglo-load ng mga ticket...",
+    "noTickets": "Wala pang mga ticket. Gumawa ng isa para makapagsimula!",
+    "noTicketsFound": "Walang nahanap na ticket",
+    "selectTicket": "Pumili ng ticket para makita ang mga mensahe",
+    "orCreateNew": "o gumawa ng bagong ticket para makakuha ng tulong",
+    "createNewTicket": "Gumawa ng Bagong Support Ticket",
+    "subject": "Paksa",
+    "subjectPlaceholder": "Maikling paglalarawan ng iyong problema",
+    "category": "Kategorya",
+    "priority": "Priyoridad",
+    "message": "Mensahe",
+    "messagePlaceholder": "Ilarawan nang detalyado ang iyong problema o tanong...",
+    "typeMessage": "I-type ang iyong mensahe...",
+    "send": "Ipadala",
+    "cancel": "Kanselahin",
+    "createTicket": "Gumawa ng Ticket",
+    "pleaseFill": "Pakipunan ang paksa at mensahe",
+    "failedToSend": "Nabigo ang pagpapadala ng mensahe",
+    "failedToCreate": "Nabigo ang paggawa ng ticket",
+    "failedToFetch": "Nabigo ang pagkuha ng mga ticket",
+    "failedToUpdate": "Nabigo ang pag-update ng status ng ticket",
+    "failedToAssign": "Nabigo ang pag-assign ng ticket",
+    "userNotAvailable": "Hindi available ang impormasyon ng user",
+    "created": "Ginawa",
+    "from": "Mula sa",
+    "internalNote": "Panloob na Tala",
+    "superAdmin": "Super Admin",
+    "assignToMe": "I-assign sa Akin",
+    "status": {
+      "all": "Lahat ng Status",
+      "open": "Bukas",
+      "inProgress": "In Progress",
+      "resolved": "Nalutas",
+      "closed": "Sarado"
+    },
+    "priorityOptions": {
+      "all": "Lahat ng Priyoridad",
+      "low": "Mababa",
+      "medium": "Katamtaman",
+      "high": "Mataas",
+      "urgent": "Kailangan Agad"
+    },
+    "categoryOptions": {
+      "all": "Lahat ng Kategorya",
+      "general": "Pangkalahatan",
+      "technical": "Teknikal na Isyu",
+      "billing": "Pagbabayad",
+      "apiApplication": "API Application",
+      "other": "Iba pa"
+    },
+    "customerMessages": {
+      "title": "Mga Mensahe ng Customer",
+      "subtitle": "Makipag-chat sa iyong mga customer tungkol sa mga produkto, order, at pagpapadala",
+      "loadingConversations": "Naglo-load ng mga usapan...",
+      "noConversations": "Wala pang mga usapan.",
+      "noConversationsSubtitle": "Maaaring magsimulang makipag-chat ang mga customer mula sa pahina ng iyong tindahan.",
+      "sendMessage": "Nabigo ang pagpapadala ng mensahe. Pakisubukan ulit.",
+      "typeMessagePlaceholder": "I-type ang isang mensahe...",
+      "noMessages": "Wala pang mga mensahe.",
+      "startConversation": "Simulan ang usapan!",
+      "selectConversation": "Pumili ng usapan para makapagsimulang makipag-chat"
+    }
+  }
+}
+

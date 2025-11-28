@@ -1,0 +1,75 @@
+{
+  "ticketing": {
+    "title": "Help & Support",
+    "subtitle": "Get help with your store or contact support",
+    "newTicket": "New Ticket",
+    "myTickets": "My Tickets",
+    "allTickets": "All Tickets",
+    "supportTickets": "Support Tickets",
+    "supportTicketsSubtitle": "View and manage all support tickets from store owners",
+    "backToDashboard": "Back to Dashboard",
+    "loadingTickets": "Loading tickets...",
+    "noTickets": "No tickets yet. Create one to get started!",
+    "noTicketsFound": "No tickets found",
+    "selectTicket": "Select a ticket to view messages",
+    "orCreateNew": "or create a new ticket to get help",
+    "createNewTicket": "Create New Support Ticket",
+    "subject": "Subject",
+    "subjectPlaceholder": "Brief description of your issue",
+    "category": "Category",
+    "priority": "Priority",
+    "message": "Message",
+    "messagePlaceholder": "Describe your issue or question in detail...",
+    "typeMessage": "Type your message...",
+    "send": "Send",
+    "cancel": "Cancel",
+    "createTicket": "Create Ticket",
+    "pleaseFill": "Please fill in subject and message",
+    "failedToSend": "Failed to send message",
+    "failedToCreate": "Failed to create ticket",
+    "failedToFetch": "Failed to fetch tickets",
+    "failedToUpdate": "Failed to update ticket status",
+    "failedToAssign": "Failed to assign ticket",
+    "userNotAvailable": "User information not available",
+    "created": "Created",
+    "from": "From",
+    "internalNote": "Internal Note",
+    "superAdmin": "Super Admin",
+    "assignToMe": "Assign to Me",
+    "status": {
+      "all": "All Status",
+      "open": "Open",
+      "inProgress": "In Progress",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    },
+    "priorityOptions": {
+      "all": "All Priorities",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "categoryOptions": {
+      "all": "All Categories",
+      "general": "General",
+      "technical": "Technical Issue",
+      "billing": "Billing",
+      "apiApplication": "API Application",
+      "other": "Other"
+    },
+    "customerMessages": {
+      "title": "Customer Messages",
+      "subtitle": "Chat with your customers about products, orders, and shipping",
+      "loadingConversations": "Loading conversations...",
+      "noConversations": "No conversations yet.",
+      "noConversationsSubtitle": "Customers can start chatting from your store page.",
+      "sendMessage": "Failed to send message. Please try again.",
+      "typeMessagePlaceholder": "Type a message...",
+      "noMessages": "No messages yet.",
+      "startConversation": "Start the conversation!",
+      "selectConversation": "Select a conversation to start chatting"
+    }
+  }
+}
+

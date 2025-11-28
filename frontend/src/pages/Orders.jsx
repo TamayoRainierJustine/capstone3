@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import apiClient from '../utils/axios';
 import Header from '../components/Header';
 import { FaCopy, FaCheck, FaEye, FaTimes, FaClock, FaSpinner, FaCheckCircle, FaTimesCircle, FaUndo } from 'react-icons/fa';
@@ -6,6 +7,7 @@ import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun }
 import { getImageUrl } from '../utils/imageUrl';
 
 const Orders = () => {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -79,7 +81,7 @@ const Orders = () => {
       }, 100);
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
+      alert(t('ticketing.customerMessages.sendMessage'));
     } finally {
       setSendingChatMessage(false);
     }
@@ -312,7 +314,7 @@ const Orders = () => {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
-              Customer Messages
+              {t('ticketing.customerMessages.title')}
               {unreadCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {unreadCount > 9 ? '9+' : unreadCount}
@@ -343,18 +345,18 @@ const Orders = () => {
         {showChatSection && (
           <div className="mb-8 bg-white rounded-lg shadow-md">
             <div className="p-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Customer Messages</h2>
-              <p className="text-sm text-gray-600 mt-1">Chat with your customers about products, orders, and shipping</p>
+              <h2 className="text-xl font-semibold text-gray-900">{t('ticketing.customerMessages.title')}</h2>
+              <p className="text-sm text-gray-600 mt-1">{t('ticketing.customerMessages.subtitle')}</p>
             </div>
             <div className="flex" style={{ height: '600px' }}>
               {/* Conversations List */}
               <div className="w-1/3 border-r border-gray-200 overflow-y-auto">
                 {chatLoading && conversations.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">Loading conversations...</div>
+                  <div className="p-4 text-center text-gray-500">{t('ticketing.customerMessages.loadingConversations')}</div>
                 ) : conversations.length === 0 ? (
                   <div className="p-4 text-center text-gray-500">
-                    <p>No conversations yet.</p>
-                    <p className="text-sm mt-2">Customers can start chatting from your store page.</p>
+                    <p>{t('ticketing.customerMessages.noConversations')}</p>
+                    <p className="text-sm mt-2">{t('ticketing.customerMessages.noConversationsSubtitle')}</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-200">
@@ -407,11 +409,11 @@ const Orders = () => {
                     {/* Messages */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
                       {chatLoading && chatMessages.length === 0 ? (
-                        <div className="text-center text-gray-500 py-8">Loading messages...</div>
+                        <div className="text-center text-gray-500 py-8">{t('ticketing.loadingTickets')}</div>
                       ) : chatMessages.length === 0 ? (
                         <div className="text-center text-gray-500 py-8">
-                          <p>No messages yet.</p>
-                          <p className="text-sm mt-2">Start the conversation!</p>
+                          <p>{t('ticketing.customerMessages.noMessages')}</p>
+                          <p className="text-sm mt-2">{t('ticketing.customerMessages.startConversation')}</p>
                         </div>
                       ) : (
                         chatMessages.map((msg) => (
@@ -450,7 +452,7 @@ const Orders = () => {
                           type="text"
                           value={newChatMessage}
                           onChange={(e) => setNewChatMessage(e.target.value)}
-                          placeholder="Type your message..."
+                          placeholder={t('ticketing.customerMessages.typeMessagePlaceholder')}
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                           disabled={sendingChatMessage}
                         />
@@ -479,7 +481,7 @@ const Orders = () => {
                       <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                       </svg>
-                      <p>Select a conversation to start chatting</p>
+                      <p>{t('ticketing.customerMessages.selectConversation')}</p>
                     </div>
                   </div>
                 )}
