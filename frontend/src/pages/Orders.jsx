@@ -646,33 +646,61 @@ const Orders = () => {
                             <option value="refunded">Refunded</option>
                           </select>
                           <div className="mt-2">
-                            <input
-                              type="text"
-                              placeholder="Payment Transaction ID (e.g., GCash reference)"
-                              value={paymentTransactionId}
-                              onChange={(e) => setPaymentTransactionId(e.target.value)}
-                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
-                              onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                  updatePaymentStatus(order.id, 'completed', paymentTransactionId, verificationNotes || '');
-                                }
-                              }}
-                            />
-                            <p className="text-xs text-gray-500 mt-1">Enter the transaction ID from GCash/PayPal receipt</p>
-                            <textarea
-                              placeholder="Verification Notes (optional)"
-                              value={editingPayment === order.id ? (verificationNotes || order.verificationNotes || '') : ''}
-                              onChange={(e) => setVerificationNotes(e.target.value)}
-                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded mt-2"
-                              rows="2"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">Add notes about payment verification</p>
-                            <button
-                              onClick={() => updatePaymentStatus(order.id, 'completed', paymentTransactionId, verificationNotes || '')}
-                              className="mt-2 w-full px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                            >
-                              Mark Payment as Completed
-                            </button>
+                            {/* Show different UI for COD vs other payment methods */}
+                            {order.paymentMethod === 'cod' ? (
+                              <>
+                                <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                                  <p className="font-medium text-blue-800 mb-1">💵 Cash on Delivery</p>
+                                  <p className="text-blue-700">
+                                    Mark payment as completed after cash has been collected upon delivery.
+                                  </p>
+                                </div>
+                                <textarea
+                                  placeholder="Verification Notes (e.g., Payment collected on delivery, Amount received, etc.)"
+                                  value={editingPayment === order.id ? (verificationNotes || order.verificationNotes || '') : ''}
+                                  onChange={(e) => setVerificationNotes(e.target.value)}
+                                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded mt-2"
+                                  rows="3"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Add notes about COD payment collection (optional but recommended)</p>
+                                <button
+                                  onClick={() => updatePaymentStatus(order.id, 'completed', null, verificationNotes || '')}
+                                  className="mt-2 w-full px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                                >
+                                  Mark COD Payment as Completed
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <input
+                                  type="text"
+                                  placeholder="Payment Transaction ID (e.g., GCash reference number)"
+                                  value={paymentTransactionId}
+                                  onChange={(e) => setPaymentTransactionId(e.target.value)}
+                                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                      updatePaymentStatus(order.id, 'completed', paymentTransactionId, verificationNotes || '');
+                                    }
+                                  }}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Enter the transaction ID from GCash/PayPal receipt</p>
+                                <textarea
+                                  placeholder="Verification Notes (optional)"
+                                  value={editingPayment === order.id ? (verificationNotes || order.verificationNotes || '') : ''}
+                                  onChange={(e) => setVerificationNotes(e.target.value)}
+                                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded mt-2"
+                                  rows="2"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Add notes about payment verification</p>
+                                <button
+                                  onClick={() => updatePaymentStatus(order.id, 'completed', paymentTransactionId, verificationNotes || '')}
+                                  className="mt-2 w-full px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                                >
+                                  Mark Payment as Completed
+                                </button>
+                              </>
+                            )}
                           </div>
                           <button
                             onClick={() => {
@@ -700,7 +728,7 @@ const Orders = () => {
                               }}
                               className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
                             >
-                              Verify Payment
+                              {order.paymentMethod === 'cod' ? 'Verify COD Payment' : 'Verify Payment'}
                             </button>
                           )}
                           {order.verificationNotes && (
