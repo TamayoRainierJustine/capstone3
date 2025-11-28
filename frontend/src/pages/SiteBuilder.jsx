@@ -50,8 +50,6 @@ export default function SiteBuilder() {
   const [htmlContent, setHtmlContent] = useState('');
   const iframeRef = useRef(null);
   const [storeId, setStoreId] = useState(null);
-  // Responsive preview
-  const [previewSize, setPreviewSize] = useState('desktop'); // desktop | tablet | mobile
   
   // Products state
   const [products, setProducts] = useState([]);
@@ -1467,12 +1465,8 @@ export default function SiteBuilder() {
   ];
 
 
-  // Responsive preview dimensions
-  const previewStyle = (() => {
-    if (previewSize === 'mobile') return { maxWidth: '420px' };
-    if (previewSize === 'tablet') return { maxWidth: '820px' };
-    return { maxWidth: '100%' };
-  })();
+  // Preview dimensions - desktop view only
+  const previewStyle = { maxWidth: '100%' };
 
   return (
     <div className="site-builder-editor" style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex' }}>
@@ -1493,48 +1487,6 @@ export default function SiteBuilder() {
             Customize your store content
           </p>
 
-          {/* Responsive preview toggles */}
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-            <button
-              onClick={() => setPreviewSize('desktop')}
-              style={{
-                padding: '0.5rem 0.75rem',
-                borderRadius: '0.375rem',
-                border: '1px solid #d1d5db',
-                background: previewSize === 'desktop' ? '#e0e7ff' : 'white',
-                cursor: 'pointer',
-                fontSize: '0.8125rem'
-              }}
-            >
-              Desktop
-            </button>
-            <button
-              onClick={() => setPreviewSize('tablet')}
-              style={{
-                padding: '0.5rem 0.75rem',
-                borderRadius: '0.375rem',
-                border: '1px solid #d1d5db',
-                background: previewSize === 'tablet' ? '#e0e7ff' : 'white',
-                cursor: 'pointer',
-                fontSize: '0.8125rem'
-              }}
-            >
-              Tablet
-            </button>
-            <button
-              onClick={() => setPreviewSize('mobile')}
-              style={{
-                padding: '0.5rem 0.75rem',
-                borderRadius: '0.375rem',
-                border: '1px solid #d1d5db',
-                background: previewSize === 'mobile' ? '#e0e7ff' : 'white',
-                cursor: 'pointer',
-                fontSize: '0.8125rem'
-              }}
-            >
-              Mobile
-            </button>
-          </div>
         </div>
 
         {/* Layers Section */}
