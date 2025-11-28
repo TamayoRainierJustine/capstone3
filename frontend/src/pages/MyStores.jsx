@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/axios';
-import Header from '../components/Header';
 import '../styles/MyStores.css';
 
 const templateNames = {
@@ -127,45 +126,31 @@ const MyStores = () => {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
-        <Header />
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          minHeight: 'calc(100vh - 80px)',
-          fontSize: '1.125rem',
-          color: '#6b7280'
-        }}>
-          Loading your stores...
-        </div>
+      <div className="min-h-screen flex items-center justify-center text-gray-500 text-lg">
+        Loading your stores...
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #FF6B9D 0%, #C44569 25%, #8B5CF6 50%, #4C1D95 75%, #1E1B4B 100%)' }}>
-      <Header />
-      <div className="my-stores-container">
-        <div className="my-stores-header">
-          <h1>My Stores</h1>
-          <p>Manage and access all your stores</p>
+    <div className="min-h-screen px-4 py-10">
+      <div className="max-w-5xl mx-auto space-y-8">
+        <div className="bg-white/80 border border-white/30 rounded-[32px] shadow-2xl backdrop-blur-3xl p-10 text-center space-y-3">
+          <h1 className="text-4xl font-bold text-gray-900">My Stores</h1>
+          <p className="text-gray-600">Manage and access all your stores</p>
           <button 
             onClick={handleCreateStore}
-            className="create-store-button"
+            className="inline-flex items-center justify-center bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition duration-200 font-semibold"
           >
             + Create New Store
           </button>
+          {error && stores.length === 0 && (
+            <p className="text-rose-500">{error}</p>
+          )}
         </div>
 
-        {error && stores.length === 0 && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
-
         {stores.length > 0 && (
-          <div className="stores-grid">
+          <div className="grid gap-8">
             {stores.map((store) => (
               <div key={store.id} className="store-card">
                 {getStatusBadge(store.status || 'draft')}

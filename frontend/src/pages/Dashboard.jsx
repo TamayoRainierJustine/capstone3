@@ -124,12 +124,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div style={{ 
-      minHeight: 'calc(100vh - 80px)',
-      width: '100%',
-      padding: '2rem',
-      margin: 0
-    }}>
+    <div className="min-h-screen px-4 py-10">
+      <div className="max-w-5xl mx-auto space-y-8">
       {/* Create Store Prompt Modal */}
       {showCreateStorePrompt && (
         <div style={{
@@ -221,32 +217,22 @@ const Dashboard = () => {
         </div>
       )}
 
-      <div className="empty-state-container text-center mb-8">
-        <h1 style={{
-          fontSize: '3rem',
-          fontWeight: 'bold',
-          marginBottom: '0.5rem',
-          color: 'white',
-          textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)'
-        }}>
-          {loading ? 'Loading...' : `Welcome to ${storeName}`}
-        </h1>
-        {error && (
-          <p style={{ color: '#fca5a5', marginBottom: '1rem', fontSize: '1.125rem' }}>{error}</p>
-        )}
-        {!error && !showCreateStorePrompt && (
-          <p style={{ 
-            color: 'white', 
-            opacity: 0.9,
-            fontSize: '1.125rem',
-            textShadow: '1px 1px 2px rgba(0, 0, 0, 0.3)'
-          }}>
-            Here are some tips to help you get started.
-          </p>
-        )}
-      </div>
+      <div className="bg-white/80 border border-white/30 rounded-[32px] shadow-2xl backdrop-blur-3xl p-10">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 drop-shadow-sm">
+            {loading ? 'Loading...' : `Welcome to ${storeName}`}
+          </h1>
+          {error && (
+            <p className="text-rose-500 mt-2 text-lg">{error}</p>
+          )}
+          {!error && !showCreateStorePrompt && (
+            <p className="text-gray-600 mt-2 text-lg">
+              Here are some tips to help you get started.
+            </p>
+          )}
+        </div>
 
-      <div className="grid gap-6" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div className="grid gap-6">
         {storeId && (
           <TodoCard
             icon={

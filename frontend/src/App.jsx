@@ -81,7 +81,9 @@ function App() {
           <Route path="/store-templates" element={<PrivateRoute><StoreTemplates /></PrivateRoute>} />
           <Route path="/store/:templateId" element={<PrivateRoute><TemplatePreview /></PrivateRoute>} />
           <Route path="/store-setup" element={<PrivateRoute><StoreSetup /></PrivateRoute>} />
-          <Route path="/my-stores" element={<PrivateRoute><MyStores /></PrivateRoute>} />
+          <Route path="/my-stores" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
+            <Route index element={<MyStores />} />
+          </Route>
           
           {/* Dashboard routes */}
           <Route path="/dashboard" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
