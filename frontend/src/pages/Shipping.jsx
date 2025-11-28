@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../utils/axios';
-import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
 
 const Shipping = () => {
   const [store, setStore] = useState(null);
@@ -56,30 +55,6 @@ const Shipping = () => {
     return rates;
   });
 
-  // Distance-based configuration (optional)
-  const [useDistanceBased, setUseDistanceBased] = useState(false);
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
-  const [regionsList] = useState(regions);
-  const [provincesList, setProvincesList] = useState([]);
-  const [municipalitiesList, setMunicipalitiesList] = useState([]);
-  const [barangaysList, setBarangaysList] = useState([]);
-  const [storeAddress, setStoreAddress] = useState({
-    region: '',
-    province: '',
-    municipality: '',
-    barangay: ''
-  });
-  const [baseDistanceRates, setBaseDistanceRates] = useState(() => {
-    const rates = {};
-    destinationAreas.forEach(area => {
-      rates[area] = {
-        baseRate: 50, // Base rate in PHP
-        perKilometer: 10 // Rate per kilometer in PHP
-      };
-    });
-    return rates;
-  });
-
   useEffect(() => {
     fetchStore();
   }, []);
@@ -110,43 +85,6 @@ const Shipping = () => {
             return updated;
           });
         }
-
-        // Load distance-based settings if available
-        if (storeData.content?.shippingDistanceBased !== undefined) {
-          setUseDistanceBased(storeData.content.shippingDistanceBased);
-        }
-        if (storeData.content?.shippingDistanceRates) {
-          setBaseDistanceRates(storeData.content.shippingDistanceRates);
-        }
-        if (storeData.content?.googleMapsApiKey) {
-          setGoogleMapsApiKey(storeData.content.googleMapsApiKey);
-        }
-        // Load store address for distance calculation
-        if (storeData.region || storeData.province || storeData.municipality) {
-          setStoreAddress({
-            region: storeData.region || '',
-            province: storeData.province || '',
-            municipality: storeData.municipality || '',
-            barangay: storeData.barangay || ''
-          });
-          
-          // Load provinces, municipalities, barangays based on store address
-          if (storeData.region) {
-            const provinces = getProvincesByRegion(storeData.region);
-            setProvincesList(provinces);
-            
-            if (storeData.province) {
-              const municipalities = getCityMunByProvince(storeData.province);
-              setMunicipalitiesList(municipalities);
-              
-              if (storeData.municipality) {
-                const barangaysData = getBarangayByMun(storeData.municipality);
-                const barangaysArray = barangaysData?.data || barangaysData || [];
-                setBarangaysList(Array.isArray(barangaysArray) ? barangaysArray : []);
-              }
-            }
-          }
-        }
       }
     } catch (error) {
       console.error('Error fetching store:', error);
@@ -163,17 +101,6 @@ const Shipping = () => {
       [weightBand]: {
         ...prev[weightBand],
         [destinationArea]: numValue
-      }
-    }));
-  };
-
-  const handleDistanceRateChange = (destinationArea, field, value) => {
-    const numValue = parseFloat(value) || 0;
-    setBaseDistanceRates(prev => ({
-      ...prev,
-      [destinationArea]: {
-        ...prev[destinationArea],
-        [field]: numValue
       }
     }));
   };
@@ -198,13 +125,10 @@ const Shipping = () => {
       // Get current store content
       const currentContent = store.content || {};
 
-      // Update content with shipping rates
+      // Update content with shipping rates only
       const updatedContent = {
         ...currentContent,
-        shippingRates: shippingRates,
-        shippingDistanceBased: useDistanceBased,
-        shippingDistanceRates: useDistanceBased ? baseDistanceRates : undefined,
-        googleMapsApiKey: useDistanceBased ? googleMapsApiKey : undefined
+        shippingRates: shippingRates
       };
 
       // Log shipping rates before saving
@@ -264,203 +188,65 @@ const Shipping = () => {
           {/* Shipping Rates Section */}
           <div>
             <div className="space-y-6">
-              {/* Distance-based option */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={useDistanceBased}
-                    onChange={(e) => setUseDistanceBased(e.target.checked)}
-                    className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
-                  />
-                  <div>
-                    <span className="font-semibold text-gray-900">Enable Distance-Based Shipping (Advanced)</span>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Calculate shipping based on distance. Currently using fixed rates per weight and destination.
-                      Distance-based shipping requires integration with mapping APIs.
-                    </p>
-                  </div>
-                </label>
-              </div>
-
               {/* Fixed Rates Table */}
-              {!useDistanceBased && (
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Shipping Rates by Weight and Destination</h2>
-                    <button
-                      onClick={handleReset}
-                      className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                      Reset to Default
-                    </button>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Set shipping rates (in PHP) for each weight band and destination area. Update these when delivery riders increase their fees.
-                  </p>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-                      <thead className="bg-gray-100">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">
-                            Weight Band (kg)
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">Shipping Rates by Weight and Destination</h2>
+                  <button
+                    onClick={handleReset}
+                    className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Reset to Default
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Set shipping rates (in PHP) for each weight band and destination area. Update these when delivery riders increase their fees.
+                </p>
+                
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-white border border-gray-200 rounded-lg">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">
+                          Weight Band (kg)
+                        </th>
+                        {destinationAreas.map(area => (
+                          <th
+                            key={area}
+                            className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b"
+                          >
+                            {area}
                           </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {weightBands.map((band, bandIndex) => (
+                        <tr key={band} className={bandIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900 border-b">
+                            {band}
+                          </td>
                           {destinationAreas.map(area => (
-                            <th
-                              key={area}
-                              className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b"
-                            >
-                              {area}
-                            </th>
+                            <td key={area} className="px-4 py-3 border-b">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm text-gray-600">₱</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={shippingRates[band]?.[area] || 0}
+                                  onChange={(e) => handleRateChange(band, area, e.target.value)}
+                                  className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                />
+                              </div>
+                            </td>
                           ))}
                         </tr>
-                      </thead>
-                      <tbody>
-                        {weightBands.map((band, bandIndex) => (
-                          <tr key={band} className={bandIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="px-4 py-3 text-sm font-medium text-gray-900 border-b">
-                              {band}
-                            </td>
-                            {destinationAreas.map(area => (
-                              <td key={area} className="px-4 py-3 border-b">
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-sm text-gray-600">₱</span>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={shippingRates[band]?.[area] || 0}
-                                    onChange={(e) => handleRateChange(band, area, e.target.value)}
-                                    className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                  />
-                                </div>
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-
-              {/* Distance-Based Rates Configuration */}
-              {useDistanceBased && (
-                <div>
-                  <h2 className="text-xl font-semibold mb-4">Distance-Based Shipping Configuration</h2>
-                  
-                  {/* Google Maps API Key Configuration */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <h3 className="font-semibold text-gray-900 mb-2">Google Maps API Configuration</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Enter your Google Maps API key to enable distance-based shipping calculation.
-                      Get your API key from{' '}
-                      <a 
-                        href="https://console.cloud.google.com/google/maps-apis" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        Google Cloud Console
-                      </a>
-                      {' '}(requires Distance Matrix API enabled).
-                    </p>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Google Maps API Key
-                      </label>
-                      <input
-                        type="password"
-                        value={googleMapsApiKey}
-                        onChange={(e) => setGoogleMapsApiKey(e.target.value)}
-                        placeholder="Enter your Google Maps API key"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Your API key will be securely stored in your store settings.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Distance-Based Rates */}
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-2">Distance-Based Shipping Rates</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Configure base rates and per-kilometer rates for each destination area.
-                      Shipping cost = Base Rate + (Distance in km × Per Kilometer Rate)
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {destinationAreas.map(area => (
-                      <div key={area} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <h3 className="font-semibold text-gray-900 mb-3">{area}</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Base Rate (₱)
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={baseDistanceRates[area]?.baseRate || 0}
-                              onChange={(e) => handleDistanceRateChange(area, 'baseRate', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Per Kilometer (₱)
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={baseDistanceRates[area]?.perKilometer || 0}
-                              onChange={(e) => handleDistanceRateChange(area, 'perKilometer', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Store Address Configuration (Optional - for distance calculation origin) */}
-                  {googleMapsApiKey && (
-                    <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-900 mb-2">Store Address (Origin for Distance Calculation)</h3>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Your store address will be used as the origin point for calculating distance to customer addresses.
-                        Update this in{' '}
-                        <a 
-                          href="/dashboard/store-settings" 
-                          className="text-blue-600 hover:underline"
-                        >
-                          Store Settings
-                        </a>
-                        {' '}if needed.
-                      </p>
-                      {storeAddress.region || storeAddress.province ? (
-                        <div className="text-sm text-gray-700">
-                          <p><strong>Current Store Address:</strong></p>
-                          <p>
-                            {[storeAddress.barangay, storeAddress.municipality, storeAddress.province, storeAddress.region]
-                              .filter(Boolean)
-                              .join(', ')}
-                          </p>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-yellow-600">
-                          ⚠️ Store address not configured. Please configure it in Store Settings.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+              </div>
 
               {/* Save Button */}
               <div className="flex justify-end space-x-4 pt-4 border-t">
