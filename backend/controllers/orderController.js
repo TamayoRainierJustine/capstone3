@@ -716,10 +716,15 @@ export const getSalesAnalytics = async (req, res) => {
     }
 
     const { startDate, endDate } = req.query;
-    // Sales are counted when payment is received (completed) OR when customer has provided payment reference/receipt
-    // This ensures sales are reflected even if store owner hasn't verified payment yet
+    // Sales are counted when:
+    // 1. Payment is completed (verified by store owner)
+    // 2. Payment is processing
+    // 3. Customer has provided payment reference/receipt (GCash)
+    // 4. COD orders (paymentMethod: 'cod') - counted even if payment status is pending since payment will be collected upon delivery
+    // Excludes cancelled orders and failed/refunded payments
     const whereConditions = [
       { storeId: store.id },
+      { status: { [Op.notIn]: ['cancelled'] } }, // Exclude cancelled orders
       {
         [Op.or]: [
           { paymentStatus: 'completed' }, // Verified by store owner
@@ -732,6 +737,12 @@ export const getSalesAnalytics = async (req, res) => {
           { 
             // Has payment receipt (customer uploaded receipt)
             paymentReceipt: { [Op.ne]: null },
+            paymentStatus: { [Op.notIn]: ['failed', 'refunded'] } // Not failed or refunded
+          },
+          {
+            // COD orders - include even if payment status is pending
+            // Payment will be collected upon delivery, so order should be counted in analytics
+            paymentMethod: 'cod',
             paymentStatus: { [Op.notIn]: ['failed', 'refunded'] } // Not failed or refunded
           }
         ]
