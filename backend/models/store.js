@@ -65,7 +65,7 @@ const Store = sequelize.define('Store', {
     defaultValue: null
   },
   status: {
-    type: DataTypes.ENUM('draft', 'published'),
+    type: DataTypes.ENUM('draft', 'published', 'suspended'),
     defaultValue: 'draft'
   },
   content: {

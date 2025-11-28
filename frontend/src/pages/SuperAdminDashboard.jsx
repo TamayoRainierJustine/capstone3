@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../utils/axios';
-import { FaStore, FaUsers, FaShoppingCart, FaDollarSign, FaEye, FaToggleOn, FaToggleOff, FaTrash, FaChartLine } from 'react-icons/fa';
+import { FaStore, FaUsers, FaShoppingCart, FaDollarSign, FaEye, FaToggleOn, FaToggleOff, FaTrash, FaChartLine, FaBan } from 'react-icons/fa';
 
 const SuperAdminDashboard = () => {
   const [stores, setStores] = useState([]);
@@ -10,7 +10,7 @@ const SuperAdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [performanceLoading, setPerformanceLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all'); // all, published, unpublished
+  const [statusFilter, setStatusFilter] = useState('all'); // all, published, unpublished, suspended
 
   useEffect(() => {
     fetchStatistics();
@@ -70,6 +70,27 @@ const SuperAdminDashboard = () => {
     } catch (error) {
       console.error('Error updating store status:', error);
       alert('Failed to update store status');
+    }
+  };
+
+  const handleSuspendStore = async (storeId, storeName, isSuspended) => {
+    const action = isSuspended ? 'unsuspend' : 'suspend';
+    const confirmMessage = isSuspended
+      ? `Are you sure you want to unsuspend "${storeName}"?\n\nThe store will be restored to draft status and can be republished.`
+      : `Are you sure you want to suspend "${storeName}"?\n\nThe store will be hidden from public view immediately.\n\nStore owner can contact support to request unsuspension.`;
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      await apiClient.put(`/admin/stores/${storeId}/suspend`, { action });
+      alert(`Store ${isSuspended ? 'unsuspended' : 'suspended'} successfully`);
+      fetchStores();
+      fetchStatistics();
+    } catch (error) {
+      console.error('Error suspending/unsuspending store:', error);
+      alert(error.response?.data?.message || `Failed to ${action} store`);
     }
   };
 
@@ -146,6 +167,18 @@ const SuperAdminDashboard = () => {
                 <FaToggleOff className="text-3xl text-yellow-500" />
               </div>
             </div>
+
+            {statistics.suspendedStores !== undefined && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Suspended</p>
+                    <p className="text-2xl font-bold text-red-600">{statistics.suspendedStores}</p>
+                  </div>
+                  <FaBan className="text-3xl text-red-500" />
+                </div>
+              </div>
+            )}
 
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between">
@@ -239,9 +272,15 @@ const SuperAdminDashboard = () => {
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                           store.status === 'published'
                             ? 'bg-green-100 text-green-800' 
+                            : store.status === 'suspended'
+                            ? 'bg-red-100 text-red-800'
                             : 'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {store.status === 'published' ? 'Published' : 'Unpublished'}
+                          {store.status === 'published' 
+                            ? 'Published' 
+                            : store.status === 'suspended'
+                            ? 'Suspended'
+                            : 'Unpublished'}
                         </span>
                       </td>
                     </tr>
@@ -273,6 +312,7 @@ const SuperAdminDashboard = () => {
                 <option value="all">All Stores</option>
                 <option value="published">Published</option>
                 <option value="unpublished">Unpublished</option>
+                <option value="suspended">Suspended</option>
               </select>
             </div>
           </div>
@@ -353,16 +393,30 @@ const SuperAdminDashboard = () => {
                         {new Date(store.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex gap-2 items-center">
+                        <div className="flex gap-2 items-center flex-wrap">
+                          {store.status !== 'suspended' && (
+                            <button
+                              onClick={() => handleToggleStoreStatus(store.id, store.status === 'published')}
+                              className={`px-3 py-1 rounded ${
+                                store.status === 'published'
+                                  ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                                  : 'bg-green-100 text-green-800 hover:bg-green-200'
+                              }`}
+                            >
+                              {store.status === 'published' ? 'Unpublish' : 'Publish'}
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleToggleStoreStatus(store.id, store.status === 'published')}
-                            className={`px-3 py-1 rounded ${
-                              store.status === 'published'
-                                ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                                : 'bg-green-100 text-green-800 hover:bg-green-200'
+                            onClick={() => handleSuspendStore(store.id, store.storeName, store.status === 'suspended')}
+                            className={`px-3 py-1 rounded flex items-center gap-1 ${
+                              store.status === 'suspended'
+                                ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                : 'bg-orange-100 text-orange-800 hover:bg-orange-200'
                             }`}
+                            title={store.status === 'suspended' ? 'Unsuspend Store' : 'Suspend Store'}
                           >
-                            {store.status === 'published' ? 'Unpublish' : 'Publish'}
+                            <FaBan size={12} />
+                            {store.status === 'suspended' ? 'Unsuspend' : 'Suspend'}
                           </button>
                           <button
                             onClick={() => handleDeleteStore(store.id, store.storeName)}

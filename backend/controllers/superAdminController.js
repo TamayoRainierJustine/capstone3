@@ -16,6 +16,8 @@ export const getAllStores = async (req, res) => {
       whereClause.status = 'published';
     } else if (status === 'unpublished' || status === 'draft') {
       whereClause.status = 'draft';
+    } else if (status === 'suspended') {
+      whereClause.status = 'suspended';
     }
     // If status is 'all' or not provided, don't filter by status
     
@@ -113,6 +115,7 @@ export const getStoreStatistics = async (req, res) => {
     
     const totalStores = await Store.count();
     const publishedStores = await Store.count({ where: { status: 'published' } });
+    const suspendedStores = await Store.count({ where: { status: 'suspended' } });
     
     // Count unique store owners (users who have at least one store)
     // Use raw query to count distinct userIds from stores table
@@ -153,7 +156,8 @@ export const getStoreStatistics = async (req, res) => {
     const stats = {
       totalStores,
       publishedStores,
-      unpublishedStores: totalStores - publishedStores,
+      unpublishedStores: totalStores - publishedStores - suspendedStores,
+      suspendedStores,
       totalUsers,
       totalOrders,
       totalRevenue: parseFloat(totalRevenue)
@@ -401,6 +405,59 @@ export const getAllOrders = async (req, res) => {
     res.status(500).json({
       message: 'Error fetching orders',
       error: error.message
+    });
+  }
+};
+
+// Suspend/Unsuspend store (Super Admin only)
+export const suspendStore = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action } = req.body; // 'suspend' or 'unsuspend'
+
+    const store = await Store.findByPk(id);
+    if (!store) {
+      return res.status(404).json({ message: 'Store not found' });
+    }
+
+    // Determine new status based on action
+    let newStatus;
+    if (action === 'suspend') {
+      newStatus = 'suspended';
+    } else if (action === 'unsuspend') {
+      // When unsuspending, revert to draft (store owner can republish later)
+      newStatus = 'draft';
+    } else {
+      return res.status(400).json({ message: 'Invalid action. Use "suspend" or "unsuspend"' });
+    }
+
+    await store.update({ status: newStatus });
+    
+    const updatedStore = await Store.findByPk(id, {
+      attributes: ['id', 'userId', 'templateId', 'storeName', 'description', 'domainName', 
+                   'region', 'province', 'municipality', 'barangay', 'contactEmail', 
+                   'phone', 'logo', 'status', 'content', 'createdAt', 'updatedAt']
+    });
+    
+    // Fetch user data separately
+    if (updatedStore.userId) {
+      const user = await User.findByPk(updatedStore.userId, {
+        attributes: ['id', 'firstName', 'lastName', 'email']
+      });
+      if (user) {
+        updatedStore.dataValues.User = user;
+      }
+    }
+    
+    res.json({ 
+      message: `Store ${action === 'suspend' ? 'suspended' : 'unsuspended'} successfully`, 
+      store: updatedStore.toJSON() 
+    });
+  } catch (error) {
+    console.error('Error suspending/unsuspending store:', error);
+    res.status(500).json({ 
+      message: `Error ${req.body.action === 'suspend' ? 'suspending' : 'unsuspending'} store`, 
+      error: error.message 
     });
   }
 };

@@ -5,6 +5,7 @@ import {
   updateStoreStatus,
   getStoreDetails,
   deleteStore,
+  suspendStore,
   getStorePerformance,
   getAllOrders
 } from '../controllers/superAdminController.js';
@@ -23,6 +24,7 @@ router.get('/store-performance', getStorePerformance);
 router.get('/orders', getAllOrders);
 router.get('/stores/:id', getStoreDetails);
 router.put('/stores/:id/status', updateStoreStatus);
+router.put('/stores/:id/suspend', suspendStore);
 router.delete('/stores/:id', deleteStore);
 
 export default router;
