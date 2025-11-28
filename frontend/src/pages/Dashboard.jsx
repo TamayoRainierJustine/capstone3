@@ -358,6 +358,7 @@ const Dashboard = () => {
           variant="solid"
         />
       </div>
+      </div>
     </div>
   </div>
   );
