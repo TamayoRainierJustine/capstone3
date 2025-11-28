@@ -3,6 +3,18 @@ import { initReactI18next } from 'react-i18next';
 import enTranslations from './locales/en.json';
 import tlTranslations from './locales/tl.json';
 
+// Safe localStorage access for SSR
+const getStoredLanguage = () => {
+  if (typeof window !== 'undefined') {
+    try {
+      return localStorage.getItem('language') || 'en';
+    } catch (e) {
+      return 'en';
+    }
+  }
+  return 'en';
+};
+
 i18n
   .use(initReactI18next)
   .init({
@@ -14,7 +26,7 @@ i18n
         translation: tlTranslations
       }
     },
-    lng: localStorage.getItem('language') || 'en', // Default language
+    lng: getStoredLanguage(),
     fallbackLng: 'en',
     interpolation: {
       escapeValue: false // React already escapes values
