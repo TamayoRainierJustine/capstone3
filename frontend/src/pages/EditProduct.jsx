@@ -13,7 +13,6 @@ const EditProduct = () => {
     description: '',
     price: '',
     image: null,
-    model3d: null,
     stock: '',
     weight: '',
     category: ''
@@ -21,7 +20,6 @@ const EditProduct = () => {
 
   const [imagePreview, setImagePreview] = useState(null);
   const [existingImage, setExistingImage] = useState(null);
-  const [existingModel3d, setExistingModel3d] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -61,19 +59,13 @@ const EditProduct = () => {
           stock: product.stock || 0,
           weight: product.weight || 0,
           category: product.category || '',
-          image: null,
-          model3d: null
+          image: null
         });
 
         if (product.image) {
           const imageUrl = getImageUrl(product.image);
           setExistingImage(imageUrl);
           setImagePreview(imageUrl);
-        }
-
-        if (product.model3dUrl) {
-          const model3dUrl = getImageUrl(product.model3dUrl);
-          setExistingModel3d(model3dUrl);
         }
       } catch (error) {
         console.error('Error fetching product:', error);
@@ -127,32 +119,6 @@ const EditProduct = () => {
     }
   };
 
-  const handleModel3dChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file size (max 20MB for 3D models)
-      if (file.size > 20 * 1024 * 1024) {
-        setError('3D model size should be less than 20MB');
-        return;
-      }
-      
-      // Validate file type (GLB/GLTF)
-      const fileName = file.name.toLowerCase();
-      const isValid3dFile = fileName.endsWith('.glb') || fileName.endsWith('.gltf');
-      
-      if (!isValid3dFile) {
-        setError('Please upload a valid 3D model file (GLB or GLTF format)');
-        return;
-      }
-
-      setError('');
-      setFormData(prev => ({
-        ...prev,
-        model3d: file
-      }));
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -178,9 +144,6 @@ const EditProduct = () => {
       }
       if (formData.image) {
         productData.append('image', formData.image);
-      }
-      if (formData.model3d) {
-        productData.append('model3d', formData.model3d);
       }
 
       await apiClient.put(`/products/${id}`, productData, {
@@ -436,29 +399,6 @@ const EditProduct = () => {
                 <img src={imagePreview} alt="Preview" />
               </div>
             )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="model3d">3D Model (Optional)</label>
-            <div className="file-upload-container">
-              <input
-                type="file"
-                id="model3d"
-                name="model3d"
-                onChange={handleModel3dChange}
-                accept=".glb,.gltf"
-                className="file-input"
-              />
-              <label htmlFor="model3d" className="file-label">
-                {existingModel3d ? 'Change 3D Model' : 'Choose 3D Model File'}
-              </label>
-              <span className="file-name">
-                {formData.model3d ? formData.model3d.name : (existingModel3d ? 'Current 3D model' : 'No file chosen (GLB or GLTF format)')}
-              </span>
-            </div>
-            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
-              Upload a 3D model file (GLB or GLTF format, max 20MB) to enable 3D viewer for customers
-            </p>
           </div>
 
           <div className="form-actions">

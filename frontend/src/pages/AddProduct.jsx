@@ -11,7 +11,6 @@ const AddProduct = () => {
     description: '',
     price: '',
     image: null,
-    model3d: null,
     stock: '',
     weight: '',
     category: ''
@@ -76,32 +75,6 @@ const AddProduct = () => {
     }
   };
 
-  const handleModel3dChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file size (max 20MB for 3D models)
-      if (file.size > 20 * 1024 * 1024) {
-        setError('3D model size should be less than 20MB');
-        return;
-      }
-      
-      // Validate file type (GLB/GLTF)
-      const fileName = file.name.toLowerCase();
-      const isValid3dFile = fileName.endsWith('.glb') || fileName.endsWith('.gltf');
-      
-      if (!isValid3dFile) {
-        setError('Please upload a valid 3D model file (GLB or GLTF format)');
-        return;
-      }
-
-      setError('');
-      setFormData(prev => ({
-        ...prev,
-        model3d: file
-      }));
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -127,9 +100,6 @@ const AddProduct = () => {
       }
       if (formData.image) {
         productData.append('image', formData.image);
-      }
-      if (formData.model3d) {
-        productData.append('model3d', formData.model3d);
       }
 
       const response = await apiClient.post('/products', productData, {
@@ -371,29 +341,6 @@ const AddProduct = () => {
                 <img src={imagePreview} alt="Preview" />
               </div>
             )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="model3d">3D Model (Optional)</label>
-            <div className="file-upload-container">
-              <input
-                type="file"
-                id="model3d"
-                name="model3d"
-                onChange={handleModel3dChange}
-                accept=".glb,.gltf"
-                className="file-input"
-              />
-              <label htmlFor="model3d" className="file-label">
-                Choose 3D Model File
-              </label>
-              <span className="file-name">
-                {formData.model3d ? formData.model3d.name : 'No file chosen (GLB or GLTF format)'}
-              </span>
-            </div>
-            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
-              Upload a 3D model file (GLB or GLTF format, max 20MB) to enable 3D viewer for customers
-            </p>
           </div>
 
           <div className="form-actions">

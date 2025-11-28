@@ -5,9 +5,8 @@ import { getImageUrl } from '../utils/imageUrl';
 import { PASSWORD_REQUIREMENTS_TEXT, passwordMeetsRequirements } from '../utils/passwordRules';
 import { regions, getProvincesByRegion, getCityMunByProvince, getBarangayByMun } from 'phil-reg-prov-mun-brgy';
 import { useAuth } from '../context/AuthContext';
-import { FaUserCircle, FaEye, FaEyeSlash, FaCube } from 'react-icons/fa';
+import { FaUserCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { calculateDistance, buildAddressString } from '../utils/distanceCalculator';
-import '@google/model-viewer';
 
 // Template mapping
 const templateFileMap = {
@@ -62,7 +61,6 @@ const PublishedStore = () => {
   // Product detail modal state
   const [detailProduct, setDetailProduct] = useState(null);
   const [showProductDetailModal, setShowProductDetailModal] = useState(false);
-  const [viewMode, setViewMode] = useState('image'); // 'image' or '3d'
   const [productReviews, setProductReviews] = useState([]);
   const [reviewStatistics, setReviewStatistics] = useState(null);
   const [loadingReviews, setLoadingReviews] = useState(false);
@@ -707,7 +705,6 @@ const PublishedStore = () => {
     if (!product) return;
     setDetailProduct(product);
     setShowProductDetailModal(true);
-    setViewMode('image'); // Reset to image view
     setReviewPage(1);
     setReviewFilter(null);
     setShowReviewForm(false);
@@ -5896,55 +5893,14 @@ const PublishedStore = () => {
 
               {/* Modal Content */}
               <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left Side - Product Image / 3D Model */}
+                {/* Left Side - Product Image */}
                 <div className="space-y-4">
-                  {/* Toggle buttons */}
-                  {detailProduct.model3dUrl && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setViewMode('image')}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                          viewMode === 'image'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
-                      >
-                        Image
-                      </button>
-                      <button
-                        onClick={() => setViewMode('3d')}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                          viewMode === '3d'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
-                      >
-                        <FaCube /> 3D Model
-                      </button>
-                    </div>
-                  )}
-                  
                   <div className="relative bg-gray-100 rounded-lg overflow-hidden" style={{ aspectRatio: '1/1' }}>
-                    {viewMode === '3d' && detailProduct.model3dUrl ? (
-                      <model-viewer
-                        src={getImageUrl(detailProduct.model3dUrl)}
-                        alt={detailProduct.name}
-                        camera-controls
-                        auto-rotate
-                        rotation-per-second="30deg"
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          backgroundColor: '#f3f4f6'
-                        }}
-                      />
-                    ) : (
-                      <img
-                        src={getImageUrl(detailProduct.image) || '/imgplc.jpg'}
-                        alt={detailProduct.name}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
+                    <img
+                      src={getImageUrl(detailProduct.image) || '/imgplc.jpg'}
+                      alt={detailProduct.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 </div>
 
