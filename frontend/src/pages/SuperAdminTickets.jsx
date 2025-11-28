@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import apiClient from '../utils/axios';
-import Header from '../components/Header';
 import LanguageToggle from '../components/LanguageToggle';
 import { useAuth } from '../context/AuthContext';
 import { FaPaperPlane, FaSpinner, FaFilter, FaHome } from 'react-icons/fa';
@@ -162,7 +161,6 @@ const SuperAdminTickets = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6 flex justify-between items-center">
           <div>

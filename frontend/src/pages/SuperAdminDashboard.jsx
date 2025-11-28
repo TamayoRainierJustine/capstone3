@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../utils/axios';
-import Header from '../components/Header';
 import { FaStore, FaUsers, FaShoppingCart, FaDollarSign, FaEye, FaToggleOn, FaToggleOff, FaTrash, FaChartLine } from 'react-icons/fa';
 
 const SuperAdminDashboard = () => {
@@ -92,7 +91,6 @@ const SuperAdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex justify-between items-center">
           <div>

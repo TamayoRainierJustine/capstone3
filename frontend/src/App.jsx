@@ -102,9 +102,11 @@ function App() {
           </Route>
 
           {/* Super Admin routes */}
-          <Route path="/super-admin" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
-          <Route path="/super-admin/orders" element={<SuperAdminRoute><SuperAdminOrders /></SuperAdminRoute>} />
-          <Route path="/super-admin/tickets" element={<SuperAdminRoute><SuperAdminTickets /></SuperAdminRoute>} />
+          <Route path="/super-admin" element={<SuperAdminRoute><DashboardLayout /></SuperAdminRoute>}>
+            <Route index element={<SuperAdminDashboard />} />
+            <Route path="orders" element={<SuperAdminOrders />} />
+            <Route path="tickets" element={<SuperAdminTickets />} />
+          </Route>
 
           {/* Site Builder route */}
           <Route path="/site-builder" element={<PrivateRoute><SiteBuilder /></PrivateRoute>} />
