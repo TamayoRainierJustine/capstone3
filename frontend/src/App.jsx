@@ -99,6 +99,7 @@ function App() {
             <Route path="store-settings" element={<StoreSettings />} />
             <Route path="share-social" element={<ShareSocial />} />
             <Route path="help-chat" element={<HelpChat />} />
+            <Route path="publish" element={<PublishPage />} />
           </Route>
 
           {/* Super Admin routes */}
@@ -111,8 +112,8 @@ function App() {
           {/* Site Builder route */}
           <Route path="/site-builder" element={<PrivateRoute><SiteBuilder /></PrivateRoute>} />
           
-          {/* Publish page */}
-          <Route path="/publish" element={<PrivateRoute><PublishPage /></PrivateRoute>} />
+          {/* Legacy publish route - redirects to dashboard/publish */}
+          <Route path="/publish" element={<Navigate to="/dashboard/publish" replace />} />
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
