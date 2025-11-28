@@ -722,20 +722,12 @@ export const getSalesAnalytics = async (req, res) => {
     // 3. Customer has provided payment reference/receipt (GCash)
     // 4. COD orders (paymentMethod: 'cod') - counted even if payment status is pending since payment will be collected upon delivery
     // Excludes:
-    // - Cancelled orders (status: 'cancelled' - approved by store owner)
-    // - Orders with pending cancellation requests (cancellationRequest: 'requested') - removed from analytics immediately upon request
+    // - Cancelled orders (status: 'cancelled' - only excluded when store owner approves cancellation)
     // - Failed/refunded payments
+    // Note: Orders with cancellationRequest: 'requested' are STILL included in analytics until store owner approves cancellation
     const whereConditions = [
       { storeId: store.id },
-      { status: { [Op.notIn]: ['cancelled'] } }, // Exclude cancelled orders (approved cancellations)
-      { 
-        // Exclude orders with pending or approved cancellation requests - removed from analytics immediately upon request
-        // Store owner can still approve/reject, but orders won't appear in sales while there's a cancellation request
-        cancellationRequest: { 
-          [Op.notIn]: ['requested', 'approved'] // Exclude pending and approved cancellation requests
-          // Includes: null, 'none', 'rejected' (which means order is still valid)
-        }
-      },
+      { status: { [Op.notIn]: ['cancelled'] } }, // Exclude only cancelled orders (when store owner approves cancellation)
       {
         [Op.or]: [
           { paymentStatus: 'completed' }, // Verified by store owner
