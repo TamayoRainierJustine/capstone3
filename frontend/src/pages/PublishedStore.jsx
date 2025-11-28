@@ -1927,6 +1927,18 @@ const PublishedStore = () => {
     const baseProducts = products.length > 0 ? products : (store.content?.products || []);
     const displayProducts = selectedCategory ? filteredProducts : baseProducts;
 
+    const postMessageToHost = (payload) => {
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage(payload, '*');
+        } else {
+          window.postMessage(payload, '*');
+        }
+      } catch (err) {
+        console.warn('postMessage failed:', err);
+      }
+    };
+
     const updateIframe = () => {
       const iframe = iframeRef.current;
       if (!iframe) return;
@@ -2512,16 +2524,10 @@ const PublishedStore = () => {
                   }
                   
                   // Method 2: Use postMessage
-                  try {
-                    if (window.parent && window.parent !== window) {
-                      window.parent.postMessage({
-                        type: 'OPEN_ORDER_MODAL',
-                        product: productCopy
-                      }, '*');
-                    }
-                  } catch (err) {
-                    console.log('PostMessage failed:', err);
-                  }
+                  postMessageToHost({
+                    type: 'OPEN_ORDER_MODAL',
+                    product: productCopy
+                  });
                   
                   // Method 3: Direct call if same origin
                   try {
@@ -2540,11 +2546,11 @@ const PublishedStore = () => {
                   try {
                     if (window.parent && window.parent.openOrderModal) {
                       window.parent.openOrderModal(productCopy);
-                    } else if (window.parent && window.parent !== window) {
-                      window.parent.postMessage({
+                    } else {
+                      postMessageToHost({
                         type: 'OPEN_ORDER_MODAL',
                         product: productCopy
-                      }, '*');
+                      });
                     }
                   } catch (err) {
                     console.error('Order button click error:', err);
@@ -2580,11 +2586,11 @@ const PublishedStore = () => {
                 try {
                   if (window.parent && window.parent.openProductDetailModal) {
                     window.parent.openProductDetailModal(productCopyForDetail);
-                  } else if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({
+                  } else {
+                    postMessageToHost({
                       type: 'OPEN_PRODUCT_DETAIL_MODAL',
                       product: productCopyForDetail
-                    }, '*');
+                    });
                   }
                 } catch (err) {
                   console.log('Error opening product detail:', err);
@@ -2665,16 +2671,10 @@ const PublishedStore = () => {
                     }
                     
                     // Method 2: Use postMessage
-                    try {
-                      if (window.parent && window.parent !== window) {
-                        window.parent.postMessage({
-                          type: 'OPEN_ORDER_MODAL',
-                          product: productCopy
-                        }, '*');
-                      }
-                    } catch (err) {
-                      console.log('PostMessage failed:', err);
-                    }
+                    postMessageToHost({
+                      type: 'OPEN_ORDER_MODAL',
+                      product: productCopy
+                    });
                   };
                   
                   // Also add event listener as backup
@@ -2685,11 +2685,11 @@ const PublishedStore = () => {
                     try {
                       if (window.parent && window.parent.openOrderModal) {
                         window.parent.openOrderModal(productCopy);
-                      } else if (window.parent && window.parent !== window) {
-                        window.parent.postMessage({
+                      } else {
+                        postMessageToHost({
                           type: 'OPEN_ORDER_MODAL',
                           product: productCopy
-                        }, '*');
+                        });
                       }
                     } catch (err) {
                       console.error('Order button click error:', err);
@@ -2765,13 +2765,12 @@ const PublishedStore = () => {
                           const titleEl = card.querySelector('.product-title, h3, h4, .product-name');
                           const productName = titleEl ? titleEl.textContent.trim() : '';
                           
-                          // Send product name to parent via postMessage
-                          if (window.parent && window.parent !== window) {
-                            window.parent.postMessage({
-                              type: 'OPEN_ORDER_MODAL',
-                              productName: productName
-                            }, '*');
-                          }
+                          // Send product name to host window via postMessage
+                          var targetWindow = (window.parent && window.parent !== window) ? window.parent : window;
+                          targetWindow.postMessage({
+                            type: 'OPEN_ORDER_MODAL',
+                            productName: productName
+                          }, '*');
                         }
                       }, true);
                       
@@ -2783,12 +2782,11 @@ const PublishedStore = () => {
                         if (card) {
                           const titleEl = card.querySelector('.product-title, h3, h4, .product-name');
                           const productName = titleEl ? titleEl.textContent.trim() : '';
-                          if (window.parent && window.parent !== window) {
-                            window.parent.postMessage({
-                              type: 'OPEN_ORDER_MODAL',
-                              productName: productName
-                            }, '*');
-                          }
+                          var targetWindow = (window.parent && window.parent !== window) ? window.parent : window;
+                          targetWindow.postMessage({
+                            type: 'OPEN_ORDER_MODAL',
+                            productName: productName
+                          }, '*');
                         }
                       };
                       
@@ -2922,19 +2920,17 @@ const PublishedStore = () => {
               e.stopPropagation();
               // Trigger categories modal in parent window
               try {
-                if (window.parent && window.parent.postMessage) {
-                  const rect = link.getBoundingClientRect();
-                  window.parent.postMessage({ 
-                    type: 'SHOW_CATEGORIES',
-                    rect: {
-                      top: rect.top,
-                      left: rect.left,
-                      width: rect.width,
-                      height: rect.height,
-                      bottom: rect.bottom
-                    }
-                  }, '*');
-                }
+                const rect = link.getBoundingClientRect();
+                postMessageToHost({ 
+                  type: 'SHOW_CATEGORIES',
+                  rect: {
+                    top: rect.top,
+                    left: rect.left,
+                    width: rect.width,
+                    height: rect.height,
+                    bottom: rect.bottom
+                  }
+                });
               } catch (err) {
                 console.error('Cannot post message to parent:', err);
               }
@@ -3193,9 +3189,7 @@ const PublishedStore = () => {
                     // Try multiple methods to ensure logout works
                     try {
                       // Method 1: Send postMessage to parent window (if in iframe)
-                      if (window.parent && window.parent !== window) {
-                        window.parent.postMessage({ type: 'CUSTOMER_LOGOUT' }, '*');
-                      }
+                      postMessageToHost({ type: 'CUSTOMER_LOGOUT' });
                       
                       // Method 2: Try direct call to parent window function
                       if (window.parent && window.parent !== window && window.parent.handleCustomerLogoutDirect) {
@@ -3210,9 +3204,7 @@ const PublishedStore = () => {
                       console.error('Error during logout:', err);
                       // Last resort: try postMessage again
                       try {
-                        if (window.parent && window.parent !== window) {
-                          window.parent.postMessage({ type: 'CUSTOMER_LOGOUT' }, '*');
-                        }
+                      postMessageToHost({ type: 'CUSTOMER_LOGOUT' });
                       } catch (finalErr) {
                         console.error('Final logout attempt failed:', finalErr);
                       }
@@ -3340,12 +3332,10 @@ const PublishedStore = () => {
                     const product = filteredProducts[index];
                     searchModal.remove();
                     // Open product detail modal for selected product via postMessage
-                    if (window.parent && window.parent !== window) {
-                      window.parent.postMessage({
-                        type: 'OPEN_PRODUCT_DETAIL_MODAL',
-                        product: product
-                      }, '*');
-                    }
+                    postMessageToHost({
+                      type: 'OPEN_PRODUCT_DETAIL_MODAL',
+                      product
+                    });
                   };
                 });
               };
@@ -5791,13 +5781,12 @@ const PublishedStore = () => {
                               const titleEl = card.querySelector('.product-title, h3, h4, .product-name');
                               const productName = titleEl ? titleEl.textContent.trim() : '';
                               
-                              // Send product name to parent via postMessage
-                              if (window.parent && window.parent !== window) {
-                                window.parent.postMessage({
-                                  type: 'OPEN_ORDER_MODAL',
-                                  productName: productName
-                                }, '*');
-                              }
+                              // Send product name to host window via postMessage
+                              var targetWindow = (window.parent && window.parent !== window) ? window.parent : window;
+                              targetWindow.postMessage({
+                                type: 'OPEN_ORDER_MODAL',
+                                productName: productName
+                              }, '*');
                             }
                           } catch (err) {
                             console.error('Error in button click:', err);
