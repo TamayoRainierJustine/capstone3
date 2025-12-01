@@ -1687,17 +1687,12 @@ const PublishedStore = () => {
         console.log('📦 Store shipping rates:', response.data?.content?.shippingRates);
 
         setStore(response.data);
-        
-        // Check QR API status for this store
-        if (response.data?.id) {
-          try {
-            const qrStatusResponse = await apiClient.get(`/api-applications/stores/${response.data.id}/qr-api-status`);
-            setHasQrApi(qrStatusResponse.data?.hasQrApi || false);
-          } catch (error) {
-            console.error('Error checking QR API status:', error);
-            setHasQrApi(false);
-          }
-        }
+
+        // Note: previously we checked QR API status via
+        // /api-applications/stores/:id/qr-api-status
+        // This call has been removed to prevent 404 errors on
+        // deployments that don't have the QR API configured.
+        setHasQrApi(false);
         
         // Update Open Graph meta tags for social media sharing
         const storeUrl = window.location.href;

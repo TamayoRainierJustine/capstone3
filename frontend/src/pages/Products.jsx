@@ -32,18 +32,13 @@ const Products = () => {
       if (response.data && response.data.length > 0) {
         const storeData = response.data[0];
         setStore(storeData);
-        
-        // Check QR API status for this store
-        if (storeData.id) {
-          try {
-            const qrStatusResponse = await apiClient.get(`/api-applications/stores/${storeData.id}/qr-api-status`);
-            setHasQrApi(qrStatusResponse.data?.hasQrApi || false);
-          } catch (error) {
-            console.error('Error checking QR API status:', error);
-            setHasQrApi(false);
-          }
-        }
-        
+
+        // Note: previously we checked QR API status via
+        // /api-applications/stores/:id/qr-api-status
+        // This has been removed to avoid 404 errors on deployments
+        // that don't use the external QR API integration.
+        setHasQrApi(false);
+
         // Parse payment config from store content
         if (storeData.content?.payment) {
           // Store GCash number is available in storeData.content.payment.gcashNumber
