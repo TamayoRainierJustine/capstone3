@@ -806,17 +806,14 @@ const Orders = () => {
 
                           // For new orders, shippingAddress is a structured object
                           const safeAddr = addr || {};
-                          // Use names if available, otherwise convert codes to names
-                          let regionName = safeAddr.regionName;
+
+                          // We only need a clean, human-readable address (no region labels)
+                          // Try to use already-resolved names if present
                           let provinceName = safeAddr.provinceName;
                           let municipalityName = safeAddr.municipalityName;
                           let barangayName = safeAddr.barangayName || safeAddr.barangay;
                           
-                          // If names not available, try to convert codes
-                          if (!regionName && safeAddr.region) {
-                            const region = regions.find(r => r.reg_code === safeAddr.region);
-                            regionName = region?.name || safeAddr.region;
-                          }
+                          // If names not available, try to resolve from codes (for older orders)
                           if (!provinceName && safeAddr.province && safeAddr.region) {
                             const provinces = getProvincesByRegion(safeAddr.region);
                             const province = provinces.find(p => p.prov_code === safeAddr.province);
@@ -830,7 +827,7 @@ const Orders = () => {
                           
                           const addressParts = [];
 
-                          // Include house number + street if available
+                          // Include house number + street if available (e.g., "Blk 19 Lot 17 Kaisahan Village")
                           if (safeAddr.houseNumber || safeAddr.street) {
                             addressParts.push(
                               [safeAddr.houseNumber, safeAddr.street]
@@ -839,16 +836,21 @@ const Orders = () => {
                             );
                           }
 
-                          if (barangayName) addressParts.push(barangayName);
+                          // Barangay (optional, as plain name or with Brgy. prefix)
+                          if (barangayName) addressParts.push(`Brgy. ${barangayName}`);
+
+                          // City / Municipality (e.g., "City of Tanauan")
                           if (municipalityName) addressParts.push(municipalityName);
+
+                          // Province (e.g., "Batangas")
                           if (provinceName) addressParts.push(provinceName);
-                          if (regionName) addressParts.push(regionName);
 
                           // If still walang nakuhang parts, linawin na luma o kulang ang data
                           if (addressParts.length === 0) {
                             return 'Shipping address not provided (older order)';
                           }
 
+                          // Join as a single, human-readable line
                           return addressParts.join(', ');
                         })()}
                       </p>
