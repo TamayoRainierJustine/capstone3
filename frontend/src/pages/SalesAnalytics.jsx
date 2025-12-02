@@ -140,7 +140,11 @@ const SalesAnalytics = () => {
       return {
         month: item.month,
         monthLabel: monthLabel,
-        sales: parseFloat(item.totalSales || 0),
+        // Use product sales (subtotal) as the primary revenue metric,
+        // fall back to totalSales if older analytics data is still present
+        sales: parseFloat((item.productSales ?? item.totalSales) || 0),
+        productSales: parseFloat((item.productSales ?? item.totalSales) || 0),
+        shippingFees: parseFloat(item.shippingFees || 0),
         orders: parseInt(item.orderCount || 0)
       };
     }).sort((a, b) => a.month.localeCompare(b.month));
@@ -190,9 +194,12 @@ const SalesAnalytics = () => {
   const statusData = getOrderStatusData();
   const growth = calculateGrowth();
 
-  const totalSales = analytics?.totalSales || 0;
+  const totalSales = analytics?.totalSales || 0; // products + shipping
+  const productRevenue = analytics?.productRevenue ?? totalSales;
+  const shippingRevenue = analytics?.shippingRevenue || 0;
   const totalOrders = analytics?.totalOrders || 0;
-  const avgOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
+  // Average order value is based on product revenue only
+  const avgOrderValue = totalOrders > 0 ? productRevenue / totalOrders : 0;
   const pendingOrders = analytics?.recentOrders?.filter(o => o.status === 'pending' || o.status === 'processing').length || 0;
 
   if (loading) {
@@ -302,8 +309,14 @@ const SalesAnalytics = () => {
                 </div>
               )}
             </div>
-            <h3 className="text-purple-100 text-sm font-medium mb-1">Total Sales</h3>
+            <h3 className="text-purple-100 text-sm font-medium mb-1">Total Revenue</h3>
             <p className="text-3xl font-bold">{formatCurrency(totalSales)}</p>
+            <p className="mt-2 text-xs text-purple-100/90">
+              Products:&nbsp;
+              <span className="font-semibold">{formatCurrency(productRevenue)}</span>
+              &nbsp;· Shipping:&nbsp;
+              <span className="font-semibold">{formatCurrency(shippingRevenue)}</span>
+            </p>
           </div>
 
           {/* Total Orders Card */}
@@ -386,10 +399,10 @@ const SalesAnalytics = () => {
                   <Legend />
                   <Line
                     type="monotone"
-                    dataKey="sales"
+                    dataKey="productSales"
                     stroke={COLORS.purple}
                     strokeWidth={3}
-                    name="Sales (₱)"
+                    name="Product Revenue (₱)"
                     dot={{ fill: COLORS.purple, r: 5 }}
                     activeDot={{ r: 7 }}
                   />

@@ -775,7 +775,12 @@ export const getSalesAnalytics = async (req, res) => {
       where: whereClause,
       attributes: [
         [monthExpr, 'month'],
+        // Sum of total (products + shipping)
         [sequelize.fn('SUM', sequelize.col('total')), 'totalSales'],
+        // Sum of product subtotal only
+        [sequelize.fn('SUM', sequelize.col('subtotal')), 'productSales'],
+        // Sum of shipping fees
+        [sequelize.fn('SUM', sequelize.col('shipping')), 'shippingFees'],
         [sequelize.fn('COUNT', sequelize.col('id')), 'orderCount']
       ],
       group: [monthExpr],
@@ -783,8 +788,18 @@ export const getSalesAnalytics = async (req, res) => {
       raw: true
     });
 
-    // Get total sales
+    // Get total sales (products + shipping)
     const totalSales = await Order.sum('total', {
+      where: whereClause
+    }) || 0;
+
+    // Get total product revenue (subtotal only)
+    const totalProductSales = await Order.sum('subtotal', {
+      where: whereClause
+    }) || 0;
+
+    // Get total shipping revenue
+    const totalShippingFees = await Order.sum('shipping', {
       where: whereClause
     }) || 0;
 
@@ -809,6 +824,8 @@ export const getSalesAnalytics = async (req, res) => {
     res.json({
       monthlySales: orders,
       totalSales,
+      productRevenue: totalProductSales,
+      shippingRevenue: totalShippingFees,
       totalOrders,
       recentOrders
     });
