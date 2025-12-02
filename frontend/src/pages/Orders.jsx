@@ -796,35 +796,44 @@ const Orders = () => {
                       <p className="text-sm font-medium text-gray-700 mb-1">Shipping Address:</p>
                       <p className="text-sm text-gray-600">
                         {(() => {
-                          const addr = order.shippingAddress || {};
+                          const addr = order.shippingAddress;
+
+                          // If older orders stored shippingAddress as plain text,
+                          // just display the raw string
+                          if (typeof addr === 'string') {
+                            return addr || 'Shipping address not provided (older order)';
+                          }
+
+                          // For new orders, shippingAddress is a structured object
+                          const safeAddr = addr || {};
                           // Use names if available, otherwise convert codes to names
-                          let regionName = addr.regionName;
-                          let provinceName = addr.provinceName;
-                          let municipalityName = addr.municipalityName;
-                          let barangayName = addr.barangayName || addr.barangay;
+                          let regionName = safeAddr.regionName;
+                          let provinceName = safeAddr.provinceName;
+                          let municipalityName = safeAddr.municipalityName;
+                          let barangayName = safeAddr.barangayName || safeAddr.barangay;
                           
                           // If names not available, try to convert codes
-                          if (!regionName && addr.region) {
-                            const region = regions.find(r => r.reg_code === addr.region);
-                            regionName = region?.name || addr.region;
+                          if (!regionName && safeAddr.region) {
+                            const region = regions.find(r => r.reg_code === safeAddr.region);
+                            regionName = region?.name || safeAddr.region;
                           }
-                          if (!provinceName && addr.province && addr.region) {
-                            const provinces = getProvincesByRegion(addr.region);
-                            const province = provinces.find(p => p.prov_code === addr.province);
-                            provinceName = province?.name || addr.province;
+                          if (!provinceName && safeAddr.province && safeAddr.region) {
+                            const provinces = getProvincesByRegion(safeAddr.region);
+                            const province = provinces.find(p => p.prov_code === safeAddr.province);
+                            provinceName = province?.name || safeAddr.province;
                           }
-                          if (!municipalityName && addr.municipality && addr.province) {
-                            const municipalities = getCityMunByProvince(addr.province);
-                            const municipality = municipalities.find(m => m.mun_code === addr.municipality);
-                            municipalityName = municipality?.name || addr.municipality;
+                          if (!municipalityName && safeAddr.municipality && safeAddr.province) {
+                            const municipalities = getCityMunByProvince(safeAddr.province);
+                            const municipality = municipalities.find(m => m.mun_code === safeAddr.municipality);
+                            municipalityName = municipality?.name || safeAddr.municipality;
                           }
                           
                           const addressParts = [];
 
                           // Include house number + street if available
-                          if (addr.houseNumber || addr.street) {
+                          if (safeAddr.houseNumber || safeAddr.street) {
                             addressParts.push(
-                              [addr.houseNumber, addr.street]
+                              [safeAddr.houseNumber, safeAddr.street]
                                 .filter(Boolean)
                                 .join(' ')
                             );
@@ -834,8 +843,13 @@ const Orders = () => {
                           if (municipalityName) addressParts.push(municipalityName);
                           if (provinceName) addressParts.push(provinceName);
                           if (regionName) addressParts.push(regionName);
-                          
-                          return addressParts.join(', ') || 'Address not available';
+
+                          // If still walang nakuhang parts, linawin na luma o kulang ang data
+                          if (addressParts.length === 0) {
+                            return 'Shipping address not provided (older order)';
+                          }
+
+                          return addressParts.join(', ');
                         })()}
                       </p>
                     </div>
