@@ -796,7 +796,7 @@ const Orders = () => {
                       <p className="text-sm font-medium text-gray-700 mb-1">Shipping Address:</p>
                       <p className="text-sm text-gray-600">
                         {(() => {
-                          const addr = order.shippingAddress;
+                          const addr = order.shippingAddress || {};
                           // Use names if available, otherwise convert codes to names
                           let regionName = addr.regionName;
                           let provinceName = addr.provinceName;
@@ -820,6 +820,16 @@ const Orders = () => {
                           }
                           
                           const addressParts = [];
+
+                          // Include house number + street if available
+                          if (addr.houseNumber || addr.street) {
+                            addressParts.push(
+                              [addr.houseNumber, addr.street]
+                                .filter(Boolean)
+                                .join(' ')
+                            );
+                          }
+
                           if (barangayName) addressParts.push(barangayName);
                           if (municipalityName) addressParts.push(municipalityName);
                           if (provinceName) addressParts.push(provinceName);
