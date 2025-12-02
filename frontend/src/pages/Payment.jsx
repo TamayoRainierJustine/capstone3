@@ -166,14 +166,8 @@ const Payment = () => {
                       <strong>Note:</strong> This will be used to generate dynamic QR codes for products. Customers will scan the QR code and manually enter the amount.
                     </p>
                   </div>
-                  <div className="border-t pt-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                      <p className="font-semibold mb-1">QR Code Generation</p>
-                      <p>
-                        Manual QR uploads are no longer required. Structura now generates a QR code automatically
-                        using the GCash number above. Customers can scan the generated QR code and enter the payment amount.
-                      </p>
-                    </div>
+                  <div className="border-t pt-4 text-sm text-gray-600">
+                    Structura will use the GCash mobile number above to auto-generate a QR code for customers.
                   </div>
                 </div>
               )}
